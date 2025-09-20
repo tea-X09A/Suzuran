@@ -19,7 +19,8 @@ var GRAVITY: float = ProjectSettings.get_setting("physics/2d/default_gravity")
 # ジャンプの感触を細かく調整可能な設定群
 @export_group("Jump Settings", "jump_")
 @export var jump_force: float = 380.0        # ジャンプの初速度（大きいほど高くジャンプ）
-@export var jump_run_bonus: float = 80.0     # run状態でのジャンプ力ボーナス（慣性ジャンプ）
+@export var jump_vertical_bonus: float = 80.0     # run状態でのジャンプ垂直力ボーナス
+@export var jump_horizontal_bonus: float = 100.0  # run状態でのジャンプ水平力ボーナス
 @export var jump_max_fall_speed: float = 400.0  # 最大落下速度（大きいほど速く落ちる）
 @export var jump_gravity_scale: float = 1.0     # 重力倍率（1.0が標準、小さいほどふわふわ）
 @export var jump_buffer_time: float = 0.1       # ジャンプ先行入力時間（秒）
@@ -36,6 +37,11 @@ var jump_buffer_timer: float = 0.0
 var coyote_timer: float = 0.0
 var was_on_floor: bool = false
 
+# ジャンプ時のボーナス維持用変数
+var current_vertical_bonus: float = 0.0    # 現在の垂直ボーナス
+var current_horizontal_bonus: float = 0.0  # 現在の水平ボーナス
+var jump_direction: float = 0.0            # ジャンプ時の移動方向を記録
+
 func _ready():
 	animated_sprite_2d.flip_h = true
 
@@ -51,6 +57,13 @@ func _physics_process(delta: float) -> void:
 func update_timers(delta: float) -> void:
 	# 現在の床接触状態を記録
 	var currently_on_floor: bool = is_on_floor()
+
+	# 着地検知（空中から地面に着地した瞬間）
+	if not was_on_floor and currently_on_floor:
+		# 着地時に垂直・水平ボーナスをリセット
+		current_vertical_bonus = 0.0
+		current_horizontal_bonus = 0.0
+		jump_direction = 0.0
 
 	# コヨーテタイマーの更新
 	if currently_on_floor:
@@ -85,15 +98,25 @@ func handle_input() -> void:
 	if not is_squatting:
 		if left_key:
 			direction_x = -1.0
-			is_running = shift_pressed
+			# 地面にいる時のみランニング状態を更新
+			if is_on_floor():
+				is_running = shift_pressed
 		elif right_key:
 			direction_x = 1.0
-			is_running = shift_pressed
+			# 地面にいる時のみランニング状態を更新
+			if is_on_floor():
+				is_running = shift_pressed
 		else:
 			direction_x = 0.0
-			is_running = false
+			# 地面にいる時のみランニング状態をfalseに
+			if is_on_floor():
+				is_running = false
 	else:
 		direction_x = 0.0
+		is_running = false
+
+	# 空中にいる場合はランニング状態をfalseにする
+	if not is_on_floor():
 		is_running = false
 
 	# ジャンプ入力処理（しゃがみ中はジャンプ不可）
@@ -104,12 +127,19 @@ func handle_input() -> void:
 	if jump_buffer_timer > 0.0 and coyote_timer > 0.0:
 		perform_jump()
 
-# ジャンプ実行（run状態での慣性ジャンプ対応）
+# ジャンプ実行（run状態での垂直・水平ボーナス対応）
 func perform_jump() -> void:
 	var effective_jump_force: float = jump_force
-	# run状態の場合、慣性により追加のジャンプ力を得る
+	# run状態の場合、慣性により垂直・水平両方のジャンプボーナスを得る
 	if is_running:
-		effective_jump_force += jump_run_bonus
+		current_vertical_bonus = jump_vertical_bonus
+		current_horizontal_bonus = jump_horizontal_bonus
+		jump_direction = direction_x  # ジャンプ時の方向を記録
+		effective_jump_force += current_vertical_bonus
+	else:
+		current_vertical_bonus = 0.0
+		current_horizontal_bonus = 0.0
+		jump_direction = 0.0
 
 	velocity.y = -effective_jump_force
 	jump_buffer_timer = 0.0
@@ -120,9 +150,23 @@ func apply_movement() -> void:
 	if direction_x != 0.0:
 		animated_sprite_2d.flip_h = direction_x > 0.0
 		var target_speed: float = move_run_speed if is_running else move_walk_speed
-		velocity.x = direction_x * target_speed
+
+		# 地面にいる場合は通常の移動、空中の場合は慣性ボーナスを追加
+		if is_on_floor():
+			velocity.x = direction_x * target_speed
+		else:
+			# 空中では基本移動速度＋ジャンプ時の水平慣性ボーナスを適用
+			velocity.x = direction_x * target_speed + (direction_x * current_horizontal_bonus)
 	else:
-		velocity.x = 0.0
+		# 移動入力がない場合
+		if is_on_floor():
+			velocity.x = 0.0
+		else:
+			# 空中では記録されたジャンプ方向の慣性を維持
+			if jump_direction != 0.0:
+				velocity.x = jump_direction * current_horizontal_bonus
+			else:
+				velocity.x = 0.0
 
 # 状態更新（静的型付け強化）
 func update_state() -> void:
