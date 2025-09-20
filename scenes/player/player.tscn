@@ -68,7 +68,7 @@ script = ExtResource("1_lvxji")
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 position = Vector2(162, 29)
 sprite_frames = SubResource("SpriteFrames_cperm")
-animation = &"normal_idle"
+animation = &"normal_squat"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(157.25, 40)

@@ -8,6 +8,7 @@ var GRAVITY: float = ProjectSettings.get_setting("physics/2d/default_gravity")
 
 # ノード参照をキャッシュ（CLAUDE.mdガイドライン準拠）
 @onready var animated_sprite_2d: AnimatedSprite2D = $AnimatedSprite2D
+@onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
 
 # ========== 移動設定 ==========
 # 通常の歩行速度とダッシュ速度を調整可能
@@ -26,11 +27,19 @@ var GRAVITY: float = ProjectSettings.get_setting("physics/2d/default_gravity")
 @export var jump_buffer_time: float = 0.1       # ジャンプ先行入力時間（秒）
 @export var jump_coyote_time: float = 0.1       # コヨーテタイム（地面を離れてもジャンプ可能な時間）
 
+# ========== 当たり判定設定 ==========
+# しゃがみ時の当たり判定サイズ調整
+@export_group("Collision Settings", "collision_")
+@export var collision_normal_size: Vector2 = Vector2(78.5, 168)  # 通常時の当たり判定サイズ
+@export var collision_squat_size: Vector2 = Vector2(78.5, 84)    # しゃがみ時の当たり判定サイズ（高さ半分）
+@export var collision_squat_offset: Vector2 = Vector2(0, 42)     # しゃがみ時の当たり判定オフセット
+
 # ========== 内部状態変数 ==========
 var direction_x: float = 0.0
 var state: PLAYER_STATE = PLAYER_STATE.IDLE
 var is_running: bool = false
 var is_squatting: bool = false
+var was_squatting: bool = false  # 前フレームのしゃがみ状態（当たり判定更新判定用）
 
 # 着地状態（フレームごとに一度だけチェック）
 var is_grounded: bool = false    # 現在のフレームで地面に接触しているか
@@ -58,6 +67,7 @@ func _physics_process(delta: float) -> void:
 	handle_input()
 	apply_movement()
 	move_and_slide()
+	update_collision_shape()
 	update_state()
 
 # タイマー更新（ジャンプバッファとコヨーテタイム）
@@ -146,6 +156,23 @@ func perform_jump() -> void:
 	velocity.y = -effective_jump_force
 	jump_buffer_timer = 0.0
 	coyote_timer = 0.0
+
+# 当たり判定更新（しゃがみ状態に応じて形状を変更）
+func update_collision_shape() -> void:
+	# しゃがみ状態が変化した場合のみ当たり判定を更新
+	if is_squatting != was_squatting:
+		var shape: RectangleShape2D = collision_shape_2d.shape as RectangleShape2D
+
+		if is_squatting:
+			# しゃがみ状態：当たり判定を縮小し、位置を調整
+			shape.size = collision_squat_size
+			collision_shape_2d.position.y += collision_squat_offset.y
+		else:
+			# 通常状態：当たり判定を元に戻す
+			shape.size = collision_normal_size
+			collision_shape_2d.position.y -= collision_squat_offset.y
+
+		was_squatting = is_squatting
 
 # 移動適用（静的型付け強化）
 func apply_movement() -> void:
