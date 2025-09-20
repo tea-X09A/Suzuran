@@ -109,8 +109,8 @@ func handle_input() -> void:
 	# Shiftキーの状態を直接確認
 	var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
 
-	# しゃがみ入力の状態確認（地面にいる時のみ）
-	is_squatting = is_grounded and Input.is_action_pressed("squat")
+	# しゃがみ入力の状態確認（地面にいる時かつ攻撃中でない場合のみ）
+	is_squatting = is_grounded and Input.is_action_pressed("squat") and not is_attacking
 
 	# 攻撃入力処理（fキー、攻撃中でない場合のみ）
 	if Input.is_key_pressed(KEY_F) and not is_attacking:
@@ -120,8 +120,8 @@ func handle_input() -> void:
 	var left_key: bool = Input.is_key_pressed(KEY_A)
 	var right_key: bool = Input.is_key_pressed(KEY_D)
 
-	# 移動方向と走行状態の決定（しゃがみ中は移動を無効にする）
-	if not is_squatting:
+	# 移動方向と走行状態の決定（しゃがみ中と攻撃中は移動を無効にする）
+	if not is_squatting and not is_attacking:
 		if left_key:
 			direction_x = -1.0
 			# 地面にいる時のみランニング状態を更新
@@ -145,8 +145,8 @@ func handle_input() -> void:
 	if not is_grounded:
 		is_running = false
 
-	# ジャンプ入力処理（しゃがみ中はジャンプ不可）
-	if Input.is_action_just_pressed("jump") and not is_squatting:
+	# ジャンプ入力処理（しゃがみ中かつ攻撃中はジャンプ不可）
+	if Input.is_action_just_pressed("jump") and not is_squatting and not is_attacking:
 		jump_buffer_timer = jump_buffer_time
 
 	# ジャンプ実行判定（ジャンプバッファとコヨーテタイム対応）
