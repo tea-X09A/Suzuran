@@ -1,10 +1,11 @@
-[gd_scene load_steps=10 format=3 uid="uid://daofj62a4corn"]
+[gd_scene load_steps=11 format=3 uid="uid://daofj62a4corn"]
 
 [ext_resource type="Texture2D" uid="uid://cp0ria1m7rv2l" path="res://assets/images/player/normal_fall/frame_fall_001.png" id="1_gmlin"]
 [ext_resource type="Script" uid="uid://cyb2ijm5xuo6s" path="res://scenes/player/player.gd" id="1_lvxji"]
 [ext_resource type="Texture2D" uid="uid://dc6u6wrdvkosi" path="res://assets/images/player/normal_idle/frame_idle_001.png" id="2_lvxji"]
 [ext_resource type="Texture2D" uid="uid://dubgvda2jklcn" path="res://assets/images/player/normal_run/frame_run_001.png" id="2_p47bc"]
 [ext_resource type="Texture2D" uid="uid://htyfblgf4cib" path="res://assets/images/player/normal_jump/frame_jump_001.png" id="3_p47bc"]
+[ext_resource type="Texture2D" uid="uid://cxqn1t7a3qwv3" path="res://assets/images/player/normal_fighting_01_001/frame_fighting_01_001.png" id="3_qek5x"]
 [ext_resource type="Texture2D" uid="uid://jle21g31pxn5" path="res://assets/images/player/normal_squat/frame_squat_001.png" id="6_0owmy"]
 [ext_resource type="Texture2D" uid="uid://ca4aisuntcyvq" path="res://assets/images/player/normal_walk/frame_walk_001.png" id="6_75vfm"]
 
@@ -19,12 +20,20 @@ animations = [{
 "speed": 10.0
 }, {
 "frames": [{
+"duration": 3.0,
+"texture": ExtResource("3_qek5x")
+}],
+"loop": false,
+"name": &"normal_fighting_01",
+"speed": 6.0
+}, {
+"frames": [{
 "duration": 1.0,
 "texture": ExtResource("2_lvxji")
 }],
 "loop": true,
 "name": &"normal_idle",
-"speed": 10.0
+"speed": 5.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -68,7 +77,7 @@ script = ExtResource("1_lvxji")
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 position = Vector2(162, 29)
 sprite_frames = SubResource("SpriteFrames_cperm")
-animation = &"normal_squat"
+animation = &"normal_idle"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(157.25, 40)

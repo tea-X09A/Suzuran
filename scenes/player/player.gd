@@ -1,7 +1,7 @@
 extends CharacterBody2D
 class_name Player
 
-enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT }
+enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT, FIGHTING }
 
 # 重力は物理設定から取得（変更不要）
 var GRAVITY: float = ProjectSettings.get_setting("physics/2d/default_gravity")
@@ -15,6 +15,10 @@ var GRAVITY: float = ProjectSettings.get_setting("physics/2d/default_gravity")
 @export_group("Movement Settings", "move_")
 @export var move_walk_speed: float = 200.0  # 通常歩行速度（ピクセル/秒）
 @export var move_run_speed: float = 350.0   # ダッシュ速度（ピクセル/秒）
+@export var move_attack_initial_speed: float = 400.0  # 攻撃開始時の初期前進速度（ピクセル/秒）
+@export var move_attack_max_distance: float = 200.0  # 攻撃時の最大前進距離（ピクセル）
+@export var move_attack_decel_start_ratio: float = 0.8  # 減速開始距離の割合（0.8 = 最大距離の80%で減速開始）
+@export var move_attack_deceleration: float = 0.95  # 攻撃中の減速率（1.0=減速なし、0.95=5%ずつ減速）
 
 # ========== ジャンプ設定 ==========
 # ジャンプの感触を細かく調整可能な設定群
@@ -40,6 +44,12 @@ var state: PLAYER_STATE = PLAYER_STATE.IDLE
 var is_running: bool = false
 var is_squatting: bool = false
 var was_squatting: bool = false  # 前フレームのしゃがみ状態（当たり判定更新判定用）
+
+# 攻撃状態管理
+var is_attacking: bool = false
+var attack_direction: float = 0.0  # 攻撃開始時の方向を記録
+var attack_start_position: float = 0.0  # 攻撃開始時のX座標
+var current_attack_speed: float = 0.0  # 現在の攻撃中の前進速度
 
 # 着地状態（フレームごとに一度だけチェック）
 var is_grounded: bool = false    # 現在のフレームで地面に接触しているか
@@ -102,6 +112,10 @@ func handle_input() -> void:
 	# しゃがみ入力の状態確認（地面にいる時のみ）
 	is_squatting = is_grounded and Input.is_action_pressed("squat")
 
+	# 攻撃入力処理（fキー、攻撃中でない場合のみ）
+	if Input.is_key_pressed(KEY_F) and not is_attacking:
+		perform_attack()
+
 	# 方向キーの状態確認
 	var left_key: bool = Input.is_key_pressed(KEY_A)
 	var right_key: bool = Input.is_key_pressed(KEY_D)
@@ -157,6 +171,40 @@ func perform_jump() -> void:
 	jump_buffer_timer = 0.0
 	coyote_timer = 0.0
 
+# 攻撃実行（飛び蹴りモーション）
+func perform_attack() -> void:
+	is_attacking = true
+	# 攻撃開始時の向きを記録（現在の向きか、向きが決まっていない場合はスプライトの向きから判定）
+	if direction_x != 0.0:
+		attack_direction = direction_x
+	else:
+		attack_direction = 1.0 if animated_sprite_2d.flip_h else -1.0
+
+	# 攻撃開始時の位置を記録
+	attack_start_position = global_position.x
+
+	# 攻撃開始時の初期速度を設定
+	current_attack_speed = move_attack_initial_speed
+
+	set_state(PLAYER_STATE.FIGHTING)
+
+	# アニメーション終了時のコールバックを設定
+	if not animated_sprite_2d.animation_finished.is_connected(_on_attack_animation_finished):
+		animated_sprite_2d.animation_finished.connect(_on_attack_animation_finished)
+
+# 攻撃アニメーション終了時のコールバック
+func _on_attack_animation_finished() -> void:
+	if state == PLAYER_STATE.FIGHTING:
+		is_attacking = false
+		attack_direction = 0.0
+		attack_start_position = 0.0
+		current_attack_speed = 0.0
+		# シグナル接続を解除
+		if animated_sprite_2d.animation_finished.is_connected(_on_attack_animation_finished):
+			animated_sprite_2d.animation_finished.disconnect(_on_attack_animation_finished)
+		# 状態更新を呼び出し（自動的に適切な状態に遷移）
+		update_state()
+
 # 当たり判定更新（しゃがみ状態に応じて形状を変更）
 func update_collision_shape() -> void:
 	# しゃがみ状態が変化した場合のみ当たり判定を更新
@@ -176,6 +224,29 @@ func update_collision_shape() -> void:
 
 # 移動適用（静的型付け強化）
 func apply_movement() -> void:
+	# 攻撃中は攻撃方向への前進移動を優先（距離ベース制御）
+	if is_attacking:
+		# 攻撃開始からの移動距離を計算
+		var distance_moved: float = abs(global_position.x - attack_start_position)
+		var decel_start_distance: float = move_attack_max_distance * move_attack_decel_start_ratio
+
+		# 減速開始距離に達していない場合は一定速度で前進
+		if distance_moved < decel_start_distance:
+			velocity.x = attack_direction * current_attack_speed
+		elif distance_moved < move_attack_max_distance:
+			# 減速開始距離に達した場合は徐々に減速
+			current_attack_speed *= move_attack_deceleration
+			velocity.x = attack_direction * current_attack_speed
+		else:
+			# 最大距離に達した場合は急激に減速
+			current_attack_speed *= move_attack_deceleration * 0.85  # より強い減速
+			velocity.x = attack_direction * current_attack_speed
+
+			# 速度が非常に小さくなったら停止
+			if current_attack_speed < 20.0:
+				velocity.x = 0.0
+		return
+
 	if direction_x != 0.0:
 		animated_sprite_2d.flip_h = direction_x > 0.0
 		var target_speed: float = move_run_speed if is_running else move_walk_speed
@@ -199,6 +270,10 @@ func apply_movement() -> void:
 
 # 状態更新（静的型付け強化）
 func update_state() -> void:
+	# 攻撃中は状態変更を行わない
+	if is_attacking:
+		return
+
 	var new_state: PLAYER_STATE
 
 	if is_grounded:
@@ -234,3 +309,5 @@ func set_state(new_state: PLAYER_STATE) -> void:
 			animated_sprite_2d.play("normal_fall")
 		PLAYER_STATE.SQUAT:
 			animated_sprite_2d.play("normal_squat")
+		PLAYER_STATE.FIGHTING:
+			animated_sprite_2d.play("normal_fighting_01")
