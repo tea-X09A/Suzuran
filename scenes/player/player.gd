@@ -15,7 +15,7 @@ var GRAVITY: float = ProjectSettings.get_setting("physics/2d/default_gravity")
 @export_group("Movement Settings", "move_")
 @export var move_walk_speed: float = 200.0  # 通常歩行速度（ピクセル/秒）
 @export var move_run_speed: float = 350.0   # ダッシュ速度（ピクセル/秒）
-@export var move_attack_initial_speed: float = 300.0  # 攻撃開始時の初期前進速度（ピクセル/秒）
+@export var move_attack_initial_speed: float = 250.0  # 攻撃開始時の初期前進速度（ピクセル/秒）
 @export var move_attack_duration: float = 0.5  # 攻撃の持続時間（秒）
 
 # ========== ジャンプ設定 ==========
@@ -60,8 +60,7 @@ var coyote_timer: float = 0.0
 
 # ジャンプ時のボーナス維持用変数
 var current_vertical_bonus: float = 0.0    # 現在の垂直ボーナス
-var current_horizontal_bonus: float = 0.0  # 現在の水平ボーナス
-var jump_direction: float = 0.0            # ジャンプ時の移動方向を記録
+var jump_horizontal_velocity: float = 0.0  # ジャンプ時の水平速度を記録（慣性維持用）
 
 func _ready():
 	animated_sprite_2d.flip_h = true
@@ -105,10 +104,9 @@ func end_attack() -> void:
 func update_timers(delta: float) -> void:
 	# 着地検知（空中から地面に着地した瞬間）
 	if not was_grounded and is_grounded:
-		# 着地時に垂直・水平ボーナスをリセット
+		# 着地時にボーナスと記録した水平速度をリセット
 		current_vertical_bonus = 0.0
-		current_horizontal_bonus = 0.0
-		jump_direction = 0.0
+		jump_horizontal_velocity = 0.0
 
 		# 空中攻撃中に着地した場合、攻撃モーションをキャンセル
 		if is_attacking and not attack_grounded:
@@ -181,16 +179,16 @@ func handle_input() -> void:
 # ジャンプ実行（run状態での垂直・水平ボーナス対応）
 func perform_jump() -> void:
 	var effective_jump_force: float = jump_force
-	# run状態の場合、慣性により垂直・水平両方のジャンプボーナスを得る
+	# run状態の場合、垂直ボーナスを得る
 	if is_running:
 		current_vertical_bonus = jump_vertical_bonus
-		current_horizontal_bonus = jump_horizontal_bonus
-		jump_direction = direction_x  # ジャンプ時の方向を記録
 		effective_jump_force += current_vertical_bonus
+		# ジャンプ時の水平速度を記録（基本速度+水平ボーナス）
+		jump_horizontal_velocity = direction_x * move_run_speed + (direction_x * jump_horizontal_bonus)
 	else:
 		current_vertical_bonus = 0.0
-		current_horizontal_bonus = 0.0
-		jump_direction = 0.0
+		# walk状態でのジャンプ時の水平速度を記録
+		jump_horizontal_velocity = direction_x * move_walk_speed
 
 	velocity.y = -effective_jump_force
 	jump_buffer_timer = 0.0
@@ -260,22 +258,19 @@ func apply_movement() -> void:
 		animated_sprite_2d.flip_h = direction_x > 0.0
 		var target_speed: float = move_run_speed if is_running else move_walk_speed
 
-		# 地面にいる場合は通常の移動、空中の場合は慣性ボーナスを追加
+		# 地面にいる場合は通常の移動、空中の場合はジャンプ時の水平速度を維持
 		if is_grounded:
 			velocity.x = direction_x * target_speed
 		else:
-			# 空中では基本移動速度＋ジャンプ時の水平慣性ボーナスを適用
-			velocity.x = direction_x * target_speed + (direction_x * current_horizontal_bonus)
+			# 空中ではジャンプ時に記録した水平速度を維持（慣性維持）
+			velocity.x = jump_horizontal_velocity
 	else:
 		# 移動入力がない場合
 		if is_grounded:
 			velocity.x = 0.0
 		else:
-			# 空中では記録されたジャンプ方向の慣性を維持
-			if jump_direction != 0.0:
-				velocity.x = jump_direction * current_horizontal_bonus
-			else:
-				velocity.x = 0.0
+			# 空中では入力がなくてもジャンプ時の水平速度を維持（慣性維持）
+			velocity.x = jump_horizontal_velocity
 
 # 状態更新（静的型付け強化）
 func update_state() -> void:
