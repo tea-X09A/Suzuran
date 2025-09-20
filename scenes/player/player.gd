@@ -15,7 +15,7 @@ var GRAVITY: float = ProjectSettings.get_setting("physics/2d/default_gravity")
 @export_group("Movement Settings", "move_")
 @export var move_walk_speed: float = 200.0  # 通常歩行速度（ピクセル/秒）
 @export var move_run_speed: float = 350.0   # ダッシュ速度（ピクセル/秒）
-@export var move_attack_initial_speed: float = 400.0  # 攻撃開始時の初期前進速度（ピクセル/秒）
+@export var move_attack_initial_speed: float = 300.0  # 攻撃開始時の初期前進速度（ピクセル/秒）
 @export var move_attack_duration: float = 0.5  # 攻撃の持続時間（秒）
 
 # ========== ジャンプ設定 ==========
@@ -109,6 +109,10 @@ func update_timers(delta: float) -> void:
 		current_vertical_bonus = 0.0
 		current_horizontal_bonus = 0.0
 		jump_direction = 0.0
+
+		# 空中攻撃中に着地した場合、攻撃モーションをキャンセル
+		if is_attacking and not attack_grounded:
+			end_attack()
 
 	# コヨーテタイマーの更新
 	if is_grounded:
@@ -204,8 +208,13 @@ func perform_attack() -> void:
 	# 攻撃開始時の着地状態を記録
 	attack_grounded = is_grounded
 
-	# 攻撃開始時の初期速度とタイマーを設定
-	current_attack_speed = move_attack_initial_speed
+	# 地上攻撃の場合のみ前進速度を設定（空中攻撃では不要）
+	if attack_grounded:
+		current_attack_speed = move_attack_initial_speed
+	else:
+		current_attack_speed = 0.0
+
+	# 攻撃タイマーを設定
 	attack_timer = move_attack_duration
 
 	set_state(PLAYER_STATE.FIGHTING)
@@ -244,8 +253,8 @@ func apply_movement() -> void:
 		if attack_grounded:
 			# 一定速度で前進（時間で制御）
 			velocity.x = attack_direction * current_attack_speed
-			return
-		# 空中攻撃の場合は攻撃による前進は行わず、通常の移動処理を続行
+		# 空中攻撃の場合は慣性を引き継いだ状態を維持（velocity.xをそのまま保持）
+		return
 
 	if direction_x != 0.0:
 		animated_sprite_2d.flip_h = direction_x > 0.0
