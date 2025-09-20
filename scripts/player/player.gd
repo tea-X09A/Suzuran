@@ -13,7 +13,7 @@ var GRAVITY: float = ProjectSettings.get_setting("physics/2d/default_gravity")
 # ========== 移動設定 ==========
 # 通常の歩行速度とダッシュ速度を調整可能
 @export_group("Movement Settings", "move_")
-@export var move_walk_speed: float = 200.0  # 通常歩行速度（ピクセル/秒）
+@export var move_walk_speed: float = 100.0  # 通常歩行速度（ピクセル/秒）
 @export var move_run_speed: float = 350.0   # ダッシュ速度（ピクセル/秒）
 @export var move_attack_initial_speed: float = 250.0  # 攻撃開始時の初期前進速度（ピクセル/秒）
 @export var move_attack_duration: float = 0.5  # 攻撃の持続時間（秒）
