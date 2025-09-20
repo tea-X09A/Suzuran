@@ -16,9 +16,7 @@ var GRAVITY: float = ProjectSettings.get_setting("physics/2d/default_gravity")
 @export var move_walk_speed: float = 200.0  # 通常歩行速度（ピクセル/秒）
 @export var move_run_speed: float = 350.0   # ダッシュ速度（ピクセル/秒）
 @export var move_attack_initial_speed: float = 400.0  # 攻撃開始時の初期前進速度（ピクセル/秒）
-@export var move_attack_max_distance: float = 200.0  # 攻撃時の最大前進距離（ピクセル）
-@export var move_attack_decel_start_ratio: float = 0.8  # 減速開始距離の割合（0.8 = 最大距離の80%で減速開始）
-@export var move_attack_deceleration: float = 0.95  # 攻撃中の減速率（1.0=減速なし、0.95=5%ずつ減速）
+@export var move_attack_duration: float = 0.5  # 攻撃の持続時間（秒）
 
 # ========== ジャンプ設定 ==========
 # ジャンプの感触を細かく調整可能な設定群
@@ -48,8 +46,9 @@ var was_squatting: bool = false  # 前フレームのしゃがみ状態（当た
 # 攻撃状態管理
 var is_attacking: bool = false
 var attack_direction: float = 0.0  # 攻撃開始時の方向を記録
-var attack_start_position: float = 0.0  # 攻撃開始時のX座標
 var current_attack_speed: float = 0.0  # 現在の攻撃中の前進速度
+var attack_grounded: bool = false  # 攻撃開始時の着地状態を記録
+var attack_timer: float = 0.0  # 攻撃の残り時間
 
 # 着地状態（フレームごとに一度だけチェック）
 var is_grounded: bool = false    # 現在のフレームで地面に接触しているか
@@ -73,11 +72,33 @@ func _physics_process(delta: float) -> void:
 	is_grounded = is_on_floor()
 
 	update_timers(delta)
+	update_attack_timer(delta)
 	apply_gravity(delta)
 	handle_input()
 	apply_movement()
 	move_and_slide()
 	update_collision_shape()
+	update_state()
+
+# 攻撃タイマー更新
+func update_attack_timer(delta: float) -> void:
+	if is_attacking:
+		attack_timer -= delta
+		if attack_timer <= 0.0:
+			# 攻撃時間終了
+			end_attack()
+
+# 攻撃終了処理（時間終了時とアニメーション終了時の共通処理）
+func end_attack() -> void:
+	is_attacking = false
+	attack_direction = 0.0
+	current_attack_speed = 0.0
+	attack_grounded = false
+	attack_timer = 0.0
+	# シグナル接続を解除
+	if animated_sprite_2d.animation_finished.is_connected(_on_attack_animation_finished):
+		animated_sprite_2d.animation_finished.disconnect(_on_attack_animation_finished)
+	# 状態更新を呼び出し
 	update_state()
 
 # タイマー更新（ジャンプバッファとコヨーテタイム）
@@ -180,11 +201,12 @@ func perform_attack() -> void:
 	else:
 		attack_direction = 1.0 if animated_sprite_2d.flip_h else -1.0
 
-	# 攻撃開始時の位置を記録
-	attack_start_position = global_position.x
+	# 攻撃開始時の着地状態を記録
+	attack_grounded = is_grounded
 
-	# 攻撃開始時の初期速度を設定
+	# 攻撃開始時の初期速度とタイマーを設定
 	current_attack_speed = move_attack_initial_speed
+	attack_timer = move_attack_duration
 
 	set_state(PLAYER_STATE.FIGHTING)
 
@@ -195,15 +217,7 @@ func perform_attack() -> void:
 # 攻撃アニメーション終了時のコールバック
 func _on_attack_animation_finished() -> void:
 	if state == PLAYER_STATE.FIGHTING:
-		is_attacking = false
-		attack_direction = 0.0
-		attack_start_position = 0.0
-		current_attack_speed = 0.0
-		# シグナル接続を解除
-		if animated_sprite_2d.animation_finished.is_connected(_on_attack_animation_finished):
-			animated_sprite_2d.animation_finished.disconnect(_on_attack_animation_finished)
-		# 状態更新を呼び出し（自動的に適切な状態に遷移）
-		update_state()
+		end_attack()
 
 # 当たり判定更新（しゃがみ状態に応じて形状を変更）
 func update_collision_shape() -> void:
@@ -224,28 +238,14 @@ func update_collision_shape() -> void:
 
 # 移動適用（静的型付け強化）
 func apply_movement() -> void:
-	# 攻撃中は攻撃方向への前進移動を優先（距離ベース制御）
+	# 攻撃中の処理
 	if is_attacking:
-		# 攻撃開始からの移動距離を計算
-		var distance_moved: float = abs(global_position.x - attack_start_position)
-		var decel_start_distance: float = move_attack_max_distance * move_attack_decel_start_ratio
-
-		# 減速開始距離に達していない場合は一定速度で前進
-		if distance_moved < decel_start_distance:
+		# 地上攻撃の場合のみ前進処理を行う
+		if attack_grounded:
+			# 一定速度で前進（時間で制御）
 			velocity.x = attack_direction * current_attack_speed
-		elif distance_moved < move_attack_max_distance:
-			# 減速開始距離に達した場合は徐々に減速
-			current_attack_speed *= move_attack_deceleration
-			velocity.x = attack_direction * current_attack_speed
-		else:
-			# 最大距離に達した場合は急激に減速
-			current_attack_speed *= move_attack_deceleration * 0.85  # より強い減速
-			velocity.x = attack_direction * current_attack_speed
-
-			# 速度が非常に小さくなったら停止
-			if current_attack_speed < 20.0:
-				velocity.x = 0.0
-		return
+			return
+		# 空中攻撃の場合は攻撃による前進は行わず、通常の移動処理を続行
 
 	if direction_x != 0.0:
 		animated_sprite_2d.flip_h = direction_x > 0.0
