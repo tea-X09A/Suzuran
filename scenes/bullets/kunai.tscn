@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3 uid="uid://bqbt724rjusfu"]
+
+[ext_resource type="Texture2D" uid="uid://c5dl3pkbmw88x" path="res://assets/images/bullets/kunai.png" id="1_ankgo"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_pnul6"]
+size = Vector2(34, 17)
+
+[node name="kunai" type="RigidBody2D"]
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(64.75, -32.75)
+scale = Vector2(0.07, 0.07)
+texture = ExtResource("1_ankgo")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(65, -33)
+shape = SubResource("RectangleShape2D_pnul6")
+debug_color = Color(0.815106, 0.379994, 0.39831, 0.42)
