@@ -32,10 +32,13 @@ var state: PLAYER_STATE = PLAYER_STATE.IDLE
 var is_running: bool = false
 var is_squatting: bool = false
 
+# 着地状態（フレームごとに一度だけチェック）
+var is_grounded: bool = false    # 現在のフレームで地面に接触しているか
+var was_grounded: bool = false   # 前のフレームで地面に接触していたか（着地瞬間の検知に使用）
+
 # ジャンプバッファとコヨーテタイム用タイマー
 var jump_buffer_timer: float = 0.0
 var coyote_timer: float = 0.0
-var was_on_floor: bool = false
 
 # ジャンプ時のボーナス維持用変数
 var current_vertical_bonus: float = 0.0    # 現在の垂直ボーナス
@@ -46,6 +49,10 @@ func _ready():
 	animated_sprite_2d.flip_h = true
 
 func _physics_process(delta: float) -> void:
+	# 着地状態を一度だけチェックして内部状態変数に保存
+	was_grounded = is_grounded
+	is_grounded = is_on_floor()
+
 	update_timers(delta)
 	apply_gravity(delta)
 	handle_input()
@@ -55,18 +62,15 @@ func _physics_process(delta: float) -> void:
 
 # タイマー更新（ジャンプバッファとコヨーテタイム）
 func update_timers(delta: float) -> void:
-	# 現在の床接触状態を記録
-	var currently_on_floor: bool = is_on_floor()
-
 	# 着地検知（空中から地面に着地した瞬間）
-	if not was_on_floor and currently_on_floor:
+	if not was_grounded and is_grounded:
 		# 着地時に垂直・水平ボーナスをリセット
 		current_vertical_bonus = 0.0
 		current_horizontal_bonus = 0.0
 		jump_direction = 0.0
 
 	# コヨーテタイマーの更新
-	if currently_on_floor:
+	if is_grounded:
 		coyote_timer = jump_coyote_time
 	else:
 		coyote_timer = max(0.0, coyote_timer - delta)
@@ -74,11 +78,9 @@ func update_timers(delta: float) -> void:
 	# ジャンプバッファタイマーの更新
 	jump_buffer_timer = max(0.0, jump_buffer_timer - delta)
 
-	was_on_floor = currently_on_floor
-
 # 重力適用（改良版：重力倍率対応）
 func apply_gravity(delta: float) -> void:
-	if not is_on_floor():
+	if not is_grounded:
 		var effective_gravity: float = GRAVITY * jump_gravity_scale
 		velocity.y = min(velocity.y + effective_gravity * delta, jump_max_fall_speed)
 
@@ -88,7 +90,7 @@ func handle_input() -> void:
 	var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
 
 	# しゃがみ入力の状態確認（地面にいる時のみ）
-	is_squatting = is_on_floor() and Input.is_action_pressed("squat")
+	is_squatting = is_grounded and Input.is_action_pressed("squat")
 
 	# 方向キーの状態確認
 	var left_key: bool = Input.is_key_pressed(KEY_A)
@@ -99,24 +101,24 @@ func handle_input() -> void:
 		if left_key:
 			direction_x = -1.0
 			# 地面にいる時のみランニング状態を更新
-			if is_on_floor():
+			if is_grounded:
 				is_running = shift_pressed
 		elif right_key:
 			direction_x = 1.0
 			# 地面にいる時のみランニング状態を更新
-			if is_on_floor():
+			if is_grounded:
 				is_running = shift_pressed
 		else:
 			direction_x = 0.0
 			# 地面にいる時のみランニング状態をfalseに
-			if is_on_floor():
+			if is_grounded:
 				is_running = false
 	else:
 		direction_x = 0.0
 		is_running = false
 
 	# 空中にいる場合はランニング状態をfalseにする
-	if not is_on_floor():
+	if not is_grounded:
 		is_running = false
 
 	# ジャンプ入力処理（しゃがみ中はジャンプ不可）
@@ -152,14 +154,14 @@ func apply_movement() -> void:
 		var target_speed: float = move_run_speed if is_running else move_walk_speed
 
 		# 地面にいる場合は通常の移動、空中の場合は慣性ボーナスを追加
-		if is_on_floor():
+		if is_grounded:
 			velocity.x = direction_x * target_speed
 		else:
 			# 空中では基本移動速度＋ジャンプ時の水平慣性ボーナスを適用
 			velocity.x = direction_x * target_speed + (direction_x * current_horizontal_bonus)
 	else:
 		# 移動入力がない場合
-		if is_on_floor():
+		if is_grounded:
 			velocity.x = 0.0
 		else:
 			# 空中では記録されたジャンプ方向の慣性を維持
@@ -172,7 +174,7 @@ func apply_movement() -> void:
 func update_state() -> void:
 	var new_state: PLAYER_STATE
 
-	if is_on_floor():
+	if is_grounded:
 		if is_squatting:
 			new_state = PLAYER_STATE.SQUAT
 		elif velocity.x == 0.0:
