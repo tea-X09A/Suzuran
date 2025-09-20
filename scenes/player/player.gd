@@ -18,7 +18,8 @@ var GRAVITY: float = ProjectSettings.get_setting("physics/2d/default_gravity")
 # ========== ジャンプ設定 ==========
 # ジャンプの感触を細かく調整可能な設定群
 @export_group("Jump Settings", "jump_")
-@export var jump_force: float = 300.0        # ジャンプの初速度（大きいほど高くジャンプ）
+@export var jump_force: float = 380.0        # ジャンプの初速度（大きいほど高くジャンプ）
+@export var jump_run_bonus: float = 80.0     # run状態でのジャンプ力ボーナス（慣性ジャンプ）
 @export var jump_max_fall_speed: float = 400.0  # 最大落下速度（大きいほど速く落ちる）
 @export var jump_gravity_scale: float = 1.0     # 重力倍率（1.0が標準、小さいほどふわふわ）
 @export var jump_buffer_time: float = 0.1       # ジャンプ先行入力時間（秒）
@@ -103,9 +104,14 @@ func handle_input() -> void:
 	if jump_buffer_timer > 0.0 and coyote_timer > 0.0:
 		perform_jump()
 
-# ジャンプ実行
+# ジャンプ実行（run状態での慣性ジャンプ対応）
 func perform_jump() -> void:
-	velocity.y = -jump_force
+	var effective_jump_force: float = jump_force
+	# run状態の場合、慣性により追加のジャンプ力を得る
+	if is_running:
+		effective_jump_force += jump_run_bonus
+
+	velocity.y = -effective_jump_force
 	jump_buffer_timer = 0.0
 	coyote_timer = 0.0
 
