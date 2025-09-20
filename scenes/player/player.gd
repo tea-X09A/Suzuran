@@ -1,7 +1,7 @@
 extends CharacterBody2D
 class_name Player
 
-enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL }
+enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT }
 
 # 重力は物理設定から取得（変更不要）
 var GRAVITY: float = ProjectSettings.get_setting("physics/2d/default_gravity")
@@ -28,6 +28,7 @@ var GRAVITY: float = ProjectSettings.get_setting("physics/2d/default_gravity")
 var direction_x: float = 0.0
 var state: PLAYER_STATE = PLAYER_STATE.IDLE
 var is_running: bool = false
+var is_squatting: bool = false
 
 # ジャンプバッファとコヨーテタイム用タイマー
 var jump_buffer_timer: float = 0.0
@@ -72,23 +73,30 @@ func handle_input() -> void:
 	# Shiftキーの状態を直接確認
 	var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
 
+	# しゃがみ入力の状態確認（地面にいる時のみ）
+	is_squatting = is_on_floor() and Input.is_action_pressed("squat")
+
 	# 方向キーの状態確認
 	var left_key: bool = Input.is_key_pressed(KEY_A)
 	var right_key: bool = Input.is_key_pressed(KEY_D)
 
-	# 移動方向と走行状態の決定
-	if left_key:
-		direction_x = -1.0
-		is_running = shift_pressed
-	elif right_key:
-		direction_x = 1.0
-		is_running = shift_pressed
+	# 移動方向と走行状態の決定（しゃがみ中は移動を無効にする）
+	if not is_squatting:
+		if left_key:
+			direction_x = -1.0
+			is_running = shift_pressed
+		elif right_key:
+			direction_x = 1.0
+			is_running = shift_pressed
+		else:
+			direction_x = 0.0
+			is_running = false
 	else:
 		direction_x = 0.0
 		is_running = false
 
-	# ジャンプ入力処理
-	if Input.is_action_just_pressed("jump"):
+	# ジャンプ入力処理（しゃがみ中はジャンプ不可）
+	if Input.is_action_just_pressed("jump") and not is_squatting:
 		jump_buffer_timer = jump_buffer_time
 
 	# ジャンプ実行判定（ジャンプバッファとコヨーテタイム対応）
@@ -115,7 +123,9 @@ func update_state() -> void:
 	var new_state: PLAYER_STATE
 
 	if is_on_floor():
-		if velocity.x == 0.0:
+		if is_squatting:
+			new_state = PLAYER_STATE.SQUAT
+		elif velocity.x == 0.0:
 			new_state = PLAYER_STATE.IDLE
 		else:
 			new_state = PLAYER_STATE.RUN if is_running else PLAYER_STATE.WALK
@@ -143,3 +153,5 @@ func set_state(new_state: PLAYER_STATE) -> void:
 			animated_sprite_2d.play("normal_jump")
 		PLAYER_STATE.FALL:
 			animated_sprite_2d.play("normal_fall")
+		PLAYER_STATE.SQUAT:
+			animated_sprite_2d.play("normal_squat")
