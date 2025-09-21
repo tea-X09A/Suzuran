@@ -19,6 +19,7 @@ const KUNAI_SCENE = preload("res://scenes/bullets/kunai.tscn")
 @export var move_walk_speed: float = 150.0  # 通常歩行速度（ピクセル/秒）
 @export var move_run_speed: float = 350.0   # ダッシュ速度（ピクセル/秒）
 @export var move_attack_initial_speed: float = 250.0  # 攻撃開始時の初期前進速度（ピクセル/秒）
+@export var move_attack_run_bonus: float = 100.0  # run中の攻撃時の速度ボーナス（ピクセル/秒）
 @export var move_attack_duration: float = 0.5  # 攻撃の持続時間（秒）
 
 # ========== 投擲設定 ==========
@@ -38,6 +39,9 @@ const KUNAI_SCENE = preload("res://scenes/bullets/kunai.tscn")
 @export var jump_gravity_scale: float = 1.0     # 重力倍率（1.0が標準、小さいほどふわふわ）
 @export var jump_buffer_time: float = 0.1       # ジャンプ先行入力時間（秒）
 @export var jump_coyote_time: float = 0.1       # コヨーテタイム（地面を離れてもジャンプ可能な時間）
+@export var jump_hold_max_time: float = 0.4     # ジャンプボタン長押し最大時間（秒）
+@export var jump_hold_vertical_bonus: float = 800.0  # 長押し時の追加垂直力ボーナス
+@export var jump_hold_horizontal_bonus: float = 100.0  # 長押し時の追加水平力ボーナス
 
 # ========== 当たり判定設定 ==========
 # しゃがみ時の当たり判定サイズ調整
@@ -77,6 +81,10 @@ var coyote_timer: float = 0.0
 var current_vertical_bonus: float = 0.0    # 現在の垂直ボーナス
 var jump_horizontal_velocity: float = 0.0  # ジャンプ時の水平速度を記録（慣性維持用）
 
+# 可変ジャンプ用変数
+var is_jumping: bool = false               # 現在ジャンプ中かどうか
+var jump_hold_timer: float = 0.0           # ジャンプボタンの押下時間
+
 func _ready():
 	animated_sprite_2d.flip_h = true
 
@@ -89,6 +97,7 @@ func _physics_process(delta: float) -> void:
 	update_attack_timer(delta)
 	update_throw_timer(delta)
 	apply_gravity(delta)
+	apply_variable_jump(delta)  # 重力適用後に可変ジャンプ処理
 	handle_input()
 	apply_movement()
 	move_and_slide()
@@ -130,6 +139,9 @@ func update_timers(delta: float) -> void:
 		# 着地時にボーナスと記録した水平速度をリセット
 		current_vertical_bonus = 0.0
 		jump_horizontal_velocity = 0.0
+		# 可変ジャンプ状態もリセット
+		is_jumping = false
+		jump_hold_timer = 0.0
 
 		# 空中攻撃中に着地した場合、攻撃モーションをキャンセル
 		if is_attacking and not attack_grounded:
@@ -144,11 +156,28 @@ func update_timers(delta: float) -> void:
 	# ジャンプバッファタイマーの更新
 	jump_buffer_timer = max(0.0, jump_buffer_timer - delta)
 
+	# 可変ジャンプタイマーの更新（基本的なタイマー管理のみ）
+	if is_jumping and jump_hold_timer < jump_hold_max_time:
+		jump_hold_timer += delta
+	else:
+		is_jumping = false
+
 # 重力適用（改良版：重力倍率対応）
 func apply_gravity(delta: float) -> void:
 	if not is_grounded:
 		var effective_gravity: float = GRAVITY * jump_gravity_scale
 		velocity.y = min(velocity.y + effective_gravity * delta, jump_max_fall_speed)
+
+# 可変ジャンプ処理（重力適用後に実行）
+func apply_variable_jump(delta: float) -> void:
+	if is_jumping and Input.is_action_pressed("jump") and jump_hold_timer < jump_hold_max_time:
+		# 長押し中は一定の上昇力を適用（頂点到達時間は変わらず、より高く到達）
+		velocity.y -= jump_hold_vertical_bonus * delta
+
+		# 長押し中は水平方向にも継続的にボーナスを追加（現在の移動方向に対して）
+		if direction_x != 0.0 and not is_grounded:
+			var horizontal_bonus: float = direction_x * jump_hold_horizontal_bonus * delta
+			jump_horizontal_velocity += horizontal_bonus
 
 # 入力処理（改良版：ジャンプバッファとコヨーテタイム対応）
 func handle_input() -> void:
@@ -220,14 +249,19 @@ func perform_jump() -> void:
 	if is_running:
 		current_vertical_bonus = jump_vertical_bonus
 		effective_jump_force += current_vertical_bonus
-		# ジャンプ時の水平速度を記録（基本速度+水平ボーナス）
-		jump_horizontal_velocity = direction_x * move_run_speed + (direction_x * jump_horizontal_bonus)
+		# ジャンプ時の水平速度を記録（基本速度+水平ボーナス+長押しボーナス）
+		var horizontal_speed: float = move_run_speed + jump_horizontal_bonus
+		jump_horizontal_velocity = direction_x * horizontal_speed
 	else:
 		current_vertical_bonus = 0.0
-		# walk状態でのジャンプ時の水平速度を記録
-		jump_horizontal_velocity = direction_x * move_walk_speed
+		# walk状態でのジャンプ時の水平速度を記録（長押し時は少しボーナス）
+		var horizontal_speed: float = move_walk_speed
+		jump_horizontal_velocity = direction_x * horizontal_speed
 
 	velocity.y = -effective_jump_force
+	# 可変ジャンプの初期化
+	is_jumping = true
+	jump_hold_timer = 0.0
 	jump_buffer_timer = 0.0
 	coyote_timer = 0.0
 
@@ -246,6 +280,9 @@ func perform_attack() -> void:
 	# 地上攻撃の場合のみ前進速度を設定（空中攻撃では不要）
 	if attack_grounded:
 		current_attack_speed = move_attack_initial_speed
+		# run中のfighting時は水平方向の速度ボーナスを追加
+		if is_running:
+			current_attack_speed += move_attack_run_bonus
 	else:
 		current_attack_speed = 0.0
 
