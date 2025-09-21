@@ -26,6 +26,10 @@ var is_squatting: bool = false
 var was_grounded: bool = false
 var is_grounded: bool = false
 
+var previous_direction_x: float = 0.0
+var previous_is_running: bool = false
+var previous_is_squatting: bool = false
+
 var state: PLAYER_STATE = PLAYER_STATE.IDLE
 var is_fighting: bool = false
 var is_shooting: bool = false
@@ -148,23 +152,51 @@ func handle_input() -> void:
 		handle_jump()
 
 func handle_movement() -> void:
+	# 移動状態の変化をログ出力
+	if direction_x != previous_direction_x or is_running != previous_is_running or is_squatting != previous_is_squatting:
+		var direction_text: String = ""
+		if direction_x > 0:
+			direction_text = "右"
+		elif direction_x < 0:
+			direction_text = "左"
+		else:
+			direction_text = "停止"
+
+		var movement_type: String = ""
+		if is_squatting:
+			movement_type = "しゃがみ"
+		elif is_running:
+			movement_type = "走り"
+		else:
+			movement_type = "歩き"
+
+		print("プレイヤー移動アクション実行: ", direction_text, " (", movement_type, ") - ", "expansion" if condition == PLAYER_CONDITION.EXPANSION else "normal")
+
+		previous_direction_x = direction_x
+		previous_is_running = is_running
+		previous_is_squatting = is_squatting
+
 	get_current_movement().handle_movement(direction_x, is_running, is_squatting)
 
 func handle_fighting() -> void:
+	print("プレイヤー戦闘アクション実行: ", "expansion" if condition == PLAYER_CONDITION.EXPANSION else "normal")
 	is_fighting = true
 	state = PLAYER_STATE.FIGHTING
 	get_current_fighting().handle_fighting()
 
 func handle_shooting() -> void:
 	if get_current_shooting().can_shoot():
+		print("プレイヤー射撃アクション実行: ", "expansion" if condition == PLAYER_CONDITION.EXPANSION else "normal")
 		is_shooting = true
 		state = PLAYER_STATE.SHOOTING
 		get_current_shooting().handle_shooting()
 
 func handle_back_jump_shooting() -> void:
+	print("プレイヤー後方ジャンプ射撃アクション実行: ", "expansion" if condition == PLAYER_CONDITION.EXPANSION else "normal")
 	get_current_shooting().handle_back_jump_shooting()
 
 func handle_jump() -> void:
+	print("プレイヤージャンプアクション実行: ", "expansion" if condition == PLAYER_CONDITION.EXPANSION else "normal")
 	get_current_jump().handle_jump()
 	jump_buffer_timer = 0.0
 	coyote_timer = 0.0
@@ -206,6 +238,19 @@ func update_state() -> void:
 func set_state(new_state: PLAYER_STATE) -> void:
 	if new_state == state:
 		return
+
+	var state_names: Dictionary = {
+		PLAYER_STATE.IDLE: "待機",
+		PLAYER_STATE.WALK: "歩き",
+		PLAYER_STATE.RUN: "走り",
+		PLAYER_STATE.JUMP: "ジャンプ",
+		PLAYER_STATE.FALL: "落下",
+		PLAYER_STATE.SQUAT: "しゃがみ",
+		PLAYER_STATE.FIGHTING: "戦闘",
+		PLAYER_STATE.SHOOTING: "射撃"
+	}
+
+	print("プレイヤー状態変更: ", state_names.get(state, "不明"), " → ", state_names.get(new_state, "不明"))
 
 	state = new_state
 	update_animation()
