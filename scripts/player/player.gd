@@ -26,6 +26,7 @@ const KUNAI_SCENE = preload("res://scenes/bullets/kunai.tscn")
 @export var throw_kunai_speed: float = 500.0  # クナイの速度（ピクセル/秒）
 @export var throw_cooldown: float = 0.3  # 投擲のクールダウン時間（秒）
 @export var throw_animation_duration: float = 0.5  # 投擲アニメーション時間（秒）
+@export var throw_offset_x: float = 40.0  # 発射位置の水平オフセット（ピクセル）
 
 # ========== ジャンプ設定 ==========
 # ジャンプの感触を細かく調整可能な設定群
@@ -276,8 +277,9 @@ func spawn_kunai() -> void:
 	# 親ノード（ゲームワールド）に追加
 	get_tree().current_scene.add_child(kunai_instance)
 
-	# クナイの初期位置をプレイヤーの位置に設定
-	kunai_instance.global_position = global_position
+	# スプライトの実際の位置を基準に発射位置を調整
+	var spawn_offset: Vector2 = Vector2(throw_direction * throw_offset_x, 0.0)
+	kunai_instance.global_position = animated_sprite_2d.global_position + spawn_offset
 
 	# クナイに速度と方向を設定
 	if kunai_instance.has_method("initialize"):
