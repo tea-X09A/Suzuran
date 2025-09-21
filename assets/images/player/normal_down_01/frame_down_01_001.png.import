@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://pukyogw6s3iu"
-path="res://.godot/imported/frame_down_01.png-ddc790c1ce2252ec7735c627537a0230.ctex"
+path="res://.godot/imported/frame_down_01_001.png-9153a67c76445616965a0da436b653e8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/images/player/normal_down_01/frame_down_01.png"
-dest_files=["res://.godot/imported/frame_down_01.png-ddc790c1ce2252ec7735c627537a0230.ctex"]
+source_file="res://assets/images/player/normal_down_01/frame_down_01_001.png"
+dest_files=["res://.godot/imported/frame_down_01_001.png-9153a67c76445616965a0da436b653e8.ctex"]
 
 [params]
 

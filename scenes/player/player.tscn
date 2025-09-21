@@ -7,7 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://2y7250olx2dl" path="res://assets/images/player/normal_damaged/frame_damaged_001.png" id="3_fm80t"]
 [ext_resource type="Texture2D" uid="uid://1cqibxc0scaj" path="res://assets/images/player/normal_jump/frame_jump_001.png" id="3_p47bc"]
 [ext_resource type="Texture2D" uid="uid://cxqn1t7a3qwv3" path="res://assets/images/player/normal_fighting_01_001/frame_fighting_01_001.png" id="3_qek5x"]
-[ext_resource type="Texture2D" uid="uid://pukyogw6s3iu" path="res://assets/images/player/normal_down_01/frame_down_01.png" id="4_gx1jg"]
+[ext_resource type="Texture2D" uid="uid://pukyogw6s3iu" path="res://assets/images/player/normal_down_01/frame_down_01_001.png" id="4_gx1jg"]
 [ext_resource type="Texture2D" uid="uid://jle21g31pxn5" path="res://assets/images/player/normal_squat/frame_squat_001.png" id="6_0owmy"]
 [ext_resource type="Texture2D" uid="uid://ca4aisuntcyvq" path="res://assets/images/player/normal_walk/frame_walk_001.png" id="6_75vfm"]
 [ext_resource type="Texture2D" uid="uid://4howketapm5p" path="res://assets/images/player/normal_shooting_01_001/frame_shooting_01_001.png" id="7_5gtgg"]
@@ -112,7 +112,7 @@ script = ExtResource("1_lvxji")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_cperm")
-animation = &"normal_idle"
+animation = &"normal_down_01"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, 11.5)
