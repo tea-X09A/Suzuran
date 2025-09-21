@@ -2,7 +2,7 @@ extends CharacterBody2D
 class_name Player
 
 enum PLAYER_CONDITION { NORMAL, EXPANSION }
-enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT, FIGHTING, SHOOTING }
+enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT, FIGHTING, SHOOTING, DAMAGED }
 
 @onready var animated_sprite_2d: AnimatedSprite2D = $AnimatedSprite2D
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
@@ -14,11 +14,13 @@ var normal_movement: NormalMovement
 var normal_fighting: NormalFighting
 var normal_shooting: NormalShooting
 var normal_jump: NormalJump
+var normal_damaged: NormalDamaged
 
 var expansion_movement: ExpansionMovement
 var expansion_fighting: ExpansionFighting
 var expansion_shooting: ExpansionShooting
 var expansion_jump: ExpansionJump
+var expansion_damaged: ExpansionDamaged
 
 var direction_x: float = 0.0
 var is_running: bool = false
@@ -33,6 +35,7 @@ var previous_is_squatting: bool = false
 var state: PLAYER_STATE = PLAYER_STATE.IDLE
 var is_fighting: bool = false
 var is_shooting: bool = false
+var is_damaged: bool = false
 
 var jump_buffer_timer: float = 0.0
 var coyote_timer: float = 0.0
@@ -48,16 +51,20 @@ func _ready() -> void:
 	normal_fighting = NormalFighting.new(self)
 	normal_shooting = NormalShooting.new(self)
 	normal_jump = NormalJump.new(self, normal_movement)
+	normal_damaged = NormalDamaged.new(self)
 
 	expansion_movement = ExpansionMovement.new(self)
 	expansion_fighting = ExpansionFighting.new(self)
 	expansion_shooting = ExpansionShooting.new(self)
 	expansion_jump = ExpansionJump.new(self, expansion_movement)
+	expansion_damaged = ExpansionDamaged.new(self)
 
 	normal_fighting.fighting_finished.connect(_on_fighting_finished)
 	normal_shooting.shooting_finished.connect(_on_shooting_finished)
+	normal_damaged.damaged_finished.connect(_on_damaged_finished)
 	expansion_fighting.fighting_finished.connect(_on_fighting_finished)
 	expansion_shooting.shooting_finished.connect(_on_shooting_finished)
+	expansion_damaged.damaged_finished.connect(_on_damaged_finished)
 
 	condition = initial_condition
 
@@ -66,12 +73,16 @@ func _physics_process(delta: float) -> void:
 	is_grounded = is_on_floor()
 
 	update_timers(delta)
-	get_current_movement().apply_gravity(delta)
-	get_current_movement().apply_variable_jump(delta)
-	handle_input()
-	handle_movement()
 
-	update_fighting_shooting(delta)
+	if not is_damaged:
+		get_current_movement().apply_gravity(delta)
+		get_current_movement().apply_variable_jump(delta)
+		handle_input()
+		handle_movement()
+	else:
+		get_current_movement().apply_gravity(delta)
+
+	update_fighting_shooting_damaged(delta)
 
 	move_and_slide()
 	update_state()
@@ -88,6 +99,9 @@ func get_current_shooting() -> NormalShooting:
 func get_current_jump() -> NormalJump:
 	return expansion_jump if condition == PLAYER_CONDITION.EXPANSION else normal_jump
 
+func get_current_damaged() -> NormalDamaged:
+	return expansion_damaged if condition == PLAYER_CONDITION.EXPANSION else normal_damaged
+
 func update_timers(delta: float) -> void:
 	# 着地時の処理 - 空中アクション中のキャンセル
 	if not was_grounded and is_grounded:
@@ -102,6 +116,10 @@ func update_timers(delta: float) -> void:
 		if is_shooting and get_current_shooting().is_airborne_attack():
 			get_current_shooting().cancel_shooting()
 
+		# ダメージモーション中に着地した場合、ダメージモーションをキャンセル
+		if is_damaged:
+			get_current_damaged().cancel_damaged()
+
 	if is_grounded:
 		coyote_timer = jump_coyote_time
 	else:
@@ -110,22 +128,22 @@ func update_timers(delta: float) -> void:
 	jump_buffer_timer = max(0.0, jump_buffer_timer - delta)
 
 func handle_input() -> void:
-	is_squatting = is_grounded and Input.is_action_pressed("squat") and not is_fighting and not is_shooting
+	is_squatting = is_grounded and Input.is_action_pressed("squat") and not is_fighting and not is_shooting and not is_damaged
 
-	if Input.is_action_just_pressed("fight") and not is_fighting and not is_shooting:
+	if Input.is_action_just_pressed("fight") and not is_fighting and not is_shooting and not is_damaged:
 		handle_fighting()
 
 	if Input.is_action_just_pressed("shooting"):
-		if not is_fighting and not is_shooting:
+		if not is_fighting and not is_shooting and not is_damaged:
 			handle_shooting()
-		elif is_shooting:
+		elif is_shooting and not is_damaged:
 			handle_back_jump_shooting()
 
 	var left_key: bool = Input.is_action_pressed("left")
 	var right_key: bool = Input.is_action_pressed("right")
 	var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
 
-	if not is_squatting and not is_fighting and not is_shooting:
+	if not is_squatting and not is_fighting and not is_shooting and not is_damaged:
 		if is_grounded:
 			if left_key:
 				direction_x = -1.0
@@ -149,7 +167,7 @@ func handle_input() -> void:
 		if is_grounded:
 			is_running = false
 
-	if Input.is_action_just_pressed("jump") and not is_squatting and not is_fighting and not is_shooting:
+	if Input.is_action_just_pressed("jump") and not is_squatting and not is_fighting and not is_shooting and not is_damaged:
 		jump_buffer_timer = jump_buffer_time
 
 	if jump_buffer_timer > 0.0 and coyote_timer > 0.0:
@@ -206,13 +224,16 @@ func handle_jump() -> void:
 	coyote_timer = 0.0
 	is_jumping_by_input = true
 
-func update_fighting_shooting(delta: float) -> void:
+func update_fighting_shooting_damaged(delta: float) -> void:
 	if is_fighting:
 		if get_current_fighting().update_fighting_timer(delta):
 			get_current_fighting().apply_fighting_movement()
 
 	if is_shooting:
 		get_current_shooting().update_shooting_timer(delta)
+
+	if is_damaged:
+		get_current_damaged().update_damaged_timer(delta)
 
 	get_current_shooting().update_shooting_cooldown(delta)
 
@@ -222,8 +243,11 @@ func _on_fighting_finished() -> void:
 func _on_shooting_finished() -> void:
 	is_shooting = false
 
+func _on_damaged_finished() -> void:
+	is_damaged = false
+
 func update_state() -> void:
-	if is_fighting or is_shooting:
+	if is_fighting or is_shooting or is_damaged:
 		return
 
 	var new_state: PLAYER_STATE
@@ -256,7 +280,8 @@ func set_state(new_state: PLAYER_STATE) -> void:
 		PLAYER_STATE.FALL: "落下",
 		PLAYER_STATE.SQUAT: "しゃがみ",
 		PLAYER_STATE.FIGHTING: "戦闘",
-		PLAYER_STATE.SHOOTING: "射撃"
+		PLAYER_STATE.SHOOTING: "射撃",
+		PLAYER_STATE.DAMAGED: "ダメージ"
 	}
 
 	print("プレイヤー状態変更: ", state_names.get(state, "不明"), " → ", state_names.get(new_state, "不明"))
@@ -284,9 +309,20 @@ func update_animation() -> void:
 			pass
 		PLAYER_STATE.SHOOTING:
 			pass
+		PLAYER_STATE.DAMAGED:
+			animated_sprite_2d.play(condition_prefix + "_damaged")
 
 func get_condition() -> PLAYER_CONDITION:
 	return condition
 
 func set_condition(new_condition: PLAYER_CONDITION) -> void:
 	condition = new_condition
+
+func take_damage(damage: int, animation_type: String, knockback_direction: Vector2, knockback_force: float) -> void:
+	if is_damaged:
+		return
+
+	print("プレイヤーダメージ処理: ダメージ", damage, ", アニメーション:", animation_type, ", 方向:", knockback_direction)
+	is_damaged = true
+	state = PLAYER_STATE.DAMAGED
+	get_current_damaged().handle_damage(damage, animation_type, knockback_direction, knockback_force)
