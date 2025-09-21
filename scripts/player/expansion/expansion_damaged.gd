@@ -16,6 +16,8 @@ signal damaged_finished
 var player: CharacterBody2D
 # アニメーションスプライトへの参照
 var animated_sprite: AnimatedSprite2D
+# 当たり判定コライダーへの参照
+var collision_shape: CollisionShape2D
 
 # ダメージアニメーションの残り時間
 var damage_timer: float = 0.0
@@ -35,13 +37,13 @@ var knockback_force_value: float = 0.0
 func _init(player_instance: CharacterBody2D) -> void:
 	player = player_instance
 	animated_sprite = player.get_node("AnimatedSprite2D") as AnimatedSprite2D
+	collision_shape = player.get_node("CollisionShape2D") as CollisionShape2D
 
 func handle_damage(damage: int, animation_type: String, direction: Vector2, force: float) -> void:
-	if is_invincible:
-		return
-
 	is_damaged = true
 	is_invincible = true
+	# 無敵状態時は当たり判定を無効化
+	collision_shape.disabled = true
 	damage_timer = damage_duration
 	invincibility_timer = invincibility_duration
 	knockback_timer = knockback_duration
@@ -68,6 +70,8 @@ func update_damaged_timer(delta: float) -> void:
 
 	if invincibility_timer <= 0.0:
 		is_invincible = false
+		# 無敵状態終了時は当たり判定を有効化
+		collision_shape.disabled = false
 
 	if damage_timer <= 0.0:
 		finish_damaged()
@@ -91,6 +95,8 @@ func update_invincibility_timer(delta: float) -> void:
 		invincibility_timer -= delta
 		if invincibility_timer <= 0.0:
 			is_invincible = false
+			# 無敵状態終了時は当たり判定を有効化
+			collision_shape.disabled = false
 
 func is_in_invincible_state() -> bool:
 	return is_invincible
