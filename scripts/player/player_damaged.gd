@@ -15,24 +15,24 @@ var condition: Player.PLAYER_CONDITION
 # パラメータの定義 - conditionに応じて選択される
 var damage_parameters: Dictionary = {
 	Player.PLAYER_CONDITION.NORMAL: {
-		"damage_duration": 0.6,
-		"knockback_vertical_force": 200.0,
-		"invincibility_duration": 2.0,
-		"knockback_duration": 0.3,
-		"down_duration": 1.0,
-		"recovery_invincibility_duration": 2.0,
-		"log_prefix": "",
-		"knockback_multiplier": 1.0
+		"damage_duration": 0.6,                    # ダメージアニメーションの継続時間（秒）
+		"knockback_vertical_force": 200.0,         # ノックバック時の垂直方向の力（ピクセル/秒）
+		"invincibility_duration": 2.0,             # ダメージ時の無敵状態継続時間（秒）
+		"knockback_duration": 0.3,                 # ノックバック効果の継続時間（秒）
+		"down_duration": 1.0,                      # ダウン状態の継続時間（秒）
+		"recovery_invincibility_duration": 2.0,    # 復帰後の無敵時間（秒）
+		"log_prefix": "",                          # ログ出力のプレフィックス文字列
+		"knockback_multiplier": 1.0                # ノックバック力の倍率
 	},
 	Player.PLAYER_CONDITION.EXPANSION: {
-		"damage_duration": 0.8,
-		"knockback_vertical_force": 250.0,
-		"invincibility_duration": 3.0,
-		"knockback_duration": 0.4,
-		"down_duration": 1.2,
-		"recovery_invincibility_duration": 3.5,
-		"log_prefix": "Expansion",
-		"knockback_multiplier": 1.2
+		"damage_duration": 0.8,                    # ダメージアニメーションの継続時間（秒）
+		"knockback_vertical_force": 250.0,         # ノックバック時の垂直方向の力（ピクセル/秒）
+		"invincibility_duration": 3.0,             # ダメージ時の無敵状態継続時間（秒）
+		"knockback_duration": 0.4,                 # ノックバック効果の継続時間（秒）
+		"down_duration": 1.2,                      # ダウン状態の継続時間（秒）
+		"recovery_invincibility_duration": 3.5,    # 復帰後の無敵時間（秒）
+		"log_prefix": "Expansion",                 # ログ出力のプレフィックス文字列
+		"knockback_multiplier": 1.2                # ノックバック力の倍率
 	}
 }
 
@@ -184,6 +184,8 @@ func handle_recovery_jump() -> void:
 		is_recovery_invincible = false
 		invincibility_timer = 0.0
 		recovery_invincibility_timer = 0.0
+		# 水平速度をリセットして垂直ジャンプにする
+		player.velocity.x = 0.0
 		finish_damaged()
 	elif is_damaged and not is_in_down_state:
 		# ノックバック状態からのジャンプ: モーションキャンセルと無敵時間付与
@@ -194,6 +196,8 @@ func handle_recovery_jump() -> void:
 		knockback_timer = 0.0
 		knockback_direction = Vector2.ZERO
 		knockback_force_value = 0.0
+		# 水平速度をリセットして垂直ジャンプにする
+		player.velocity.x = 0.0
 		# ダメージ状態を終了し復帰無敵時間を付与
 		finish_damaged()
 
