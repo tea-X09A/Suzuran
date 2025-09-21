@@ -1,9 +1,9 @@
 class_name NormalJump
 extends RefCounted
 
-@export var jump_force: float = 380.0
-@export var jump_vertical_bonus: float = 80.0
-@export var jump_horizontal_bonus: float = 100.0
+@export var jump_force: float = 380.0  # 基本ジャンプ力（ピクセル/秒）
+@export var jump_vertical_bonus: float = 80.0  # run中のジャンプ時の垂直ボーナス（ピクセル/秒）
+@export var jump_horizontal_bonus: float = 100.0  # run中のジャンプ時の水平ボーナス（ピクセル/秒）
 
 var player: CharacterBody2D
 var movement_action: NormalMovement

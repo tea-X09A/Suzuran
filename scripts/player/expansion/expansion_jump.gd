@@ -1,7 +1,7 @@
 class_name ExpansionJump
 extends NormalJump
 
-@export var expansion_jump_force_multiplier: float = 1.15
+@export var expansion_jump_force_multiplier: float = 1.15  # 拡張ジャンプ力の倍率
 
 func _init(player_instance: CharacterBody2D, movement_ref: ExpansionMovement) -> void:
 	super(player_instance, movement_ref)

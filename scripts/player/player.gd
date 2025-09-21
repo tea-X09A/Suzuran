@@ -33,8 +33,8 @@ var is_shooting: bool = false
 var jump_buffer_timer: float = 0.0
 var coyote_timer: float = 0.0
 
-@export var jump_buffer_time: float = 0.1
-@export var jump_coyote_time: float = 0.1
+@export var jump_buffer_time: float = 0.1  # ジャンプ先行入力時間（秒）
+@export var jump_coyote_time: float = 0.1  # コヨーテタイム（地面を離れてもジャンプ可能な時間）
 
 func _ready() -> void:
 	animated_sprite_2d.flip_h = true
@@ -84,6 +84,16 @@ func get_current_jump() -> NormalJump:
 	return expansion_jump if current_condition == PLAYER_CONDITION.EXPANSION else normal_jump
 
 func update_timers(delta: float) -> void:
+	# 着地時の処理 - 空中アクション中のキャンセル
+	if not was_grounded and is_grounded:
+		# 空中攻撃中に着地した場合、攻撃モーションをキャンセル
+		if is_fighting and get_current_fighting().is_airborne_attack():
+			get_current_fighting().cancel_fighting()
+
+		# 空中射撃中に着地した場合、射撃モーションをキャンセル
+		if is_shooting and get_current_shooting().is_airborne_attack():
+			get_current_shooting().cancel_shooting()
+
 	if is_grounded:
 		coyote_timer = jump_coyote_time
 	else:

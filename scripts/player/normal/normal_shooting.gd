@@ -3,11 +3,11 @@ extends RefCounted
 
 const KUNAI_SCENE = preload("res://scenes/bullets/kunai.tscn")
 
-@export var shooting_kunai_speed: float = 500.0
-@export var shooting_cooldown: float = 0.3
-@export var shooting_animation_duration: float = 0.5
-@export var shooting_offset_x: float = 40.0
-@export var jump_force: float = 380.0
+@export var shooting_kunai_speed: float = 500.0  # クナイの飛行速度（ピクセル/秒）
+@export var shooting_cooldown: float = 0.3  # 射撃のクールダウン時間（秒）
+@export var shooting_animation_duration: float = 0.5  # 射撃アニメーションの持続時間（秒）
+@export var shooting_offset_x: float = 40.0  # 射撃位置のX方向オフセット（ピクセル）
+@export var jump_force: float = 380.0  # バックジャンプ射撃時のジャンプ力（ピクセル/秒）
 
 var player: CharacterBody2D
 var animated_sprite: AnimatedSprite2D
@@ -108,6 +108,12 @@ func end_shooting() -> void:
 	shooting_timer = 0.0
 	shooting_grounded = false
 	shooting_finished.emit()
+
+func is_airborne_attack() -> bool:
+	return not shooting_grounded
+
+func cancel_shooting() -> void:
+	end_shooting()
 
 func _on_shooting_animation_finished() -> void:
 	end_shooting()

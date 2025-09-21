@@ -1,8 +1,8 @@
 class_name ExpansionMovement
 extends NormalMovement
 
-@export var expansion_walk_speed_multiplier: float = 1.2
-@export var expansion_run_speed_multiplier: float = 1.3
+@export var expansion_walk_speed_multiplier: float = 1.2  # 拡張歩行速度の倍率
+@export var expansion_run_speed_multiplier: float = 1.3  # 拡張ダッシュ速度の倍率
 
 func _init(player_instance: CharacterBody2D) -> void:
 	super(player_instance)

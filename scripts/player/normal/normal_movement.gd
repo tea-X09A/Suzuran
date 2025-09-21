@@ -1,13 +1,13 @@
 class_name NormalMovement
 extends RefCounted
 
-@export var move_walk_speed: float = 150.0
-@export var move_run_speed: float = 350.0
-@export var GRAVITY: float
-@export var jump_max_fall_speed: float = 400.0
-@export var jump_gravity_scale: float = 1.0
-@export var jump_hold_vertical_bonus: float = 800.0
-@export var jump_hold_horizontal_bonus: float = 100.0
+@export var move_walk_speed: float = 150.0  # 通常歩行速度（ピクセル/秒）
+@export var move_run_speed: float = 350.0   # ダッシュ速度（ピクセル/秒）
+@export var GRAVITY: float  # 重力加速度（プロジェクト設定から取得）
+@export var jump_max_fall_speed: float = 400.0  # 最大落下速度（ピクセル/秒）
+@export var jump_gravity_scale: float = 1.0     # 重力倍率（1.0が標準、小さいほどふわふわ）
+@export var jump_hold_vertical_bonus: float = 800.0  # 長押し時の追加垂直力ボーナス（ピクセル/秒²）
+@export var jump_hold_horizontal_bonus: float = 100.0  # 長押し時の追加水平力ボーナス（ピクセル/秒²）
 
 var player: CharacterBody2D
 var animated_sprite: AnimatedSprite2D
@@ -20,7 +20,7 @@ var was_squatting: bool = false
 var jump_horizontal_velocity: float = 0.0
 var is_jumping: bool = false
 var jump_hold_timer: float = 0.0
-var jump_hold_max_time: float = 0.4
+var jump_hold_max_time: float = 0.4  # ジャンプボタン長押し最大時間（秒）
 
 func _init(player_instance: CharacterBody2D) -> void:
 	player = player_instance
