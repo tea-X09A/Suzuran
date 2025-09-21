@@ -14,20 +14,20 @@
 [sub_resource type="SpriteFrames" id="SpriteFrames_cperm"]
 animations = [{
 "frames": [{
+"duration": 3.0,
+"texture": ExtResource("3_qek5x")
+}],
+"loop": false,
+"name": &"normal_attack_01",
+"speed": 6.0
+}, {
+"frames": [{
 "duration": 1.0,
 "texture": ExtResource("1_gmlin")
 }],
 "loop": true,
 "name": &"normal_fall",
 "speed": 10.0
-}, {
-"frames": [{
-"duration": 3.0,
-"texture": ExtResource("3_qek5x")
-}],
-"loop": false,
-"name": &"normal_fighting_01",
-"speed": 6.0
 }, {
 "frames": [{
 "duration": 1.0,

@@ -1,7 +1,7 @@
 extends CharacterBody2D
 class_name Player
 
-enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT, FIGHTING }
+enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT, ATTACK }
 
 # 重力は物理設定から取得（変更不要）
 var GRAVITY: float = ProjectSettings.get_setting("physics/2d/default_gravity")
@@ -154,11 +154,11 @@ func handle_input() -> void:
 	# しゃがみ入力の状態確認（地面にいる時かつ攻撃中でない場合のみ）
 	is_squatting = is_grounded and Input.is_action_pressed("squat") and not is_attacking
 
-	# 攻撃入力処理（fキー、攻撃中でない場合のみ）
+	# 攻撃入力処理（Fキー：格闘攻撃、攻撃中でない場合のみ）
 	if Input.is_key_pressed(KEY_F) and not is_attacking:
 		perform_attack()
 
-	# 投擲入力処理（cキー、クールダウン中でない場合のみ）
+	# 攻撃入力処理（Cキー：投擲攻撃、クールダウン中でない場合のみ）
 	if Input.is_key_pressed(KEY_C) and throw_cooldown_timer <= 0.0:
 		perform_throw()
 
@@ -238,11 +238,11 @@ func perform_attack() -> void:
 	# 攻撃タイマーを設定
 	attack_timer = move_attack_duration
 
-	# 状態をFIGHTINGに設定
-	state = PLAYER_STATE.FIGHTING
+	# 状態をATTACKに設定
+	state = PLAYER_STATE.ATTACK
 
 	# 攻撃アニメーションを再生
-	animated_sprite_2d.play("normal_fighting_01")
+	animated_sprite_2d.play("normal_attack_01")
 
 	# アニメーション終了時のコールバックを設定
 	if not animated_sprite_2d.animation_finished.is_connected(_on_attack_animation_finished):
@@ -250,7 +250,7 @@ func perform_attack() -> void:
 
 # 攻撃アニメーション終了時のコールバック
 func _on_attack_animation_finished() -> void:
-	if state == PLAYER_STATE.FIGHTING:
+	if state == PLAYER_STATE.ATTACK:
 		end_attack()
 
 
@@ -274,8 +274,8 @@ func perform_throw() -> void:
 	# クナイを生成して発射
 	spawn_kunai()
 
-	# 状態をFIGHTINGに設定
-	state = PLAYER_STATE.FIGHTING
+	# 状態をATTACKに設定
+	state = PLAYER_STATE.ATTACK
 
 	# アニメーション再生（地上/空中で分岐）
 	if is_grounded:
@@ -396,6 +396,6 @@ func set_state(new_state: PLAYER_STATE) -> void:
 			animated_sprite_2d.play("normal_fall")
 		PLAYER_STATE.SQUAT:
 			animated_sprite_2d.play("normal_squat")
-		PLAYER_STATE.FIGHTING:
-			# FIGHTINGステートのアニメーションは個別に設定済み（perform_attack/perform_throwで）
+		PLAYER_STATE.ATTACK:
+			# ATTACKステートのアニメーションは個別に設定済み（perform_attack/perform_throwで）
 			pass
