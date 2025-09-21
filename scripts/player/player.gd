@@ -6,6 +6,9 @@ enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT, FIGHTING }
 # 重力は物理設定から取得（変更不要）
 var GRAVITY: float = ProjectSettings.get_setting("physics/2d/default_gravity")
 
+# リソースのプリロード（CLAUDE.mdガイドライン準拠）
+const KUNAI_SCENE = preload("res://scenes/bullets/kunai.tscn")
+
 # ノード参照をキャッシュ（CLAUDE.mdガイドライン準拠）
 @onready var animated_sprite_2d: AnimatedSprite2D = $AnimatedSprite2D
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
@@ -17,6 +20,12 @@ var GRAVITY: float = ProjectSettings.get_setting("physics/2d/default_gravity")
 @export var move_run_speed: float = 350.0   # ダッシュ速度（ピクセル/秒）
 @export var move_attack_initial_speed: float = 250.0  # 攻撃開始時の初期前進速度（ピクセル/秒）
 @export var move_attack_duration: float = 0.5  # 攻撃の持続時間（秒）
+
+# ========== 投擲設定 ==========
+@export_group("Throwing Settings", "throw_")
+@export var throw_kunai_speed: float = 500.0  # クナイの速度（ピクセル/秒）
+@export var throw_cooldown: float = 0.3  # 投擲のクールダウン時間（秒）
+@export var throw_animation_duration: float = 0.5  # 投擲アニメーション時間（秒）
 
 # ========== ジャンプ設定 ==========
 # ジャンプの感触を細かく調整可能な設定群
@@ -50,6 +59,9 @@ var current_attack_speed: float = 0.0  # 現在の攻撃中の前進速度
 var attack_grounded: bool = false  # 攻撃開始時の着地状態を記録
 var attack_timer: float = 0.0  # 攻撃の残り時間
 
+# 投擲状態管理
+var throw_cooldown_timer: float = 0.0  # 投擲クールダウンタイマー
+
 # 着地状態（フレームごとに一度だけチェック）
 var is_grounded: bool = false    # 現在のフレームで地面に接触しているか
 var was_grounded: bool = false   # 前のフレームで地面に接触していたか（着地瞬間の検知に使用）
@@ -72,6 +84,7 @@ func _physics_process(delta: float) -> void:
 
 	update_timers(delta)
 	update_attack_timer(delta)
+	update_throw_timer(delta)
 	apply_gravity(delta)
 	handle_input()
 	apply_movement()
@@ -99,6 +112,11 @@ func end_attack() -> void:
 		animated_sprite_2d.animation_finished.disconnect(_on_attack_animation_finished)
 	# 状態更新を呼び出し
 	update_state()
+
+# 投擲タイマー更新
+func update_throw_timer(delta: float) -> void:
+	# 投擲クールダウンを減らす
+	throw_cooldown_timer = max(0.0, throw_cooldown_timer - delta)
 
 # タイマー更新（ジャンプバッファとコヨーテタイム）
 func update_timers(delta: float) -> void:
@@ -138,6 +156,10 @@ func handle_input() -> void:
 	# 攻撃入力処理（fキー、攻撃中でない場合のみ）
 	if Input.is_key_pressed(KEY_F) and not is_attacking:
 		perform_attack()
+
+	# 投擲入力処理（cキー、クールダウン中でない場合のみ）
+	if Input.is_key_pressed(KEY_C) and throw_cooldown_timer <= 0.0:
+		perform_throw()
 
 	# 方向キーの状態確認
 	var left_key: bool = Input.is_key_pressed(KEY_A)
@@ -225,6 +247,41 @@ func perform_attack() -> void:
 func _on_attack_animation_finished() -> void:
 	if state == PLAYER_STATE.FIGHTING:
 		end_attack()
+
+# 投擲実行（クナイ投擲）
+func perform_throw() -> void:
+	# クナイを生成して発射
+	spawn_kunai()
+
+	# 投擲クールダウンを設定
+	throw_cooldown_timer = throw_animation_duration
+
+	# アニメーション再生（地上/空中で分岐）
+	if is_grounded:
+		animated_sprite_2d.play("normal_shooting_01_001")
+	else:
+		animated_sprite_2d.play("normal_shooting_01_002")
+
+
+# クナイ生成と発射
+func spawn_kunai() -> void:
+	# 投擲方向を決定（現在の向きか、向きが決まっていない場合はスプライトの向きから判定）
+	var throw_direction: float
+	if direction_x != 0.0:
+		throw_direction = direction_x
+	else:
+		throw_direction = 1.0 if animated_sprite_2d.flip_h else -1.0
+
+	var kunai_instance: Area2D = KUNAI_SCENE.instantiate()
+	# 親ノード（ゲームワールド）に追加
+	get_tree().current_scene.add_child(kunai_instance)
+
+	# クナイの初期位置をプレイヤーの位置に設定
+	kunai_instance.global_position = global_position
+
+	# クナイに速度と方向を設定
+	if kunai_instance.has_method("initialize"):
+		kunai_instance.initialize(throw_direction, throw_kunai_speed, self)
 
 # 当たり判定更新（しゃがみ状態に応じて形状を変更）
 func update_collision_shape() -> void:
