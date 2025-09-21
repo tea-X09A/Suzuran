@@ -1,450 +1,185 @@
 extends CharacterBody2D
 class_name Player
 
-enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT, ATTACK }
+enum PLAYER_CONDITION { NORMAL, EXPANSION }
+enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT, FIGHTING, SHOOTING }
 
-# 重力は物理設定から取得（変更不要）
-var GRAVITY: float = ProjectSettings.get_setting("physics/2d/default_gravity")
-
-# リソースのプリロード（CLAUDE.mdガイドライン準拠）
-const KUNAI_SCENE = preload("res://scenes/bullets/kunai.tscn")
-
-# ノード参照をキャッシュ（CLAUDE.mdガイドライン準拠）
 @onready var animated_sprite_2d: AnimatedSprite2D = $AnimatedSprite2D
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
 
-# ========== 移動設定 ==========
-# 通常の歩行速度とダッシュ速度を調整可能
-@export_group("Movement Settings", "move_")
-@export var move_walk_speed: float = 150.0  # 通常歩行速度（ピクセル/秒）
-@export var move_run_speed: float = 350.0   # ダッシュ速度（ピクセル/秒）
-@export var move_attack_initial_speed: float = 250.0  # 攻撃開始時の初期前進速度（ピクセル/秒）
-@export var move_attack_run_bonus: float = 100.0  # run中の攻撃時の速度ボーナス（ピクセル/秒）
-@export var move_attack_duration: float = 0.5  # 攻撃の持続時間（秒）
+@export var initial_condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
 
-# ========== 投擲設定 ==========
-@export_group("Throwing Settings", "throw_")
-@export var throw_kunai_speed: float = 500.0  # クナイの速度（ピクセル/秒）
-@export var throw_cooldown: float = 0.3  # 投擲のクールダウン時間（秒）
-@export var throw_animation_duration: float = 0.5  # 投擲アニメーション時間（秒）
-@export var throw_offset_x: float = 40.0  # 発射位置の水平オフセット（ピクセル）
+var current_condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
+var normal_movement: NormalMovement
+var normal_fighting: NormalFighting
+var normal_shooting: NormalShooting
+var normal_jump: NormalJump
 
-# ========== ジャンプ設定 ==========
-# ジャンプの感触を細かく調整可能な設定群
-@export_group("Jump Settings", "jump_")
-@export var jump_force: float = 380.0        # ジャンプの初速度（大きいほど高くジャンプ）
-@export var jump_vertical_bonus: float = 80.0     # run状態でのジャンプ垂直力ボーナス
-@export var jump_horizontal_bonus: float = 100.0  # run状態でのジャンプ水平力ボーナス
-@export var jump_max_fall_speed: float = 400.0  # 最大落下速度（大きいほど速く落ちる）
-@export var jump_gravity_scale: float = 1.0     # 重力倍率（1.0が標準、小さいほどふわふわ）
-@export var jump_buffer_time: float = 0.1       # ジャンプ先行入力時間（秒）
-@export var jump_coyote_time: float = 0.1       # コヨーテタイム（地面を離れてもジャンプ可能な時間）
-@export var jump_hold_max_time: float = 0.4     # ジャンプボタン長押し最大時間（秒）
-@export var jump_hold_vertical_bonus: float = 800.0  # 長押し時の追加垂直力ボーナス
-@export var jump_hold_horizontal_bonus: float = 100.0  # 長押し時の追加水平力ボーナス
+var expansion_movement: ExpansionMovement
+var expansion_fighting: ExpansionFighting
+var expansion_shooting: ExpansionShooting
+var expansion_jump: ExpansionJump
 
-# ========== 当たり判定設定 ==========
-# しゃがみ時の当たり判定サイズ調整
-@export_group("Collision Settings", "collision_")
-@export var collision_normal_size: Vector2 = Vector2(78.5, 168)  # 通常時の当たり判定サイズ
-@export var collision_squat_size: Vector2 = Vector2(78.5, 84)    # しゃがみ時の当たり判定サイズ（高さ半分）
-@export var collision_squat_offset: Vector2 = Vector2(0, 42)     # しゃがみ時の当たり判定オフセット
-
-# ========== 内部状態変数 ==========
 var direction_x: float = 0.0
-var state: PLAYER_STATE = PLAYER_STATE.IDLE
 var is_running: bool = false
 var is_squatting: bool = false
-var was_squatting: bool = false  # 前フレームのしゃがみ状態（当たり判定更新判定用）
+var was_grounded: bool = false
+var is_grounded: bool = false
 
-# 攻撃状態管理
-var is_attacking: bool = false
-var attack_direction: float = 0.0  # 攻撃開始時の方向を記録
-var current_attack_speed: float = 0.0  # 現在の攻撃中の前進速度
-var attack_grounded: bool = false  # 攻撃開始時の着地状態を記録
-var attack_timer: float = 0.0  # 攻撃の残り時間
+var state: PLAYER_STATE = PLAYER_STATE.IDLE
+var is_fighting: bool = false
+var is_shooting: bool = false
 
-# 投擲状態管理
-var throw_cooldown_timer: float = 0.0  # 投擲クールダウンタイマー
-var is_throwing: bool = false  # 現在投擲中かどうか
-var can_back_jump: bool = false  # 後ろジャンプが可能かどうか
-
-# 着地状態（フレームごとに一度だけチェック）
-var is_grounded: bool = false    # 現在のフレームで地面に接触しているか
-var was_grounded: bool = false   # 前のフレームで地面に接触していたか（着地瞬間の検知に使用）
-
-# ジャンプバッファとコヨーテタイム用タイマー
 var jump_buffer_timer: float = 0.0
 var coyote_timer: float = 0.0
 
-# ジャンプ時のボーナス維持用変数
-var current_vertical_bonus: float = 0.0    # 現在の垂直ボーナス
-var jump_horizontal_velocity: float = 0.0  # ジャンプ時の水平速度を記録（慣性維持用）
+@export var jump_buffer_time: float = 0.1
+@export var jump_coyote_time: float = 0.1
 
-# 可変ジャンプ用変数
-var is_jumping: bool = false               # 現在ジャンプ中かどうか
-var jump_hold_timer: float = 0.0           # ジャンプボタンの押下時間
-
-func _ready():
+func _ready() -> void:
 	animated_sprite_2d.flip_h = true
 
+	normal_movement = NormalMovement.new(self)
+	normal_fighting = NormalFighting.new(self)
+	normal_shooting = NormalShooting.new(self)
+	normal_jump = NormalJump.new(self, normal_movement)
+
+	expansion_movement = ExpansionMovement.new(self)
+	expansion_fighting = ExpansionFighting.new(self)
+	expansion_shooting = ExpansionShooting.new(self)
+	expansion_jump = ExpansionJump.new(self, expansion_movement)
+
+	normal_fighting.fighting_finished.connect(_on_fighting_finished)
+	normal_shooting.shooting_finished.connect(_on_shooting_finished)
+	expansion_fighting.fighting_finished.connect(_on_fighting_finished)
+	expansion_shooting.shooting_finished.connect(_on_shooting_finished)
+
+	current_condition = initial_condition
+
 func _physics_process(delta: float) -> void:
-	# 着地状態を一度だけチェックして内部状態変数に保存
 	was_grounded = is_grounded
 	is_grounded = is_on_floor()
 
 	update_timers(delta)
-	update_attack_timer(delta)
-	update_throw_timer(delta)
-	apply_gravity(delta)
-	apply_variable_jump(delta)  # 重力適用後に可変ジャンプ処理
+	get_current_movement().apply_gravity(delta)
+	get_current_movement().apply_variable_jump(delta)
 	handle_input()
-	apply_movement()
+	handle_movement()
+
+	update_fighting_shooting(delta)
+
 	move_and_slide()
-	update_collision_shape()
 	update_state()
 
-# 攻撃タイマー更新
-func update_attack_timer(delta: float) -> void:
-	if is_attacking:
-		attack_timer -= delta
-		if attack_timer <= 0.0:
-			# 攻撃時間終了
-			end_attack()
+func get_current_movement() -> NormalMovement:
+	return expansion_movement if current_condition == PLAYER_CONDITION.EXPANSION else normal_movement
 
-# 攻撃終了処理（時間終了時とアニメーション終了時の共通処理）
-func end_attack() -> void:
-	is_attacking = false
-	is_throwing = false
-	can_back_jump = false
-	attack_direction = 0.0
-	current_attack_speed = 0.0
-	attack_grounded = false
-	attack_timer = 0.0
-	# シグナル接続を解除
-	if animated_sprite_2d.animation_finished.is_connected(_on_attack_animation_finished):
-		animated_sprite_2d.animation_finished.disconnect(_on_attack_animation_finished)
-	# 状態更新を呼び出し
-	update_state()
+func get_current_fighting() -> NormalFighting:
+	return expansion_fighting if current_condition == PLAYER_CONDITION.EXPANSION else normal_fighting
 
-# 投擲タイマー更新
-func update_throw_timer(delta: float) -> void:
-	# 投擲クールダウンを減らす
-	throw_cooldown_timer = max(0.0, throw_cooldown_timer - delta)
+func get_current_shooting() -> NormalShooting:
+	return expansion_shooting if current_condition == PLAYER_CONDITION.EXPANSION else normal_shooting
 
-# タイマー更新（ジャンプバッファとコヨーテタイム）
+func get_current_jump() -> NormalJump:
+	return expansion_jump if current_condition == PLAYER_CONDITION.EXPANSION else normal_jump
+
 func update_timers(delta: float) -> void:
-	# 着地検知（空中から地面に着地した瞬間）
-	if not was_grounded and is_grounded:
-		# 着地時にボーナスと記録した水平速度をリセット
-		current_vertical_bonus = 0.0
-		jump_horizontal_velocity = 0.0
-		# 可変ジャンプ状態もリセット
-		is_jumping = false
-		jump_hold_timer = 0.0
-
-		# 空中攻撃中に着地した場合、攻撃モーションをキャンセル
-		if is_attacking and not attack_grounded:
-			end_attack()
-
-	# コヨーテタイマーの更新
 	if is_grounded:
 		coyote_timer = jump_coyote_time
 	else:
 		coyote_timer = max(0.0, coyote_timer - delta)
 
-	# ジャンプバッファタイマーの更新
 	jump_buffer_timer = max(0.0, jump_buffer_timer - delta)
 
-	# 可変ジャンプタイマーの更新（基本的なタイマー管理のみ）
-	if is_jumping and jump_hold_timer < jump_hold_max_time:
-		jump_hold_timer += delta
-	else:
-		is_jumping = false
-
-# 重力適用（改良版：重力倍率対応）
-func apply_gravity(delta: float) -> void:
-	if not is_grounded:
-		var effective_gravity: float = GRAVITY * jump_gravity_scale
-		velocity.y = min(velocity.y + effective_gravity * delta, jump_max_fall_speed)
-
-# 可変ジャンプ処理（重力適用後に実行）
-func apply_variable_jump(delta: float) -> void:
-	if is_jumping and Input.is_action_pressed("jump") and jump_hold_timer < jump_hold_max_time:
-		# 長押し中は一定の上昇力を適用（頂点到達時間は変わらず、より高く到達）
-		velocity.y -= jump_hold_vertical_bonus * delta
-
-		# 長押し中は水平方向にも継続的にボーナスを追加（現在の移動方向に対して）
-		if direction_x != 0.0 and not is_grounded:
-			var horizontal_bonus: float = direction_x * jump_hold_horizontal_bonus * delta
-			jump_horizontal_velocity += horizontal_bonus
-
-# 入力処理（改良版：ジャンプバッファとコヨーテタイム対応）
 func handle_input() -> void:
-	# しゃがみ入力の状態確認（地面にいる時かつ攻撃中でない場合のみ）
-	is_squatting = is_grounded and Input.is_action_pressed("squat") and not is_attacking
+	is_squatting = is_grounded and Input.is_action_pressed("squat") and not is_fighting and not is_shooting
 
-	# 攻撃入力処理（fightアクション：格闘攻撃、攻撃中でない場合のみ）
-	if Input.is_action_just_pressed("fight") and not is_attacking:
-		perform_attack()
+	if Input.is_action_just_pressed("fight") and not is_fighting and not is_shooting:
+		handle_fighting()
 
-	# 投擲入力処理（shootingアクション：投擲攻撃）
 	if Input.is_action_just_pressed("shooting"):
-		# 通常の投擲（攻撃中でなく、クールダウン中でない場合）
-		if not is_attacking and throw_cooldown_timer <= 0.0:
-			perform_throw()
-		# 投擲中の後ろジャンプ（投擲中かつ後ろジャンプ可能な場合）
-		elif is_throwing and can_back_jump:
-			perform_back_jump_throw()
+		if not is_fighting and not is_shooting:
+			handle_shooting()
+		elif is_shooting:
+			handle_back_jump_shooting()
 
-	# 方向アクションの状態確認
 	var left_key: bool = Input.is_action_pressed("left")
 	var right_key: bool = Input.is_action_pressed("right")
 	var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
 
-	# 移動方向と走行状態の決定
-	if not is_squatting and not is_attacking:
+	if not is_squatting and not is_fighting and not is_shooting:
 		if is_grounded:
-			# 地上での移動処理
 			if left_key:
-				# 左移動（Shiftが押されているかで走行状態を決定）
 				direction_x = -1.0
 				is_running = shift_pressed
 			elif right_key:
-				# 右移動（Shiftが押されているかで走行状態を決定）
 				direction_x = 1.0
 				is_running = shift_pressed
 			else:
-				# 移動入力がない場合
 				direction_x = 0.0
 				is_running = false
 		else:
-			# 空中では方向入力のみ受け付け、走行状態はShiftキーに応じて更新
 			if left_key:
 				direction_x = -1.0
 			elif right_key:
 				direction_x = 1.0
 			else:
 				direction_x = 0.0
-			# 空中でもShiftキーの状態を監視（着地時の状態復帰用）
 			is_running = shift_pressed and (left_key or right_key)
 	else:
-		# しゃがみ中、攻撃中は移動入力を無効化
 		direction_x = 0.0
 		if is_grounded:
 			is_running = false
 
-	# ジャンプ入力処理（しゃがみ中かつ攻撃中はジャンプ不可）
-	if Input.is_action_just_pressed("jump") and not is_squatting and not is_attacking:
+	if Input.is_action_just_pressed("jump") and not is_squatting and not is_fighting and not is_shooting:
 		jump_buffer_timer = jump_buffer_time
 
-	# ジャンプ実行判定（ジャンプバッファとコヨーテタイム対応）
 	if jump_buffer_timer > 0.0 and coyote_timer > 0.0:
-		perform_jump()
+		handle_jump()
 
-# ジャンプ実行（run状態での垂直・水平ボーナス対応）
-func perform_jump() -> void:
-	var effective_jump_force: float = jump_force
-	# run状態の場合、垂直ボーナスを得る
-	if is_running:
-		current_vertical_bonus = jump_vertical_bonus
-		effective_jump_force += current_vertical_bonus
-		# ジャンプ時の水平速度を記録（基本速度+水平ボーナス+長押しボーナス）
-		var horizontal_speed: float = move_run_speed + jump_horizontal_bonus
-		jump_horizontal_velocity = direction_x * horizontal_speed
-	else:
-		current_vertical_bonus = 0.0
-		# walk状態でのジャンプ時の水平速度を記録（長押し時は少しボーナス）
-		var horizontal_speed: float = move_walk_speed
-		jump_horizontal_velocity = direction_x * horizontal_speed
+	if Input.is_action_just_pressed("transform"):
+		toggle_condition()
 
-	velocity.y = -effective_jump_force
-	# 可変ジャンプの初期化
-	is_jumping = true
-	jump_hold_timer = 0.0
+func handle_movement() -> void:
+	get_current_movement().handle_movement(direction_x, is_running, is_squatting)
+
+func handle_fighting() -> void:
+	is_fighting = true
+	state = PLAYER_STATE.FIGHTING
+	get_current_fighting().handle_fighting()
+
+func handle_shooting() -> void:
+	if get_current_shooting().can_shoot():
+		is_shooting = true
+		state = PLAYER_STATE.SHOOTING
+		get_current_shooting().handle_shooting()
+
+func handle_back_jump_shooting() -> void:
+	get_current_shooting().handle_back_jump_shooting()
+
+func handle_jump() -> void:
+	get_current_jump().handle_jump()
 	jump_buffer_timer = 0.0
 	coyote_timer = 0.0
 
-# 攻撃実行（飛び蹴りモーション）
-func perform_attack() -> void:
-	is_attacking = true
-	# 攻撃開始時の向きを記録（現在の向きか、向きが決まっていない場合はスプライトの向きから判定）
-	if direction_x != 0.0:
-		attack_direction = direction_x
-	else:
-		attack_direction = 1.0 if animated_sprite_2d.flip_h else -1.0
+func update_fighting_shooting(delta: float) -> void:
+	if is_fighting:
+		if get_current_fighting().update_fighting_timer(delta):
+			get_current_fighting().apply_fighting_movement()
 
-	# 攻撃開始時の着地状態を記録
-	attack_grounded = is_grounded
+	if is_shooting:
+		get_current_shooting().update_shooting_timer(delta)
 
-	# 地上攻撃の場合のみ前進速度を設定（空中攻撃では不要）
-	if attack_grounded:
-		current_attack_speed = move_attack_initial_speed
-		# run中のfighting時は水平方向の速度ボーナスを追加
-		if is_running:
-			current_attack_speed += move_attack_run_bonus
-	else:
-		current_attack_speed = 0.0
+	get_current_shooting().update_shooting_cooldown(delta)
 
-	# 攻撃タイマーを設定
-	attack_timer = move_attack_duration
+func _on_fighting_finished() -> void:
+	is_fighting = false
 
-	# 状態をATTACKに設定
-	state = PLAYER_STATE.ATTACK
+func _on_shooting_finished() -> void:
+	is_shooting = false
 
-	# 攻撃アニメーションを再生
-	animated_sprite_2d.play("normal_attack_01")
-
-	# アニメーション終了時のコールバックを設定
-	if not animated_sprite_2d.animation_finished.is_connected(_on_attack_animation_finished):
-		animated_sprite_2d.animation_finished.connect(_on_attack_animation_finished)
-
-# 攻撃アニメーション終了時のコールバック
-func _on_attack_animation_finished() -> void:
-	if state == PLAYER_STATE.ATTACK:
-		end_attack()
-
-
-# 投擲実行（クナイ投擲）
-func perform_throw() -> void:
-	# 攻撃状態と投擲状態を設定
-	is_attacking = true
-	is_throwing = true
-
-	# 投擲クールダウンを設定
-	throw_cooldown_timer = throw_cooldown
-
-	# 攻撃タイマーを投擲アニメーション時間に設定
-	attack_timer = throw_animation_duration
-
-	# 攻撃開始時の着地状態を記録
-	attack_grounded = is_grounded
-
-	# 投擲では前進速度は0
-	current_attack_speed = 0.0
-
-	# クナイを生成して発射
-	spawn_kunai()
-
-	# 状態をATTACKに設定
-	state = PLAYER_STATE.ATTACK
-
-	# アニメーション再生（地上/空中で分岐）
-	if is_grounded:
-		animated_sprite_2d.play("normal_shooting_01_001")
-		# 地上投擲時は後ろジャンプ可能
-		can_back_jump = true
-	else:
-		animated_sprite_2d.play("normal_shooting_01_002")
-		# 空中投擲時は後ろジャンプ不可
-		can_back_jump = false
-
-	# アニメーション終了時のコールバックを設定
-	if not animated_sprite_2d.animation_finished.is_connected(_on_attack_animation_finished):
-		animated_sprite_2d.animation_finished.connect(_on_attack_animation_finished)
-
-
-# クナイ生成と発射
-func spawn_kunai() -> void:
-	# 投擲方向を決定（現在の向きか、向きが決まっていない場合はスプライトの向きから判定）
-	var throw_direction: float
-	if direction_x != 0.0:
-		throw_direction = direction_x
-	else:
-		throw_direction = 1.0 if animated_sprite_2d.flip_h else -1.0
-
-	var kunai_instance: Area2D = KUNAI_SCENE.instantiate()
-	# 親ノード（ゲームワールド）に追加
-	get_tree().current_scene.add_child(kunai_instance)
-
-	# スプライトの実際の位置を基準に発射位置を調整
-	var spawn_offset: Vector2 = Vector2(throw_direction * throw_offset_x, 0.0)
-	kunai_instance.global_position = animated_sprite_2d.global_position + spawn_offset
-
-	# クナイに速度と方向を設定
-	if kunai_instance.has_method("initialize"):
-		kunai_instance.initialize(throw_direction, throw_kunai_speed, self)
-
-# 後ろジャンプ投擲実行
-func perform_back_jump_throw() -> void:
-	# 後ろジャンプを無効化（1回のみ実行可能）
-	can_back_jump = false
-
-	# 現在の向きを取得
-	var current_direction: float = 1.0 if animated_sprite_2d.flip_h else -1.0
-
-	# 後ろ方向へのジャンプ（walk時のジャンプと同じ飛距離）
-	var back_direction: float = -current_direction
-	velocity.y = -jump_force  # 垂直ジャンプ力
-	velocity.x = back_direction * move_walk_speed  # 水平方向は後ろ向きにwalk速度
-
-	# 投擲クールダウンを再設定
-	throw_cooldown_timer = throw_cooldown
-
-	# 攻撃タイマーをリセット
-	attack_timer = throw_animation_duration
-
-	# クナイを再度発射
-	spawn_kunai()
-
-	# normal_shooting_01_002アニメーションを再生
-	animated_sprite_2d.play("normal_shooting_01_002")
-
-	# 地面から離れるため、attack_groundedをfalseに
-	attack_grounded = false
-
-# 当たり判定更新（しゃがみ状態に応じて形状を変更）
-func update_collision_shape() -> void:
-	# しゃがみ状態が変化した場合のみ当たり判定を更新
-	if is_squatting != was_squatting:
-		var shape: RectangleShape2D = collision_shape_2d.shape as RectangleShape2D
-
-		if is_squatting:
-			# しゃがみ状態：当たり判定を縮小し、位置を調整
-			shape.size = collision_squat_size
-			collision_shape_2d.position.y += collision_squat_offset.y
-		else:
-			# 通常状態：当たり判定を元に戻す
-			shape.size = collision_normal_size
-			collision_shape_2d.position.y -= collision_squat_offset.y
-
-		was_squatting = is_squatting
-
-# 移動適用（静的型付け強化）
-func apply_movement() -> void:
-	# 攻撃中の処理
-	if is_attacking:
-		# 地上攻撃の場合のみ前進処理を行う
-		if attack_grounded:
-			# 一定速度で前進（時間で制御）
-			velocity.x = attack_direction * current_attack_speed
-		# 空中攻撃の場合は慣性を引き継いだ状態を維持（velocity.xをそのまま保持）
-		return
-
-	if direction_x != 0.0:
-		# 地面にいる時のみ向きを変更する
-		if is_grounded:
-			animated_sprite_2d.flip_h = direction_x > 0.0
-		var target_speed: float = move_run_speed if is_running else move_walk_speed
-
-		# 地面にいる場合は通常の移動、空中の場合はジャンプ時の水平速度を維持
-		if is_grounded:
-			velocity.x = direction_x * target_speed
-		else:
-			# 空中ではジャンプ時に記録した水平速度を維持（慣性維持）
-			velocity.x = jump_horizontal_velocity
-	else:
-		# 移動入力がない場合
-		if is_grounded:
-			velocity.x = 0.0
-		else:
-			# 空中では入力がなくてもジャンプ時の水平速度を維持（慣性維持）
-			velocity.x = jump_horizontal_velocity
-
-# 状態更新（静的型付け強化）
 func update_state() -> void:
-	# 攻撃中は状態変更を行わない
-	if is_attacking:
+	if is_fighting or is_shooting:
 		return
 
 	var new_state: PLAYER_STATE
@@ -461,27 +196,45 @@ func update_state() -> void:
 
 	set_state(new_state)
 
-# 状態設定とアニメーション制御
 func set_state(new_state: PLAYER_STATE) -> void:
 	if new_state == state:
 		return
 
 	state = new_state
+	update_animation()
 
-	# 状態に応じたアニメーション再生
+func update_animation() -> void:
+	var condition_prefix: String = "expansion" if current_condition == PLAYER_CONDITION.EXPANSION else "normal"
+
 	match state:
 		PLAYER_STATE.IDLE:
-			animated_sprite_2d.play("normal_idle")
+			animated_sprite_2d.play(condition_prefix + "_idle")
 		PLAYER_STATE.WALK:
-			animated_sprite_2d.play("normal_walk")
+			animated_sprite_2d.play(condition_prefix + "_walk")
 		PLAYER_STATE.RUN:
-			animated_sprite_2d.play("normal_run")
+			animated_sprite_2d.play(condition_prefix + "_run")
 		PLAYER_STATE.JUMP:
-			animated_sprite_2d.play("normal_jump")
+			animated_sprite_2d.play(condition_prefix + "_jump")
 		PLAYER_STATE.FALL:
-			animated_sprite_2d.play("normal_fall")
+			animated_sprite_2d.play(condition_prefix + "_fall")
 		PLAYER_STATE.SQUAT:
-			animated_sprite_2d.play("normal_squat")
-		PLAYER_STATE.ATTACK:
-			# ATTACKステートのアニメーションは個別に設定済み（perform_attack/perform_throwで）
+			animated_sprite_2d.play(condition_prefix + "_squat")
+		PLAYER_STATE.FIGHTING:
 			pass
+		PLAYER_STATE.SHOOTING:
+			pass
+
+func toggle_condition() -> void:
+	var new_condition: PLAYER_CONDITION
+	if current_condition == PLAYER_CONDITION.NORMAL:
+		new_condition = PLAYER_CONDITION.EXPANSION
+	else:
+		new_condition = PLAYER_CONDITION.NORMAL
+
+	current_condition = new_condition
+
+func get_current_condition() -> PLAYER_CONDITION:
+	return current_condition
+
+func set_condition(new_condition: PLAYER_CONDITION) -> void:
+	current_condition = new_condition
