@@ -146,25 +146,6 @@ func update_timers(delta: float) -> void:
 		if is_shooting and get_current_shooting().is_airborne_attack():
 			get_current_shooting().cancel_shooting()
 
-		# ダメージモーション中に着地した場合の処理
-		if is_damaged:
-			var damaged_handler = get_current_damaged()
-			# animation_typeが"down"の場合は、downアニメーションに切り替えてダウン状態に移行
-			if damaged_handler.current_animation_type == "down":
-				print("着地時にdownアニメーションに切り替え")
-				var condition_prefix: String = "expansion" if condition == PLAYER_CONDITION.EXPANSION else "normal"
-				animated_sprite_2d.play(condition_prefix + "_down_01")
-
-				# ダメージ状態を終了
-				damaged_handler.finish_damaged()
-
-				# ダウン状態に移行（アニメーションは既に再生済みなのでfalse）
-				is_down = true
-				state = PLAYER_STATE.DOWN
-				get_current_down().start_down(false)
-			else:
-				# 通常のダメージの場合はキャンセル
-				damaged_handler.cancel_damaged()
 
 	if is_grounded:
 		coyote_timer = jump_coyote_time

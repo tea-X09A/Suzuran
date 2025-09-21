@@ -85,8 +85,13 @@ func update_damaged_timer(delta: float) -> void:
 	if invincibility_timer <= 0.0:
 		is_invincible = false
 
+	# downアニメーションの場合は着地するまで待つ
 	if damage_timer <= 0.0:
-		finish_damaged()
+		if current_animation_type == "down" and not player.is_on_floor():
+			# 空中にいる間は着地まで待機（damagedアニメーションを維持）
+			pass
+		else:
+			finish_damaged()
 
 func apply_continuous_knockback() -> void:
 	player.velocity.x = knockback_direction.x * knockback_force_value * 1.2
