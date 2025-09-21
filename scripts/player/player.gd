@@ -36,6 +36,7 @@ var is_shooting: bool = false
 
 var jump_buffer_timer: float = 0.0
 var coyote_timer: float = 0.0
+var is_jumping_by_input: bool = false
 
 @export var jump_buffer_time: float = 0.1  # ジャンプ先行入力時間（秒）
 @export var jump_coyote_time: float = 0.1  # コヨーテタイム（地面を離れてもジャンプ可能な時間）
@@ -90,6 +91,9 @@ func get_current_jump() -> NormalJump:
 func update_timers(delta: float) -> void:
 	# 着地時の処理 - 空中アクション中のキャンセル
 	if not was_grounded and is_grounded:
+		# ジャンプフラグをリセット
+		is_jumping_by_input = false
+
 		# 空中攻撃中に着地した場合、攻撃モーションをキャンセル
 		if is_fighting and get_current_fighting().is_airborne_attack():
 			get_current_fighting().cancel_fighting()
@@ -200,6 +204,7 @@ func handle_jump() -> void:
 	get_current_jump().handle_jump()
 	jump_buffer_timer = 0.0
 	coyote_timer = 0.0
+	is_jumping_by_input = true
 
 func update_fighting_shooting(delta: float) -> void:
 	if is_fighting:
@@ -232,7 +237,10 @@ func update_state() -> void:
 		else:
 			new_state = PLAYER_STATE.RUN if is_running else PLAYER_STATE.WALK
 	else:
-		new_state = PLAYER_STATE.FALL if velocity.y > 0.0 else PLAYER_STATE.JUMP
+		if is_jumping_by_input and velocity.y < 0.0:
+			new_state = PLAYER_STATE.JUMP
+		else:
+			new_state = PLAYER_STATE.FALL
 
 	set_state(new_state)
 
