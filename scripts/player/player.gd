@@ -9,7 +9,7 @@ enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT, FIGHTING, SHOOTING }
 
 @export var initial_condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
 
-var current_condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
+var condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
 var normal_movement: NormalMovement
 var normal_fighting: NormalFighting
 var normal_shooting: NormalShooting
@@ -54,7 +54,7 @@ func _ready() -> void:
 	expansion_fighting.fighting_finished.connect(_on_fighting_finished)
 	expansion_shooting.shooting_finished.connect(_on_shooting_finished)
 
-	current_condition = initial_condition
+	condition = initial_condition
 
 func _physics_process(delta: float) -> void:
 	was_grounded = is_grounded
@@ -72,16 +72,16 @@ func _physics_process(delta: float) -> void:
 	update_state()
 
 func get_current_movement() -> NormalMovement:
-	return expansion_movement if current_condition == PLAYER_CONDITION.EXPANSION else normal_movement
+	return expansion_movement if condition == PLAYER_CONDITION.EXPANSION else normal_movement
 
 func get_current_fighting() -> NormalFighting:
-	return expansion_fighting if current_condition == PLAYER_CONDITION.EXPANSION else normal_fighting
+	return expansion_fighting if condition == PLAYER_CONDITION.EXPANSION else normal_fighting
 
 func get_current_shooting() -> NormalShooting:
-	return expansion_shooting if current_condition == PLAYER_CONDITION.EXPANSION else normal_shooting
+	return expansion_shooting if condition == PLAYER_CONDITION.EXPANSION else normal_shooting
 
 func get_current_jump() -> NormalJump:
-	return expansion_jump if current_condition == PLAYER_CONDITION.EXPANSION else normal_jump
+	return expansion_jump if condition == PLAYER_CONDITION.EXPANSION else normal_jump
 
 func update_timers(delta: float) -> void:
 	# 着地時の処理 - 空中アクション中のキャンセル
@@ -147,9 +147,6 @@ func handle_input() -> void:
 	if jump_buffer_timer > 0.0 and coyote_timer > 0.0:
 		handle_jump()
 
-	if Input.is_action_just_pressed("transform"):
-		toggle_condition()
-
 func handle_movement() -> void:
 	get_current_movement().handle_movement(direction_x, is_running, is_squatting)
 
@@ -214,7 +211,7 @@ func set_state(new_state: PLAYER_STATE) -> void:
 	update_animation()
 
 func update_animation() -> void:
-	var condition_prefix: String = "expansion" if current_condition == PLAYER_CONDITION.EXPANSION else "normal"
+	var condition_prefix: String = "expansion" if condition == PLAYER_CONDITION.EXPANSION else "normal"
 
 	match state:
 		PLAYER_STATE.IDLE:
@@ -234,17 +231,8 @@ func update_animation() -> void:
 		PLAYER_STATE.SHOOTING:
 			pass
 
-func toggle_condition() -> void:
-	var new_condition: PLAYER_CONDITION
-	if current_condition == PLAYER_CONDITION.NORMAL:
-		new_condition = PLAYER_CONDITION.EXPANSION
-	else:
-		new_condition = PLAYER_CONDITION.NORMAL
-
-	current_condition = new_condition
-
-func get_current_condition() -> PLAYER_CONDITION:
-	return current_condition
+func get_condition() -> PLAYER_CONDITION:
+	return condition
 
 func set_condition(new_condition: PLAYER_CONDITION) -> void:
-	current_condition = new_condition
+	condition = new_condition
