@@ -1,10 +1,14 @@
-class_name Trap
+class_name Trap01
 extends Area2D
 
+# プレイヤーに与えるダメージ量（整数値）
 @export var damage: int = 10
+# 再生するダメージアニメーションの種類（アニメーション名）
 @export var animation_type: String = "damaged"
+# プレイヤーをノックバックさせる力の強さ（ピクセル/秒）
 @export var knockback_force: float = 300.0
 
+# 現在ダメージを受けているプレイヤーのリスト（重複ダメージを防ぐため）
 var damaged_players: Array[Player] = []
 
 func _ready() -> void:

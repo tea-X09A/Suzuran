@@ -40,6 +40,7 @@ var is_damaged: bool = false
 var jump_buffer_timer: float = 0.0
 var coyote_timer: float = 0.0
 var is_jumping_by_input: bool = false
+var blink_timer: float = 0.0  # 点滅効果用の時間管理
 
 @export var jump_buffer_time: float = 0.1  # ジャンプ先行入力時間（秒）
 @export var jump_coyote_time: float = 0.1  # コヨーテタイム（地面を離れてもジャンプ可能な時間）
@@ -67,6 +68,19 @@ func _ready() -> void:
 	expansion_damaged.damaged_finished.connect(_on_damaged_finished)
 
 	condition = initial_condition
+
+func _process(delta: float) -> void:
+	blink_timer += delta
+
+	# 無敵状態時に点滅効果を適用
+	if get_current_damaged().is_in_invincible_state():
+		# sinカーブを使用して点滅効果を作成（周期：0.2秒）
+		var blink_alpha: float = (sin(blink_timer * PI * 10.0) + 1.0) / 2.0
+		# 透明度を0.3～1.0の範囲で変化させる
+		animated_sprite_2d.modulate.a = 0.3 + (blink_alpha * 0.7)
+	else:
+		# 無敵状態でない場合は完全に不透明
+		animated_sprite_2d.modulate.a = 1.0
 
 func _physics_process(delta: float) -> void:
 	was_grounded = is_grounded
@@ -234,6 +248,9 @@ func update_fighting_shooting_damaged(delta: float) -> void:
 
 	if is_damaged:
 		get_current_damaged().update_damaged_timer(delta)
+	elif get_current_damaged().is_in_invincible_state():
+		# ダメージアニメーション終了後も無敵状態が継続する場合はタイマーを更新
+		get_current_damaged().update_invincibility_timer(delta)
 
 	get_current_shooting().update_shooting_cooldown(delta)
 
@@ -323,6 +340,16 @@ func take_damage(damage: int, animation_type: String, knockback_direction: Vecto
 		return
 
 	print("プレイヤーダメージ処理: ダメージ", damage, ", アニメーション:", animation_type, ", 方向:", knockback_direction)
+
+	# ダメージを受けた際に現在のアクションをキャンセル
+	if is_fighting:
+		get_current_fighting().cancel_fighting()
+		is_fighting = false
+
+	if is_shooting:
+		get_current_shooting().cancel_shooting()
+		is_shooting = false
+
 	is_damaged = true
 	state = PLAYER_STATE.DAMAGED
 	get_current_damaged().handle_damage(damage, animation_type, knockback_direction, knockback_force)
