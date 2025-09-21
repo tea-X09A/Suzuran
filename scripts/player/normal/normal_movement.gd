@@ -52,12 +52,15 @@ func apply_gravity(delta: float) -> void:
 		player.velocity.y = min(player.velocity.y + effective_gravity * delta, jump_max_fall_speed)
 
 func apply_variable_jump(delta: float) -> void:
+	var just_landed: bool = false
 	if not player.was_grounded and player.is_on_floor():
 		jump_horizontal_velocity = 0.0
 		is_jumping = false
 		jump_hold_timer = 0.0
+		just_landed = true
 
-	if is_jumping and Input.is_action_pressed("jump") and jump_hold_timer < jump_hold_max_time:
+	# 着地したフレームではジャンプ処理をスキップ
+	if not just_landed and is_jumping and Input.is_action_pressed("jump") and jump_hold_timer < jump_hold_max_time:
 		player.velocity.y -= jump_hold_vertical_bonus * delta
 		jump_hold_timer += delta
 

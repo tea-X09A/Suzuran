@@ -222,8 +222,9 @@ func update_state() -> void:
 		return
 
 	var new_state: PLAYER_STATE
+	var current_grounded: bool = is_on_floor()  # move_and_slide後の最新の地面判定
 
-	if is_grounded:
+	if current_grounded:
 		if is_squatting:
 			new_state = PLAYER_STATE.SQUAT
 		elif velocity.x == 0.0:
