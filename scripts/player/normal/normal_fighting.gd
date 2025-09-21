@@ -2,7 +2,7 @@ class_name NormalFighting
 extends RefCounted
 
 @export var move_fighting_initial_speed: float = 250.0  # 攻撃開始時の初期前進速度（ピクセル/秒）
-@export var move_fighting_run_bonus: float = 100.0  # run中の攻撃時の速度ボーナス（ピクセル/秒）
+@export var move_fighting_run_bonus: float = 150.0  # run中の攻撃時の速度ボーナス（ピクセル/秒）
 @export var move_fighting_duration: float = 0.5  # 攻撃の持続時間（秒）
 
 var player: CharacterBody2D

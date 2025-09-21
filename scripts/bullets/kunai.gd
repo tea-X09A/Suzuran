@@ -60,12 +60,22 @@ func _on_body_entered(body: Node2D) -> void:
 func _on_area_entered(area: Area2D) -> void:
 	# 発射したキャラクター以外との衝突をチェック
 	if area != owner_character:
-		# ダメージ処理（対象がダメージを受けられる場合）
-		if area.has_method("take_damage"):
-			area.take_damage(damage)
+		# 他のクナイとの衝突処理
+		if area is Kunai:
+			var other_kunai: Kunai = area as Kunai
+			# 同じキャラクターが発射したクナイ同士は衝突しない
+			if other_kunai.owner_character == owner_character:
+				return
+			# 異なるキャラクターが発射したクナイ同士は両方破壊
+			other_kunai.destroy_kunai()
+			destroy_kunai()
+		else:
+			# ダメージ処理（対象がダメージを受けられる場合）
+			if area.has_method("take_damage"):
+				area.take_damage(damage)
 
-		# クナイを破壊
-		destroy_kunai()
+			# クナイを破壊
+			destroy_kunai()
 
 # クナイ破壊処理
 func destroy_kunai() -> void:
