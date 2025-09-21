@@ -2,7 +2,7 @@ extends CharacterBody2D
 class_name Player
 
 enum PLAYER_CONDITION { NORMAL, EXPANSION }
-enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT, FIGHTING, SHOOTING, DAMAGED, DOWN }
+enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT, FIGHTING, SHOOTING, DAMAGED }
 
 @onready var animated_sprite_2d: AnimatedSprite2D = $AnimatedSprite2D
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
@@ -15,14 +15,12 @@ var normal_fighting: NormalFighting
 var normal_shooting: NormalShooting
 var normal_jump: NormalJump
 var normal_damaged: NormalDamaged
-var normal_down: NormalDown
 
 var expansion_movement: ExpansionMovement
 var expansion_fighting: ExpansionFighting
 var expansion_shooting: ExpansionShooting
 var expansion_jump: ExpansionJump
 var expansion_damaged: ExpansionDamaged
-var expansion_down: NormalDown
 
 var direction_x: float = 0.0
 var is_running: bool = false
@@ -38,7 +36,6 @@ var state: PLAYER_STATE = PLAYER_STATE.IDLE
 var is_fighting: bool = false
 var is_shooting: bool = false
 var is_damaged: bool = false
-var is_down: bool = false
 
 var jump_buffer_timer: float = 0.0
 var coyote_timer: float = 0.0
@@ -57,23 +54,19 @@ func _ready() -> void:
 	normal_shooting = NormalShooting.new(self)
 	normal_jump = NormalJump.new(self, normal_movement)
 	normal_damaged = NormalDamaged.new(self)
-	normal_down = NormalDown.new(self)
 
 	expansion_movement = ExpansionMovement.new(self)
 	expansion_fighting = ExpansionFighting.new(self)
 	expansion_shooting = ExpansionShooting.new(self)
 	expansion_jump = ExpansionJump.new(self, expansion_movement)
 	expansion_damaged = ExpansionDamaged.new(self)
-	expansion_down = NormalDown.new(self)
 
 	normal_fighting.fighting_finished.connect(_on_fighting_finished)
 	normal_shooting.shooting_finished.connect(_on_shooting_finished)
 	normal_damaged.damaged_finished.connect(_on_damaged_finished)
-	normal_down.down_finished.connect(_on_down_finished)
 	expansion_fighting.fighting_finished.connect(_on_fighting_finished)
 	expansion_shooting.shooting_finished.connect(_on_shooting_finished)
 	expansion_damaged.damaged_finished.connect(_on_damaged_finished)
-	expansion_down.down_finished.connect(_on_down_finished)
 
 	condition = initial_condition
 
@@ -81,7 +74,7 @@ func _process(delta: float) -> void:
 	blink_timer += delta
 
 	# 無敵状態時に点滅効果を適用
-	if get_current_damaged().is_in_invincible_state() or get_current_down().is_in_recovery_invincible_state():
+	if get_current_damaged().is_in_invincible_state():
 		# sinカーブを使用して点滅効果を作成（周期：0.2秒）
 		var blink_alpha: float = (sin(blink_timer * PI * 10.0) + 1.0) / 2.0
 		# 透明度を0.3～1.0の範囲で変化させる
@@ -96,15 +89,16 @@ func _physics_process(delta: float) -> void:
 
 	update_timers(delta)
 
-	if not is_damaged and not is_down:
+	if not is_damaged:
 		get_current_movement().apply_gravity(delta)
 		get_current_movement().apply_variable_jump(delta)
 		handle_input()
 		handle_movement()
 	else:
 		get_current_movement().apply_gravity(delta)
-		if is_down:
-			handle_input()
+		# ダメージ中は特殊な入力処理を行う
+		handle_damaged_input()
+		if get_current_damaged().is_in_knockback_landing_state():
 			handle_movement()
 
 	update_fighting_shooting_damaged(delta)
@@ -127,9 +121,6 @@ func get_current_jump() -> NormalJump:
 func get_current_damaged() -> NormalDamaged:
 	return expansion_damaged if condition == PLAYER_CONDITION.EXPANSION else normal_damaged
 
-func get_current_down() -> NormalDown:
-	return expansion_down if condition == PLAYER_CONDITION.EXPANSION else normal_down
-
 func update_timers(delta: float) -> void:
 	# 着地時の処理 - 空中アクション中のキャンセル
 	if not was_grounded and is_grounded:
@@ -137,6 +128,10 @@ func update_timers(delta: float) -> void:
 		is_jumping_by_input = false
 		# ダメージ後のノックバック保持フラグをリセット
 		ignore_jump_horizontal_velocity = false
+
+		# ノックバック状態で着地した場合、即座にdown状態に遷移
+		if is_damaged and get_current_damaged().is_in_knockback_state():
+			get_current_damaged().start_down_state()
 
 		# 空中攻撃中に着地した場合、攻撃モーションをキャンセル
 		if is_fighting and get_current_fighting().is_airborne_attack():
@@ -155,31 +150,22 @@ func update_timers(delta: float) -> void:
 	jump_buffer_timer = max(0.0, jump_buffer_timer - delta)
 
 func handle_input() -> void:
-	is_squatting = is_grounded and Input.is_action_pressed("squat") and not is_fighting and not is_shooting and not is_damaged and not is_down
+	is_squatting = is_grounded and Input.is_action_pressed("squat") and not is_fighting and not is_shooting and not is_damaged
 
-	if Input.is_action_just_pressed("fight") and not is_fighting and not is_shooting and not is_damaged and not is_down:
+	if Input.is_action_just_pressed("fight") and not is_fighting and not is_shooting and not is_damaged:
 		handle_fighting()
 
 	if Input.is_action_just_pressed("shooting"):
-		if not is_fighting and not is_shooting and not is_damaged and not is_down:
+		if not is_fighting and not is_shooting and not is_damaged:
 			handle_shooting()
-		elif is_shooting and not is_damaged and not is_down:
+		elif is_shooting and not is_damaged:
 			handle_back_jump_shooting()
 
 	var left_key: bool = Input.is_action_pressed("left")
 	var right_key: bool = Input.is_action_pressed("right")
 	var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
 
-	# down状態では移動を制限し、ジャンプのみ許可
-	if is_down:
-		direction_x = 0.0  # 左右移動を制限
-		is_running = false
-		# down状態からの移行チェック（ジャンプのみ）
-		var jump_pressed: bool = Input.is_action_just_pressed("jump")
-		if get_current_down().handle_down_input(jump_pressed):
-			# down状態が終了した場合、通常の状態処理を再開
-			pass
-	elif not is_squatting and not is_fighting and not is_shooting and not is_damaged:
+	if not is_squatting and not is_fighting and not is_shooting and not is_damaged:
 		if is_grounded:
 			if left_key:
 				direction_x = -1.0
@@ -203,11 +189,25 @@ func handle_input() -> void:
 		if is_grounded:
 			is_running = false
 
-	if Input.is_action_just_pressed("jump") and not is_squatting and not is_fighting and not is_shooting and not is_damaged and not is_down:
+	if Input.is_action_just_pressed("jump") and not is_squatting and not is_fighting and not is_shooting and not is_damaged:
 		jump_buffer_timer = jump_buffer_time
 
 	if jump_buffer_timer > 0.0 and coyote_timer > 0.0:
 		handle_jump()
+
+func handle_damaged_input() -> void:
+	# ダメージ中は移動を制限し、ジャンプ入力のみ受け付ける
+	direction_x = 0.0
+	is_running = false
+
+	# ノックバック中（空中状態）またはノックバック後の着地状態でジャンプ入力を受け付ける
+	var can_jump: bool = get_current_damaged().is_in_knockback_state() or get_current_damaged().is_in_knockback_landing_state()
+	if can_jump:
+		var jump_pressed: bool = Input.is_action_just_pressed("jump")
+		if jump_pressed:
+			# ジャンプで無敵解除と復帰処理
+			get_current_damaged().handle_recovery_jump()
+			handle_jump()
 
 func handle_movement() -> void:
 	# 移動状態の変化をログ出力
@@ -274,12 +274,6 @@ func update_fighting_shooting_damaged(delta: float) -> void:
 		# ダメージアニメーション終了後も無敵状態が継続する場合はタイマーを更新
 		get_current_damaged().update_invincibility_timer(delta)
 
-	if is_down:
-		get_current_down().update_down_timer(delta)
-	elif get_current_down().is_in_recovery_invincible_state():
-		# down状態終了後の無敵時間を更新
-		get_current_down().update_recovery_invincibility_timer(delta)
-
 	get_current_shooting().update_shooting_cooldown(delta)
 
 func _on_fighting_finished() -> void:
@@ -291,11 +285,8 @@ func _on_shooting_finished() -> void:
 func _on_damaged_finished() -> void:
 	is_damaged = false
 
-func _on_down_finished() -> void:
-	is_down = false
-
 func update_state() -> void:
-	if is_fighting or is_shooting or is_damaged or is_down:
+	if is_fighting or is_shooting or is_damaged:
 		return
 
 	var new_state: PLAYER_STATE
@@ -329,8 +320,7 @@ func set_state(new_state: PLAYER_STATE) -> void:
 		PLAYER_STATE.SQUAT: "しゃがみ",
 		PLAYER_STATE.FIGHTING: "戦闘",
 		PLAYER_STATE.SHOOTING: "射撃",
-		PLAYER_STATE.DAMAGED: "ダメージ",
-		PLAYER_STATE.DOWN: "ダウン"
+		PLAYER_STATE.DAMAGED: "ダメージ"
 	}
 
 	print("プレイヤー状態変更: ", state_names.get(state, "不明"), " → ", state_names.get(new_state, "不明"))
@@ -360,8 +350,6 @@ func update_animation() -> void:
 			pass
 		PLAYER_STATE.DAMAGED:
 			animated_sprite_2d.play(condition_prefix + "_damaged")
-		PLAYER_STATE.DOWN:
-			pass
 
 func get_condition() -> PLAYER_CONDITION:
 	return condition
@@ -371,10 +359,6 @@ func set_condition(new_condition: PLAYER_CONDITION) -> void:
 
 func take_damage(damage: int, animation_type: String, knockback_direction: Vector2, knockback_force: float) -> void:
 	if is_damaged:
-		return
-
-	# down状態では無敵ではないが、すでにダウンしているならば追加ダメージは受けない
-	if is_down:
 		return
 
 	print("プレイヤーダメージ処理: ダメージ", damage, ", アニメーション:", animation_type, ", 方向:", knockback_direction)
@@ -392,4 +376,5 @@ func take_damage(damage: int, animation_type: String, knockback_direction: Vecto
 	state = PLAYER_STATE.DAMAGED
 	# ダメージ後のノックバック効果を保持するため、ジャンプ水平速度の適用を無効化
 	ignore_jump_horizontal_velocity = true
-	get_current_damaged().handle_damage(damage, animation_type, knockback_direction, knockback_force)
+	# animation_type は常に "damaged" として統一
+	get_current_damaged().handle_damage(damage, "damaged", knockback_direction, knockback_force)
