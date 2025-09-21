@@ -5,7 +5,7 @@ extends RefCounted
 @export var move_run_speed: float = 350.0   # ダッシュ速度（ピクセル/秒）
 @export var GRAVITY: float  # 重力加速度（プロジェクト設定から取得）
 @export var jump_max_fall_speed: float = 400.0  # 最大落下速度（ピクセル/秒）
-@export var jump_gravity_scale: float = 1.0     # 重力倍率（1.0が標準、小さいほどふわふわ）
+@export var jump_gravity_scale: float = 1.2     # 重力倍率（1.0が標準、小さいほどふわふわ）
 @export var jump_hold_vertical_bonus: float = 800.0  # 長押し時の追加垂直力ボーナス（ピクセル/秒²）
 @export var jump_hold_horizontal_bonus: float = 100.0  # 長押し時の追加水平力ボーナス（ピクセル/秒²）
 
