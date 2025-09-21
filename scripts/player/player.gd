@@ -62,6 +62,8 @@ var attack_timer: float = 0.0  # 攻撃の残り時間
 
 # 投擲状態管理
 var throw_cooldown_timer: float = 0.0  # 投擲クールダウンタイマー
+var is_throwing: bool = false  # 現在投擲中かどうか
+var can_back_jump: bool = false  # 後ろジャンプが可能かどうか
 
 # 着地状態（フレームごとに一度だけチェック）
 var is_grounded: bool = false    # 現在のフレームで地面に接触しているか
@@ -104,6 +106,8 @@ func update_attack_timer(delta: float) -> void:
 # 攻撃終了処理（時間終了時とアニメーション終了時の共通処理）
 func end_attack() -> void:
 	is_attacking = false
+	is_throwing = false
+	can_back_jump = false
 	attack_direction = 0.0
 	current_attack_speed = 0.0
 	attack_grounded = false
@@ -148,39 +152,52 @@ func apply_gravity(delta: float) -> void:
 
 # 入力処理（改良版：ジャンプバッファとコヨーテタイム対応）
 func handle_input() -> void:
-	# Shiftキーの状態を直接確認
-	var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
-
 	# しゃがみ入力の状態確認（地面にいる時かつ攻撃中でない場合のみ）
 	is_squatting = is_grounded and Input.is_action_pressed("squat") and not is_attacking
 
-	# 攻撃入力処理（Fキー：格闘攻撃、攻撃中でない場合のみ）
-	if Input.is_key_pressed(KEY_F) and not is_attacking:
+	# 攻撃入力処理（fightアクション：格闘攻撃、攻撃中でない場合のみ）
+	if Input.is_action_just_pressed("fight") and not is_attacking:
 		perform_attack()
 
-	# 攻撃入力処理（Cキー：投擲攻撃、クールダウン中でない場合のみ）
-	if Input.is_key_pressed(KEY_C) and throw_cooldown_timer <= 0.0:
-		perform_throw()
+	# 投擲入力処理（shootingアクション：投擲攻撃）
+	if Input.is_action_just_pressed("shooting"):
+		# 通常の投擲（攻撃中でなく、クールダウン中でない場合）
+		if not is_attacking and throw_cooldown_timer <= 0.0:
+			perform_throw()
+		# 投擲中の後ろジャンプ（投擲中かつ後ろジャンプ可能な場合）
+		elif is_throwing and can_back_jump:
+			perform_back_jump_throw()
 
-	# 方向キーの状態確認
-	var left_key: bool = Input.is_key_pressed(KEY_A)
-	var right_key: bool = Input.is_key_pressed(KEY_D)
+	# 方向アクションの状態確認
+	var left_key: bool = Input.is_action_pressed("left")
+	var right_key: bool = Input.is_action_pressed("right")
+	var run_left_key: bool = Input.is_action_pressed("run_left")
+	var run_right_key: bool = Input.is_action_pressed("run_right")
 
 	# 移動方向と走行状態の決定（しゃがみ中と攻撃中は移動を無効にする）
 	if not is_squatting and not is_attacking:
-		if left_key:
+		if run_left_key:
+			# 走りながら左移動
 			direction_x = -1.0
-			# 地面にいる時のみランニング状態を更新
 			if is_grounded:
-				is_running = shift_pressed
-		elif right_key:
+				is_running = true
+		elif run_right_key:
+			# 走りながら右移動
 			direction_x = 1.0
-			# 地面にいる時のみランニング状態を更新
 			if is_grounded:
-				is_running = shift_pressed
+				is_running = true
+		elif left_key:
+			# 通常歩行で左移動
+			direction_x = -1.0
+			if is_grounded:
+				is_running = false
+		elif right_key:
+			# 通常歩行で右移動
+			direction_x = 1.0
+			if is_grounded:
+				is_running = false
 		else:
 			direction_x = 0.0
-			# 地面にいる時のみランニング状態をfalseに
 			if is_grounded:
 				is_running = false
 	else:
@@ -256,8 +273,9 @@ func _on_attack_animation_finished() -> void:
 
 # 投擲実行（クナイ投擲）
 func perform_throw() -> void:
-	# 攻撃状態として設定（投擲も攻撃の一種）
+	# 攻撃状態と投擲状態を設定
 	is_attacking = true
+	is_throwing = true
 
 	# 投擲クールダウンを設定
 	throw_cooldown_timer = throw_cooldown
@@ -280,8 +298,12 @@ func perform_throw() -> void:
 	# アニメーション再生（地上/空中で分岐）
 	if is_grounded:
 		animated_sprite_2d.play("normal_shooting_01_001")
+		# 地上投擲時は後ろジャンプ可能
+		can_back_jump = true
 	else:
 		animated_sprite_2d.play("normal_shooting_01_002")
+		# 空中投擲時は後ろジャンプ不可
+		can_back_jump = false
 
 	# アニメーション終了時のコールバックを設定
 	if not animated_sprite_2d.animation_finished.is_connected(_on_attack_animation_finished):
@@ -308,6 +330,34 @@ func spawn_kunai() -> void:
 	# クナイに速度と方向を設定
 	if kunai_instance.has_method("initialize"):
 		kunai_instance.initialize(throw_direction, throw_kunai_speed, self)
+
+# 後ろジャンプ投擲実行
+func perform_back_jump_throw() -> void:
+	# 後ろジャンプを無効化（1回のみ実行可能）
+	can_back_jump = false
+
+	# 現在の向きを取得
+	var current_direction: float = 1.0 if animated_sprite_2d.flip_h else -1.0
+
+	# 後ろ方向へのジャンプ（walk時のジャンプと同じ飛距離）
+	var back_direction: float = -current_direction
+	velocity.y = -jump_force  # 垂直ジャンプ力
+	velocity.x = back_direction * move_walk_speed  # 水平方向は後ろ向きにwalk速度
+
+	# 投擲クールダウンを再設定
+	throw_cooldown_timer = throw_cooldown
+
+	# 攻撃タイマーをリセット
+	attack_timer = throw_animation_duration
+
+	# クナイを再度発射
+	spawn_kunai()
+
+	# normal_shooting_01_002アニメーションを再生
+	animated_sprite_2d.play("normal_shooting_01_002")
+
+	# 地面から離れるため、attack_groundedをfalseに
+	attack_grounded = false
 
 # 当たり判定更新（しゃがみ状態に応じて形状を変更）
 func update_collision_shape() -> void:
