@@ -171,39 +171,39 @@ func handle_input() -> void:
 	# 方向アクションの状態確認
 	var left_key: bool = Input.is_action_pressed("left")
 	var right_key: bool = Input.is_action_pressed("right")
-	var run_left_key: bool = Input.is_action_pressed("run_left")
-	var run_right_key: bool = Input.is_action_pressed("run_right")
+	var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
 
-	# 移動方向と走行状態の決定（しゃがみ中、攻撃中、空中時は移動を無効にする）
-	if not is_squatting and not is_attacking and is_grounded:
-		if run_left_key:
-			# 走りながら左移動
-			direction_x = -1.0
-			is_running = true
-		elif run_right_key:
-			# 走りながら右移動
-			direction_x = 1.0
-			is_running = true
-		elif left_key:
-			# 通常歩行で左移動
-			direction_x = -1.0
-			is_running = false
-		elif right_key:
-			# 通常歩行で右移動
-			direction_x = 1.0
-			is_running = false
+	# 移動方向と走行状態の決定
+	if not is_squatting and not is_attacking:
+		if is_grounded:
+			# 地上での移動処理
+			if left_key:
+				# 左移動（Shiftが押されているかで走行状態を決定）
+				direction_x = -1.0
+				is_running = shift_pressed
+			elif right_key:
+				# 右移動（Shiftが押されているかで走行状態を決定）
+				direction_x = 1.0
+				is_running = shift_pressed
+			else:
+				# 移動入力がない場合
+				direction_x = 0.0
+				is_running = false
 		else:
-			direction_x = 0.0
-			is_running = false
+			# 空中では方向入力のみ受け付け、走行状態はShiftキーに応じて更新
+			if left_key:
+				direction_x = -1.0
+			elif right_key:
+				direction_x = 1.0
+			else:
+				direction_x = 0.0
+			# 空中でもShiftキーの状態を監視（着地時の状態復帰用）
+			is_running = shift_pressed and (left_key or right_key)
 	else:
-		# 空中、しゃがみ中、攻撃中は移動入力を無効化
+		# しゃがみ中、攻撃中は移動入力を無効化
 		direction_x = 0.0
 		if is_grounded:
 			is_running = false
-
-	# 空中にいる場合はランニング状態をfalseにする
-	if not is_grounded:
-		is_running = false
 
 	# ジャンプ入力処理（しゃがみ中かつ攻撃中はジャンプ不可）
 	if Input.is_action_just_pressed("jump") and not is_squatting and not is_attacking:
