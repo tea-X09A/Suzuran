@@ -84,7 +84,8 @@
       "Bash(git pull:*)",
       "mcp__serena__insert_after_symbol",
       "Bash(git log:*)",
-      "Bash(/bashes)"
+      "Bash(/bashes)",
+      "Bash(godot:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

@@ -32,12 +32,12 @@ func _physics_process(delta: float) -> void:
 		destroy_kunai()
 
 # クナイの初期化（プレイヤーから呼び出される）
-func initialize(direction: float, speed: float, owner: Node2D) -> void:
+func initialize(direction: float, speed: float, shooter: Node2D) -> void:
 	# 速度設定
 	velocity = Vector2(direction * speed, 0.0)
 
 	# 発射者を記録
-	owner_character = owner
+	owner_character = shooter
 
 	# スプライトの向きを設定
 	if direction < 0.0:

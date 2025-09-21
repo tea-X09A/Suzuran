@@ -238,7 +238,11 @@ func perform_attack() -> void:
 	# 攻撃タイマーを設定
 	attack_timer = move_attack_duration
 
-	set_state(PLAYER_STATE.FIGHTING)
+	# 状態をFIGHTINGに設定
+	state = PLAYER_STATE.FIGHTING
+
+	# 攻撃アニメーションを再生
+	animated_sprite_2d.play("normal_fighting_01")
 
 	# アニメーション終了時のコールバックを設定
 	if not animated_sprite_2d.animation_finished.is_connected(_on_attack_animation_finished):
@@ -249,19 +253,39 @@ func _on_attack_animation_finished() -> void:
 	if state == PLAYER_STATE.FIGHTING:
 		end_attack()
 
+
 # 投擲実行（クナイ投擲）
 func perform_throw() -> void:
+	# 攻撃状態として設定（投擲も攻撃の一種）
+	is_attacking = true
+
+	# 投擲クールダウンを設定
+	throw_cooldown_timer = throw_cooldown
+
+	# 攻撃タイマーを投擲アニメーション時間に設定
+	attack_timer = throw_animation_duration
+
+	# 攻撃開始時の着地状態を記録
+	attack_grounded = is_grounded
+
+	# 投擲では前進速度は0
+	current_attack_speed = 0.0
+
 	# クナイを生成して発射
 	spawn_kunai()
 
-	# 投擲クールダウンを設定
-	throw_cooldown_timer = throw_animation_duration
+	# 状態をFIGHTINGに設定
+	state = PLAYER_STATE.FIGHTING
 
 	# アニメーション再生（地上/空中で分岐）
 	if is_grounded:
 		animated_sprite_2d.play("normal_shooting_01_001")
 	else:
 		animated_sprite_2d.play("normal_shooting_01_002")
+
+	# アニメーション終了時のコールバックを設定
+	if not animated_sprite_2d.animation_finished.is_connected(_on_attack_animation_finished):
+		animated_sprite_2d.animation_finished.connect(_on_attack_animation_finished)
 
 
 # クナイ生成と発射
@@ -373,4 +397,5 @@ func set_state(new_state: PLAYER_STATE) -> void:
 		PLAYER_STATE.SQUAT:
 			animated_sprite_2d.play("normal_squat")
 		PLAYER_STATE.FIGHTING:
-			animated_sprite_2d.play("normal_fighting_01")
+			# FIGHTINGステートのアニメーションは個別に設定済み（perform_attack/perform_throwで）
+			pass
