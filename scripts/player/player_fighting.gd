@@ -1,19 +1,32 @@
 class_name PlayerFighting
 extends RefCounted
 
-# ===== エクスポート変数 =====
-@export var move_fighting_initial_speed: float = 250.0  # 攻撃開始時の初期前進速度（ピクセル/秒）
-@export var move_fighting_run_bonus: float = 150.0  # run中の攻撃時の速度ボーナス（ピクセル/秒）
-@export var move_fighting_duration: float = 0.5  # 攻撃の持続時間（秒）
+signal fighting_finished
 
-# expansion用パラメータ（将来的な拡張用）
-@export var expansion_fighting_speed_multiplier: float = 1.25  # 拡張攻撃速度の倍率
-@export var expansion_fighting_duration_multiplier: float = 0.8  # 拡張攻撃持続時間の倍率
-
-# ===== プライベート変数 =====
+# プレイヤーノードへの参照
 var player: CharacterBody2D
+# アニメーションスプライトへの参照
 var animated_sprite: AnimatedSprite2D
+# プレイヤーの状態
 var condition: Player.PLAYER_CONDITION
+
+# パラメータの定義 - conditionに応じて選択される
+var fighting_parameters: Dictionary = {
+	Player.PLAYER_CONDITION.NORMAL: {
+		"move_fighting_initial_speed": 250.0,       # 攻撃開始時の初期前進速度（ピクセル/秒）
+		"move_fighting_run_bonus": 150.0,           # run中の攻撃時の速度ボーナス（ピクセル/秒）
+		"move_fighting_duration": 0.5,              # 攻撃の持続時間（秒）
+		"animation_prefix": "normal",               # アニメーション名のプレフィックス
+		"enabled": true                             # 攻撃が有効かどうか
+	},
+	Player.PLAYER_CONDITION.EXPANSION: {
+		"move_fighting_initial_speed": 312.5,       # 攻撃開始時の初期前進速度（250.0 * 1.25）（ピクセル/秒）
+		"move_fighting_run_bonus": 187.5,           # run中の攻撃時の速度ボーナス（150.0 * 1.25）（ピクセル/秒）
+		"move_fighting_duration": 0.4,              # 攻撃の持続時間（0.5 * 0.8）（秒）
+		"animation_prefix": "expansion",            # アニメーション名のプレフィックス
+		"enabled": false                            # EXPANSIONモードでは攻撃を無効化
+	}
+}
 
 # 攻撃状態管理
 var fighting_direction: float = 0.0
@@ -21,22 +34,18 @@ var current_fighting_speed: float = 0.0
 var fighting_grounded: bool = false
 var fighting_timer: float = 0.0
 
-# ===== シグナル =====
-signal fighting_finished
-
-# ===== 初期化 =====
 func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CONDITION) -> void:
 	player = player_instance
 	condition = player_condition
 	animated_sprite = player.get_node("AnimatedSprite2D") as AnimatedSprite2D
 
-# ===== 公開メソッド =====
+func get_parameter(key: String) -> Variant:
+	return fighting_parameters[condition][key]
 
-## 攻撃処理の開始
 func handle_fighting() -> void:
-	# EXPANSIONモードでは攻撃を無効化
-	if condition == Player.PLAYER_CONDITION.EXPANSION:
-		print("EXPANSIONモードでは攻撃が無効化されています")
+	# 攻撃が有効でない場合は処理を停止
+	if not get_parameter("enabled"):
+		print("攻撃が無効化されています")
 		return
 
 	# 攻撃方向の決定
@@ -49,14 +58,14 @@ func handle_fighting() -> void:
 	fighting_grounded = player.is_on_floor()
 
 	if fighting_grounded:
-		current_fighting_speed = move_fighting_initial_speed
+		current_fighting_speed = get_parameter("move_fighting_initial_speed")
 		if player.is_running:
-			current_fighting_speed += move_fighting_run_bonus
+			current_fighting_speed += get_parameter("move_fighting_run_bonus")
 	else:
 		current_fighting_speed = 0.0
 
 	# タイマー設定
-	fighting_timer = move_fighting_duration
+	fighting_timer = get_parameter("move_fighting_duration")
 
 	# アニメーション再生
 	animated_sprite.play(get_animation_name())
@@ -65,19 +74,17 @@ func handle_fighting() -> void:
 	if not animated_sprite.animation_finished.is_connected(_on_fighting_animation_finished):
 		animated_sprite.animation_finished.connect(_on_fighting_animation_finished)
 
-## 攻撃中の移動処理を適用
 func apply_fighting_movement() -> void:
-	# EXPANSIONモードでは移動も無効化
-	if condition == Player.PLAYER_CONDITION.EXPANSION:
+	# 攻撃が有効でない場合は移動も無効化
+	if not get_parameter("enabled"):
 		return
 
 	if fighting_grounded:
 		player.velocity.x = fighting_direction * current_fighting_speed
 
-## 攻撃タイマーの更新
 func update_fighting_timer(delta: float) -> bool:
-	# EXPANSIONモードでは即座にfalseを返す
-	if condition == Player.PLAYER_CONDITION.EXPANSION:
+	# 攻撃が有効でない場合は即座にfalseを返す
+	if not get_parameter("enabled"):
 		return false
 
 	if fighting_timer > 0.0:
@@ -102,41 +109,26 @@ func end_fighting() -> void:
 	# 完了シグナルの発信
 	fighting_finished.emit()
 
-## 空中攻撃かどうかの判定
 func is_airborne_attack() -> bool:
-	# EXPANSIONモードでは常にfalse
-	if condition == Player.PLAYER_CONDITION.EXPANSION:
+	# 攻撃が有効でない場合は常にfalse
+	if not get_parameter("enabled"):
 		return false
 
 	return not fighting_grounded
 
-## 攻撃のキャンセル
 func cancel_fighting() -> void:
-	# EXPANSIONモードでも安全にキャンセル処理を実行
 	end_fighting()
 
-## 適切なアニメーション名を取得
 func get_animation_name() -> String:
-	match condition:
-		Player.PLAYER_CONDITION.NORMAL:
-			return "normal_attack_01"
-		Player.PLAYER_CONDITION.EXPANSION:
-			# EXPANSIONモードでは実際には再生されないが、一応定義
-			return "expansion_attack_01"
-		_:
-			print("警告: 不明なプレイヤーコンディション: ", condition)
-			return "normal_attack_01"
+	var prefix: String = get_parameter("animation_prefix")
+	return prefix + "_attack_01"
 
-## プレイヤーコンディションの更新
 func update_condition(new_condition: Player.PLAYER_CONDITION) -> void:
 	condition = new_condition
 
-# ===== プライベートメソッド =====
-
-## アニメーション完了時のコールバック
 func _on_fighting_animation_finished() -> void:
-	# EXPANSIONモードでは何もしない（そもそもアニメーションが再生されない）
-	if condition == Player.PLAYER_CONDITION.EXPANSION:
+	# 攻撃が有効でない場合は何もしない
+	if not get_parameter("enabled"):
 		return
 
 	end_fighting()
