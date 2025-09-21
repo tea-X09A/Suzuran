@@ -16,7 +16,7 @@ const KUNAI_SCENE = preload("res://scenes/bullets/kunai.tscn")
 # ========== 移動設定 ==========
 # 通常の歩行速度とダッシュ速度を調整可能
 @export_group("Movement Settings", "move_")
-@export var move_walk_speed: float = 100.0  # 通常歩行速度（ピクセル/秒）
+@export var move_walk_speed: float = 150.0  # 通常歩行速度（ピクセル/秒）
 @export var move_run_speed: float = 350.0   # ダッシュ速度（ピクセル/秒）
 @export var move_attack_initial_speed: float = 250.0  # 攻撃開始時の初期前進速度（ピクセル/秒）
 @export var move_attack_duration: float = 0.5  # 攻撃の持続時間（秒）
@@ -174,35 +174,32 @@ func handle_input() -> void:
 	var run_left_key: bool = Input.is_action_pressed("run_left")
 	var run_right_key: bool = Input.is_action_pressed("run_right")
 
-	# 移動方向と走行状態の決定（しゃがみ中と攻撃中は移動を無効にする）
-	if not is_squatting and not is_attacking:
+	# 移動方向と走行状態の決定（しゃがみ中、攻撃中、空中時は移動を無効にする）
+	if not is_squatting and not is_attacking and is_grounded:
 		if run_left_key:
 			# 走りながら左移動
 			direction_x = -1.0
-			if is_grounded:
-				is_running = true
+			is_running = true
 		elif run_right_key:
 			# 走りながら右移動
 			direction_x = 1.0
-			if is_grounded:
-				is_running = true
+			is_running = true
 		elif left_key:
 			# 通常歩行で左移動
 			direction_x = -1.0
-			if is_grounded:
-				is_running = false
+			is_running = false
 		elif right_key:
 			# 通常歩行で右移動
 			direction_x = 1.0
-			if is_grounded:
-				is_running = false
+			is_running = false
 		else:
 			direction_x = 0.0
-			if is_grounded:
-				is_running = false
+			is_running = false
 	else:
+		# 空中、しゃがみ中、攻撃中は移動入力を無効化
 		direction_x = 0.0
-		is_running = false
+		if is_grounded:
+			is_running = false
 
 	# 空中にいる場合はランニング状態をfalseにする
 	if not is_grounded:
@@ -388,7 +385,9 @@ func apply_movement() -> void:
 		return
 
 	if direction_x != 0.0:
-		animated_sprite_2d.flip_h = direction_x > 0.0
+		# 地面にいる時のみ向きを変更する
+		if is_grounded:
+			animated_sprite_2d.flip_h = direction_x > 0.0
 		var target_speed: float = move_run_speed if is_running else move_walk_speed
 
 		# 地面にいる場合は通常の移動、空中の場合はジャンプ時の水平速度を維持
