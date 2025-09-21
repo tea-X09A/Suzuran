@@ -6,7 +6,7 @@ signal down_finished
 # ダウンアニメーションの持続時間（秒）
 @export var down_duration: float = 1.0
 # down状態からの移行時に付与する無敵時間（秒）
-@export var recovery_invincibility_duration: float = 2.0
+@export var recovery_invincibility_duration: float = 3.0
 
 # プレイヤーノードへの参照
 var player: CharacterBody2D
@@ -25,13 +25,16 @@ func _init(player_instance: CharacterBody2D) -> void:
 	player = player_instance
 	animated_sprite = player.get_node("AnimatedSprite2D") as AnimatedSprite2D
 
-func start_down() -> void:
+func start_down(play_animation: bool = true) -> void:
 	is_down = true
 	down_timer = down_duration
 
-	print("ダウンアニメーション開始")
-	var condition_prefix: String = "expansion" if player.condition == Player.PLAYER_CONDITION.EXPANSION else "normal"
-	animated_sprite.play(condition_prefix + "_down_01")
+	if play_animation:
+		print("ダウンアニメーション開始")
+		var condition_prefix: String = "expansion" if player.condition == Player.PLAYER_CONDITION.EXPANSION else "normal"
+		animated_sprite.play(condition_prefix + "_down_01")
+	else:
+		print("ダウン状態開始（アニメーション既に再生済み）")
 
 func update_down_timer(delta: float) -> void:
 	if not is_down:
@@ -44,12 +47,12 @@ func update_down_timer(delta: float) -> void:
 		# 実際の状態移行は handle_down_input() で管理される
 		down_timer = 0.0
 
-func handle_down_input(direction_x: float, jump_pressed: bool) -> bool:
+func handle_down_input(jump_pressed: bool) -> bool:
 	if not is_down:
 		return false
 
-	# 左右移動またはジャンプ入力があった場合にdown状態を終了
-	if abs(direction_x) > 0.0 or jump_pressed:
+	# ジャンプ入力があった場合のみdown状態を終了
+	if jump_pressed:
 		finish_down()
 		return true
 

@@ -18,7 +18,12 @@ func _physics_process(delta: float) -> void:
 	check_overlapping_bodies()
 
 func apply_damage_to_player(player: Player) -> void:
-	if player.get_current_damaged().is_in_invincible_state():
+	# ダメージ状態の無敵状態またはダウン状態からの復帰時無敵状態をチェック
+	if player.get_current_damaged().is_in_invincible_state() or player.get_current_down().is_in_recovery_invincible_state():
+		return
+
+	# ダウン状態の場合は追加ダメージを与えない
+	if player.is_down:
 		return
 
 	var knockback_direction: Vector2 = Vector2.ZERO

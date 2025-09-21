@@ -146,9 +146,25 @@ func update_timers(delta: float) -> void:
 		if is_shooting and get_current_shooting().is_airborne_attack():
 			get_current_shooting().cancel_shooting()
 
-		# ダメージモーション中に着地した場合、ダメージモーションをキャンセル
+		# ダメージモーション中に着地した場合の処理
 		if is_damaged:
-			get_current_damaged().cancel_damaged()
+			var damaged_handler = get_current_damaged()
+			# animation_typeが"down"の場合は、downアニメーションに切り替えてダウン状態に移行
+			if damaged_handler.current_animation_type == "down":
+				print("着地時にdownアニメーションに切り替え")
+				var condition_prefix: String = "expansion" if condition == PLAYER_CONDITION.EXPANSION else "normal"
+				animated_sprite_2d.play(condition_prefix + "_down_01")
+
+				# ダメージ状態を終了
+				damaged_handler.finish_damaged()
+
+				# ダウン状態に移行（アニメーションは既に再生済みなのでfalse）
+				is_down = true
+				state = PLAYER_STATE.DOWN
+				get_current_down().start_down(false)
+			else:
+				# 通常のダメージの場合はキャンセル
+				damaged_handler.cancel_damaged()
 
 	if is_grounded:
 		coyote_timer = jump_coyote_time
@@ -173,18 +189,13 @@ func handle_input() -> void:
 	var right_key: bool = Input.is_action_pressed("right")
 	var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
 
-	# down状態では左右移動とジャンプのみ許可
+	# down状態では移動を制限し、ジャンプのみ許可
 	if is_down:
-		if left_key:
-			direction_x = -1.0
-		elif right_key:
-			direction_x = 1.0
-		else:
-			direction_x = 0.0
+		direction_x = 0.0  # 左右移動を制限
 		is_running = false
-		# down状態からの移行チェック
+		# down状態からの移行チェック（ジャンプのみ）
 		var jump_pressed: bool = Input.is_action_just_pressed("jump")
-		if get_current_down().handle_down_input(direction_x, jump_pressed):
+		if get_current_down().handle_down_input(jump_pressed):
 			# down状態が終了した場合、通常の状態処理を再開
 			pass
 	elif not is_squatting and not is_fighting and not is_shooting and not is_damaged:
@@ -298,12 +309,6 @@ func _on_shooting_finished() -> void:
 
 func _on_damaged_finished() -> void:
 	is_damaged = false
-	# ダメージ処理終了時に地面に接地していない場合、down状態に移行
-	if not is_on_floor():
-		print("ダメージ終了時に空中 - down状態に移行")
-		is_down = true
-		state = PLAYER_STATE.DOWN
-		get_current_down().start_down()
 
 func _on_down_finished() -> void:
 	is_down = false

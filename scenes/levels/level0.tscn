@@ -299,3 +299,4 @@ tile_set = SubResource("TileSet_d0grl")
 
 [node name="trap_01" parent="." instance=ExtResource("4_5kr0j")]
 position = Vector2(213, 58)
+animation_type = "down"

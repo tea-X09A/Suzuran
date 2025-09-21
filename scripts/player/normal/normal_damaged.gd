@@ -33,6 +33,8 @@ var is_invincible: bool = false
 var knockback_direction: Vector2 = Vector2.ZERO
 # ノックバック力の値（ピクセル/秒）
 var knockback_force_value: float = 0.0
+# アニメーションタイプ
+var current_animation_type: String = ""
 
 func _init(player_instance: CharacterBody2D) -> void:
 	player = player_instance
@@ -41,10 +43,18 @@ func _init(player_instance: CharacterBody2D) -> void:
 
 func handle_damage(damage: int, animation_type: String, direction: Vector2, force: float) -> void:
 	is_damaged = true
-	is_invincible = true
+	current_animation_type = animation_type
+
+	# downアニメーションの場合は無敵状態にしない
+	if animation_type == "down":
+		is_invincible = false
+		invincibility_timer = 0.0
+	else:
+		is_invincible = true
+		invincibility_timer = invincibility_duration
+
 	# コリジョンは地形との当たり判定のため有効のまま維持
 	damage_timer = damage_duration
-	invincibility_timer = invincibility_duration
 	knockback_timer = knockback_duration
 	knockback_direction = direction
 	knockback_force_value = force
@@ -54,7 +64,12 @@ func handle_damage(damage: int, animation_type: String, direction: Vector2, forc
 
 	print("ダメージアニメーション開始: ", animation_type)
 	var condition_prefix: String = "expansion" if player.condition == Player.PLAYER_CONDITION.EXPANSION else "normal"
-	animated_sprite.play(condition_prefix + "_" + animation_type)
+
+	# downアニメーションの場合でも、最初はdamagedアニメーションを再生
+	if animation_type == "down":
+		animated_sprite.play(condition_prefix + "_damaged")
+	else:
+		animated_sprite.play(condition_prefix + "_" + animation_type)
 
 func update_damaged_timer(delta: float) -> void:
 	if not is_damaged:
