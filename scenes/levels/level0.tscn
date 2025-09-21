@@ -1,10 +1,9 @@
-[gd_scene load_steps=8 format=4 uid="uid://c66yhlgjdohsy"]
+[gd_scene load_steps=7 format=4 uid="uid://c66yhlgjdohsy"]
 
 [ext_resource type="PackedScene" uid="uid://cb3hree4jheeu" path="res://scenes/levels/camera.tscn" id="1_o8kyb"]
 [ext_resource type="Texture2D" uid="uid://cvvb866p8u71i" path="res://assets/images/tilesets/tilesheet_complete.png" id="3_5kr0j"]
 [ext_resource type="PackedScene" uid="uid://daofj62a4corn" path="res://scenes/player/player.tscn" id="3_hghvf"]
-[ext_resource type="PackedScene" uid="uid://i0ua85aljlry" path="res://scenes/traps/trap_01.tscn" id="4_5kr0j"]
-[ext_resource type="Script" uid="uid://b1k8omu2fpyc5" path="res://scripts/traps/trap_01.gd" id="5_ry65h"]
+[ext_resource type="PackedScene" uid="uid://ygpxc8s354rc" path="res://scenes/traps/trap_01.tscn" id="4_5kr0j"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ry65h"]
 texture = ExtResource("3_5kr0j")
@@ -304,4 +303,3 @@ tile_set = SubResource("TileSet_d0grl")
 
 [node name="Trap_01" parent="." instance=ExtResource("4_5kr0j")]
 position = Vector2(213, 23)
-script = ExtResource("5_ry65h")

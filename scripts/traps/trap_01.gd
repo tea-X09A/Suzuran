@@ -1,5 +1,5 @@
 class_name Trap01
-extends Area2D
+extends StaticBody2D
 
 # プレイヤーに与えるダメージ量（整数値）
 @export var damage: int = 10
@@ -11,9 +11,12 @@ extends Area2D
 # 現在ダメージを受けているプレイヤーのリスト（重複ダメージを防ぐため）
 var damaged_players: Array[Player] = []
 
+# Area2Dの参照をキャッシュ
+@onready var area_2d: Area2D = $Area2D
+
 func _ready() -> void:
-	body_entered.connect(_on_body_entered)
-	body_exited.connect(_on_body_exited)
+	area_2d.body_entered.connect(_on_body_entered)
+	area_2d.body_exited.connect(_on_body_exited)
 
 func _on_body_entered(body: Node2D) -> void:
 	if body is Player:
