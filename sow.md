@@ -11,16 +11,16 @@
 ```
 scripts/player/
 ├── player.gd (統合済み状態管理コントローラー)
+├── player.jump.gd (統合済みジャンプシステム - パラメータテーブル方式)
+├── player_damaged.gd (ダメージシステム - パラメータテーブル方式)
 ├── normal/
 │   ├── normal_movement.gd
 │   ├── normal_fighting.gd (旧 normal_attack.gd)
-│   ├── normal_shooting.gd (旧 normal_throw.gd)
-│   └── normal_jump.gd
+│   └── normal_shooting.gd (旧 normal_throw.gd)
 └── expansion/
     ├── expansion_movement.gd
     ├── expansion_fighting.gd (旧 expansion_attack.gd)
-    ├── expansion_shooting.gd (旧 expansion_throw.gd)
-    └── expansion_jump.gd
+    └── expansion_shooting.gd (旧 expansion_throw.gd)
 ```
 
 ### ✅ 機能改善

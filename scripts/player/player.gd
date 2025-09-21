@@ -10,16 +10,14 @@ enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT, FIGHTING, SHOOTING, DAMA
 @export var initial_condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
 
 var condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
-var normal_movement: NormalMovement
+var player_movement: PlayerMovement
 var normal_fighting: NormalFighting
 var normal_shooting: NormalShooting
-var normal_jump: NormalJump
+var player_jump: PlayerJump
 var player_damaged: PlayerDamaged
 
-var expansion_movement: ExpansionMovement
 var expansion_fighting: ExpansionFighting
 var expansion_shooting: ExpansionShooting
-var expansion_jump: ExpansionJump
 
 var direction_x: float = 0.0
 var is_running: bool = false
@@ -48,17 +46,16 @@ var ignore_jump_horizontal_velocity: bool = false  # ダメージ後のノック
 func _ready() -> void:
 	animated_sprite_2d.flip_h = true
 
-	normal_movement = NormalMovement.new(self)
 	normal_fighting = NormalFighting.new(self)
 	normal_shooting = NormalShooting.new(self)
-	normal_jump = NormalJump.new(self, normal_movement)
 
-	expansion_movement = ExpansionMovement.new(self)
 	expansion_fighting = ExpansionFighting.new(self)
 	expansion_shooting = ExpansionShooting.new(self)
-	expansion_jump = ExpansionJump.new(self, expansion_movement)
 
 	condition = initial_condition
+	# 統合されたPlayerMovementクラスを使用
+	player_movement = PlayerMovement.new(self, condition)
+	player_jump = PlayerJump.new(self, player_movement, condition)
 	player_damaged = PlayerDamaged.new(self, condition)
 
 	normal_fighting.fighting_finished.connect(_on_fighting_finished)
@@ -103,8 +100,8 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	update_state()
 
-func get_current_movement() -> NormalMovement:
-	return expansion_movement if condition == PLAYER_CONDITION.EXPANSION else normal_movement
+func get_current_movement() -> PlayerMovement:
+	return player_movement
 
 func get_current_fighting() -> NormalFighting:
 	return expansion_fighting if condition == PLAYER_CONDITION.EXPANSION else normal_fighting
@@ -112,8 +109,8 @@ func get_current_fighting() -> NormalFighting:
 func get_current_shooting() -> NormalShooting:
 	return expansion_shooting if condition == PLAYER_CONDITION.EXPANSION else normal_shooting
 
-func get_current_jump() -> NormalJump:
-	return expansion_jump if condition == PLAYER_CONDITION.EXPANSION else normal_jump
+func get_current_jump() -> PlayerJump:
+	return player_jump
 
 func get_current_damaged() -> PlayerDamaged:
 	return player_damaged
