@@ -42,8 +42,7 @@ func _init(player_instance: CharacterBody2D) -> void:
 func handle_damage(damage: int, animation_type: String, direction: Vector2, force: float) -> void:
 	is_damaged = true
 	is_invincible = true
-	# 無敵状態時は当たり判定を無効化
-	collision_shape.disabled = true
+	# コリジョンは地形との当たり判定のため有効のまま維持
 	damage_timer = damage_duration
 	invincibility_timer = invincibility_duration
 	knockback_timer = knockback_duration
@@ -70,8 +69,6 @@ func update_damaged_timer(delta: float) -> void:
 
 	if invincibility_timer <= 0.0:
 		is_invincible = false
-		# 無敵状態終了時は当たり判定を有効化
-		collision_shape.disabled = false
 
 	if damage_timer <= 0.0:
 		finish_damaged()
@@ -95,8 +92,6 @@ func update_invincibility_timer(delta: float) -> void:
 		invincibility_timer -= delta
 		if invincibility_timer <= 0.0:
 			is_invincible = false
-			# 無敵状態終了時は当たり判定を有効化
-			collision_shape.disabled = false
 
 func is_in_invincible_state() -> bool:
 	return is_invincible
