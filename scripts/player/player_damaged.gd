@@ -1,20 +1,7 @@
-class_name NormalDamaged
+class_name PlayerDamaged
 extends RefCounted
 
 signal damaged_finished
-
-# ダメージアニメーションの持続時間（秒）
-@export var damage_duration: float = 0.6
-# 垂直方向のノックバック力（上方向への力、ピクセル/秒）
-@export var knockback_vertical_force: float = 200.0
-# 無敵状態の持続時間（秒）
-@export var invincibility_duration: float = 2.0
-# ノックバックモーションの持続時間（秒）
-@export var knockback_duration: float = 0.3
-# down状態の持続時間（秒）
-@export var down_duration: float = 1.0
-# down状態からの移行時に付与する無敵時間（秒）
-@export var recovery_invincibility_duration: float = 3.0
 
 # プレイヤーノードへの参照
 var player: CharacterBody2D
@@ -22,6 +9,32 @@ var player: CharacterBody2D
 var animated_sprite: AnimatedSprite2D
 # 当たり判定コライダーへの参照
 var collision_shape: CollisionShape2D
+# プレイヤーの状態
+var condition: Player.PLAYER_CONDITION
+
+# パラメータの定義 - conditionに応じて選択される
+var damage_parameters: Dictionary = {
+	Player.PLAYER_CONDITION.NORMAL: {
+		"damage_duration": 0.6,
+		"knockback_vertical_force": 200.0,
+		"invincibility_duration": 2.0,
+		"knockback_duration": 0.3,
+		"down_duration": 1.0,
+		"recovery_invincibility_duration": 2.0,
+		"log_prefix": "",
+		"knockback_multiplier": 1.0
+	},
+	Player.PLAYER_CONDITION.EXPANSION: {
+		"damage_duration": 0.8,
+		"knockback_vertical_force": 250.0,
+		"invincibility_duration": 3.0,
+		"knockback_duration": 0.4,
+		"down_duration": 1.2,
+		"recovery_invincibility_duration": 3.5,
+		"log_prefix": "Expansion",
+		"knockback_multiplier": 1.2
+	}
+}
 
 # ダメージアニメーションの残り時間
 var damage_timer: float = 0.0
@@ -45,10 +58,14 @@ var down_timer: float = 0.0
 var is_recovery_invincible: bool = false
 var recovery_invincibility_timer: float = 0.0
 
-func _init(player_instance: CharacterBody2D) -> void:
+func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CONDITION) -> void:
 	player = player_instance
+	condition = player_condition
 	animated_sprite = player.get_node("AnimatedSprite2D") as AnimatedSprite2D
 	collision_shape = player.get_node("CollisionShape2D") as CollisionShape2D
+
+func get_parameter(key: String) -> Variant:
+	return damage_parameters[condition][key]
 
 func handle_damage(damage: int, animation_type: String, direction: Vector2, force: float) -> void:
 	is_damaged = true
@@ -56,20 +73,23 @@ func handle_damage(damage: int, animation_type: String, direction: Vector2, forc
 
 	# ノックバック中は無敵状態を維持
 	is_invincible = true
-	invincibility_timer = invincibility_duration
+	invincibility_timer = get_parameter("invincibility_duration")
 
 	# コリジョンは地形との当たり判定のため有効のまま維持
-	damage_timer = damage_duration
-	knockback_timer = knockback_duration
+	damage_timer = get_parameter("damage_duration")
+	knockback_timer = get_parameter("knockback_duration")
 	knockback_direction = direction
 	knockback_force_value = force
 
-	player.velocity.x = direction.x * force
-	player.velocity.y = -knockback_vertical_force
+	var knockback_multiplier: float = get_parameter("knockback_multiplier")
+	player.velocity.x = direction.x * force * knockback_multiplier
+	player.velocity.y = -get_parameter("knockback_vertical_force")
 
-	print("ダメージアニメーション開始: ", animation_type)
-	var condition_prefix: String = "expansion" if player.condition == Player.PLAYER_CONDITION.EXPANSION else "normal"
+	var log_prefix: String = get_parameter("log_prefix")
+	var prefix_text: String = (log_prefix + "ダメージアニメーション開始: ") if log_prefix != "" else "ダメージアニメーション開始: "
+	print(prefix_text, animation_type)
 
+	var condition_prefix: String = "expansion" if condition == Player.PLAYER_CONDITION.EXPANSION else "normal"
 	# 常にdamagedアニメーションを再生
 	animated_sprite.play(condition_prefix + "_damaged")
 
@@ -84,34 +104,40 @@ func update_damaged_timer(delta: float) -> void:
 	if knockback_timer > 0.0:
 		apply_continuous_knockback()
 
-
 	# down状態の処理
 	if is_in_down_state:
 		down_timer -= delta
 
 func apply_continuous_knockback() -> void:
+	var knockback_multiplier: float = get_parameter("knockback_multiplier")
+
 	# 地上でのノックバックは摩擦を適用して減衰させる
 	if player.is_on_floor():
 		# 地上では摩擦による減衰を適用
 		var friction_factor: float = 0.85
-		player.velocity.x = knockback_direction.x * knockback_force_value * friction_factor
+		player.velocity.x = knockback_direction.x * knockback_force_value * knockback_multiplier * friction_factor
 	else:
 		# 空中では元の力を維持
-		player.velocity.x = knockback_direction.x * knockback_force_value
+		player.velocity.x = knockback_direction.x * knockback_force_value * knockback_multiplier
 
 func start_down_state() -> void:
 	if is_in_down_state:
 		return
 
 	is_in_down_state = true
-	down_timer = down_duration
+	down_timer = get_parameter("down_duration")
 
 	# down状態では無敵を解除（特殊なイベント実行のため）
 	is_invincible = false
 	invincibility_timer = 0.0
 
-	print("ダウン状態開始 - 無敵解除")
-	var condition_prefix: String = "expansion" if player.condition == Player.PLAYER_CONDITION.EXPANSION else "normal"
+	var log_prefix: String = get_parameter("log_prefix")
+	var prefix_text: String = (log_prefix + "ダウン状態開始") if log_prefix != "" else "ダウン状態開始"
+	if log_prefix == "":
+		prefix_text += " - 無敵解除"
+	print(prefix_text)
+
+	var condition_prefix: String = "expansion" if condition == Player.PLAYER_CONDITION.EXPANSION else "normal"
 	animated_sprite.play(condition_prefix + "_down_01")
 
 func finish_damaged() -> void:
@@ -123,9 +149,11 @@ func finish_damaged() -> void:
 
 	# down状態からの移行時に無敵時間を付与
 	is_recovery_invincible = true
-	recovery_invincibility_timer = recovery_invincibility_duration
+	recovery_invincibility_timer = get_parameter("recovery_invincibility_duration")
 
-	print("ダメージ状態終了 - 無敵時間付与")
+	var log_prefix: String = get_parameter("log_prefix")
+	var prefix_text: String = (log_prefix + "ダメージ状態終了 - 無敵時間付与") if log_prefix != "" else "ダメージ状態終了 - 無敵時間付与"
+	print(prefix_text)
 	damaged_finished.emit()
 
 func cancel_damaged() -> void:
@@ -159,7 +187,9 @@ func handle_recovery_jump() -> void:
 		finish_damaged()
 	elif is_damaged and not is_in_down_state:
 		# ノックバック状態からのジャンプ: モーションキャンセルと無敵時間付与
-		print("ノックバック状態からのジャンプ復帰")
+		var log_prefix: String = get_parameter("log_prefix")
+		var prefix_text: String = (log_prefix + "ノックバック状態からのジャンプ復帰") if log_prefix != "" else "ノックバック状態からのジャンプ復帰"
+		print(prefix_text)
 		# ノックバック効果をキャンセル
 		knockback_timer = 0.0
 		knockback_direction = Vector2.ZERO
@@ -172,4 +202,6 @@ func update_recovery_invincibility_timer(delta: float) -> void:
 		recovery_invincibility_timer -= delta
 		if recovery_invincibility_timer <= 0.0:
 			is_recovery_invincible = false
-			print("recovery無敵時間終了")
+			var log_prefix: String = get_parameter("log_prefix")
+			var prefix_text: String = (log_prefix + " recovery無敵時間終了") if log_prefix != "" else "recovery無敵時間終了"
+			print(prefix_text)

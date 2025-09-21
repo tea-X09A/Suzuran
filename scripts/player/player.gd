@@ -14,13 +14,12 @@ var normal_movement: NormalMovement
 var normal_fighting: NormalFighting
 var normal_shooting: NormalShooting
 var normal_jump: NormalJump
-var normal_damaged: NormalDamaged
+var player_damaged: PlayerDamaged
 
 var expansion_movement: ExpansionMovement
 var expansion_fighting: ExpansionFighting
 var expansion_shooting: ExpansionShooting
 var expansion_jump: ExpansionJump
-var expansion_damaged: ExpansionDamaged
 
 var direction_x: float = 0.0
 var is_running: bool = false
@@ -53,28 +52,26 @@ func _ready() -> void:
 	normal_fighting = NormalFighting.new(self)
 	normal_shooting = NormalShooting.new(self)
 	normal_jump = NormalJump.new(self, normal_movement)
-	normal_damaged = NormalDamaged.new(self)
 
 	expansion_movement = ExpansionMovement.new(self)
 	expansion_fighting = ExpansionFighting.new(self)
 	expansion_shooting = ExpansionShooting.new(self)
 	expansion_jump = ExpansionJump.new(self, expansion_movement)
-	expansion_damaged = ExpansionDamaged.new(self)
+
+	condition = initial_condition
+	player_damaged = PlayerDamaged.new(self, condition)
 
 	normal_fighting.fighting_finished.connect(_on_fighting_finished)
 	normal_shooting.shooting_finished.connect(_on_shooting_finished)
-	normal_damaged.damaged_finished.connect(_on_damaged_finished)
 	expansion_fighting.fighting_finished.connect(_on_fighting_finished)
 	expansion_shooting.shooting_finished.connect(_on_shooting_finished)
-	expansion_damaged.damaged_finished.connect(_on_damaged_finished)
-
-	condition = initial_condition
+	player_damaged.damaged_finished.connect(_on_damaged_finished)
 
 func _process(delta: float) -> void:
 	blink_timer += delta
 
 	# 無敵状態時に点滅効果を適用
-	if get_current_damaged().is_in_invincible_state():
+	if player_damaged.is_in_invincible_state():
 		# sinカーブを使用して点滅効果を作成（周期：0.2秒）
 		var blink_alpha: float = (sin(blink_timer * PI * 10.0) + 1.0) / 2.0
 		# 透明度を0.3～1.0の範囲で変化させる
@@ -98,7 +95,7 @@ func _physics_process(delta: float) -> void:
 		get_current_movement().apply_gravity(delta)
 		# ダメージ中は特殊な入力処理を行う
 		handle_damaged_input()
-		if get_current_damaged().is_in_knockback_landing_state():
+		if player_damaged.is_in_knockback_landing_state():
 			handle_movement()
 
 	update_fighting_shooting_damaged(delta)
@@ -118,8 +115,8 @@ func get_current_shooting() -> NormalShooting:
 func get_current_jump() -> NormalJump:
 	return expansion_jump if condition == PLAYER_CONDITION.EXPANSION else normal_jump
 
-func get_current_damaged() -> NormalDamaged:
-	return expansion_damaged if condition == PLAYER_CONDITION.EXPANSION else normal_damaged
+func get_current_damaged() -> PlayerDamaged:
+	return player_damaged
 
 func update_timers(delta: float) -> void:
 	# 着地時の処理 - 空中アクション中のキャンセル
@@ -130,8 +127,8 @@ func update_timers(delta: float) -> void:
 		ignore_jump_horizontal_velocity = false
 
 		# ノックバック状態で着地した場合、即座にdown状態に遷移
-		if is_damaged and get_current_damaged().is_in_knockback_state():
-			get_current_damaged().start_down_state()
+		if is_damaged and player_damaged.is_in_knockback_state():
+			player_damaged.start_down_state()
 
 		# 空中攻撃中に着地した場合、攻撃モーションをキャンセル
 		if is_fighting and get_current_fighting().is_airborne_attack():
@@ -201,12 +198,12 @@ func handle_damaged_input() -> void:
 	is_running = false
 
 	# ノックバック中（空中状態）またはノックバック後の着地状態でジャンプ入力を受け付ける
-	var can_jump: bool = get_current_damaged().is_in_knockback_state() or get_current_damaged().is_in_knockback_landing_state()
+	var can_jump: bool = player_damaged.is_in_knockback_state() or player_damaged.is_in_knockback_landing_state()
 	if can_jump:
 		var jump_pressed: bool = Input.is_action_just_pressed("jump")
 		if jump_pressed:
 			# ジャンプで無敵解除と復帰処理
-			get_current_damaged().handle_recovery_jump()
+			player_damaged.handle_recovery_jump()
 			handle_jump()
 
 func handle_movement() -> void:
@@ -269,10 +266,10 @@ func update_fighting_shooting_damaged(delta: float) -> void:
 		get_current_shooting().update_shooting_timer(delta)
 
 	if is_damaged:
-		get_current_damaged().update_damaged_timer(delta)
-	elif get_current_damaged().is_in_invincible_state():
+		player_damaged.update_damaged_timer(delta)
+	elif player_damaged.is_in_invincible_state():
 		# ダメージアニメーション終了後も無敵状態が継続する場合はタイマーを更新
-		get_current_damaged().update_invincibility_timer(delta)
+		player_damaged.update_invincibility_timer(delta)
 
 	get_current_shooting().update_shooting_cooldown(delta)
 
@@ -377,4 +374,4 @@ func take_damage(damage: int, animation_type: String, knockback_direction: Vecto
 	# ダメージ後のノックバック効果を保持するため、ジャンプ水平速度の適用を無効化
 	ignore_jump_horizontal_velocity = true
 	# animation_type は常に "damaged" として統一
-	get_current_damaged().handle_damage(damage, "damaged", knockback_direction, knockback_force)
+	player_damaged.handle_damage(damage, "damaged", knockback_direction, knockback_force)
