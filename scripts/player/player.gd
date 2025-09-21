@@ -41,6 +41,7 @@ var jump_buffer_timer: float = 0.0
 var coyote_timer: float = 0.0
 var is_jumping_by_input: bool = false
 var blink_timer: float = 0.0  # 点滅効果用の時間管理
+var ignore_jump_horizontal_velocity: bool = false  # ダメージ後のノックバック保持用フラグ
 
 @export var jump_buffer_time: float = 0.1  # ジャンプ先行入力時間（秒）
 @export var jump_coyote_time: float = 0.1  # コヨーテタイム（地面を離れてもジャンプ可能な時間）
@@ -121,6 +122,8 @@ func update_timers(delta: float) -> void:
 	if not was_grounded and is_grounded:
 		# ジャンプフラグをリセット
 		is_jumping_by_input = false
+		# ダメージ後のノックバック保持フラグをリセット
+		ignore_jump_horizontal_velocity = false
 
 		# 空中攻撃中に着地した場合、攻撃モーションをキャンセル
 		if is_fighting and get_current_fighting().is_airborne_attack():
@@ -352,4 +355,6 @@ func take_damage(damage: int, animation_type: String, knockback_direction: Vecto
 
 	is_damaged = true
 	state = PLAYER_STATE.DAMAGED
+	# ダメージ後のノックバック効果を保持するため、ジャンプ水平速度の適用を無効化
+	ignore_jump_horizontal_velocity = true
 	get_current_damaged().handle_damage(damage, animation_type, knockback_direction, knockback_force)

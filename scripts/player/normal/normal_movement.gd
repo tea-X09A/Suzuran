@@ -37,12 +37,16 @@ func handle_movement(direction_x: float, is_running: bool, is_squatting: bool) -
 		if player.is_on_floor():
 			player.velocity.x = direction_x * target_speed
 		else:
-			player.velocity.x = jump_horizontal_velocity
+			# ダメージ後のノックバック保持中は、ジャンプ水平速度を適用しない
+			if not player.ignore_jump_horizontal_velocity:
+				player.velocity.x = jump_horizontal_velocity
 	else:
 		if player.is_on_floor():
 			player.velocity.x = 0.0
 		else:
-			player.velocity.x = jump_horizontal_velocity
+			# ダメージ後のノックバック保持中は、ジャンプ水平速度を適用しない
+			if not player.ignore_jump_horizontal_velocity:
+				player.velocity.x = jump_horizontal_velocity
 
 	update_collision_shape(is_squatting)
 
