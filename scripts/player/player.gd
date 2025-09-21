@@ -11,13 +11,10 @@ enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT, FIGHTING, SHOOTING, DAMA
 
 var condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
 var player_movement: PlayerMovement
-var normal_fighting: NormalFighting
-var normal_shooting: NormalShooting
+var player_fighting: PlayerFighting
+var player_shooting: PlayerShooting
 var player_jump: PlayerJump
 var player_damaged: PlayerDamaged
-
-var expansion_fighting: ExpansionFighting
-var expansion_shooting: ExpansionShooting
 
 var direction_x: float = 0.0
 var is_running: bool = false
@@ -46,11 +43,8 @@ var ignore_jump_horizontal_velocity: bool = false  # ダメージ後のノック
 func _ready() -> void:
 	animated_sprite_2d.flip_h = true
 
-	normal_fighting = NormalFighting.new(self)
-	normal_shooting = NormalShooting.new(self)
-
-	expansion_fighting = ExpansionFighting.new(self)
-	expansion_shooting = ExpansionShooting.new(self)
+	player_fighting = PlayerFighting.new(self, condition)
+	player_shooting = PlayerShooting.new(self, condition)
 
 	condition = initial_condition
 	# 統合されたPlayerMovementクラスを使用
@@ -58,10 +52,8 @@ func _ready() -> void:
 	player_jump = PlayerJump.new(self, player_movement, condition)
 	player_damaged = PlayerDamaged.new(self, condition)
 
-	normal_fighting.fighting_finished.connect(_on_fighting_finished)
-	normal_shooting.shooting_finished.connect(_on_shooting_finished)
-	expansion_fighting.fighting_finished.connect(_on_fighting_finished)
-	expansion_shooting.shooting_finished.connect(_on_shooting_finished)
+	player_fighting.fighting_finished.connect(_on_fighting_finished)
+	player_shooting.shooting_finished.connect(_on_shooting_finished)
 	player_damaged.damaged_finished.connect(_on_damaged_finished)
 
 func _process(delta: float) -> void:
@@ -103,11 +95,11 @@ func _physics_process(delta: float) -> void:
 func get_current_movement() -> PlayerMovement:
 	return player_movement
 
-func get_current_fighting() -> NormalFighting:
-	return expansion_fighting if condition == PLAYER_CONDITION.EXPANSION else normal_fighting
+func get_current_fighting() -> PlayerFighting:
+	return player_fighting
 
-func get_current_shooting() -> NormalShooting:
-	return expansion_shooting if condition == PLAYER_CONDITION.EXPANSION else normal_shooting
+func get_current_shooting() -> PlayerShooting:
+	return player_shooting
 
 func get_current_jump() -> PlayerJump:
 	return player_jump
@@ -350,6 +342,11 @@ func get_condition() -> PLAYER_CONDITION:
 
 func set_condition(new_condition: PLAYER_CONDITION) -> void:
 	condition = new_condition
+	# player_fightingとplayer_shootingのconditionも更新
+	if player_fighting:
+		player_fighting.update_condition(new_condition)
+	if player_shooting:
+		player_shooting.update_condition(new_condition)
 
 func take_damage(damage: int, animation_type: String, knockback_direction: Vector2, knockback_force: float) -> void:
 	if is_damaged:
