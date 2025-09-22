@@ -33,7 +33,7 @@ func _ready() -> void:
 		visibility_enabler.screen_entered.connect(_on_screen_entered)
 		visibility_enabler.screen_exited.connect(_on_screen_exited)
 
-func _physics_process(delta: float) -> void:
+func _physics_process(_delta: float) -> void:
 	if not processing_enabled:
 		return
 

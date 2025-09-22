@@ -1,8 +1,7 @@
-[gd_scene load_steps=6 format=3 uid="uid://ygpxc8s354rc"]
+[gd_scene load_steps=5 format=3 uid="uid://ygpxc8s354rc"]
 
 [ext_resource type="Script" uid="uid://b1k8omu2fpyc5" path="res://scripts/traps/trap_01.gd" id="1_5w2d0"]
 [ext_resource type="Texture2D" uid="uid://c0cwcm2r0s6g2" path="res://icon.svg" id="1_tdem6"]
-[ext_resource type="Script" uid="uid://dio5vsxw8idq8" path="res://scripts/traps/trap_hitbox.gd" id="2_hitbox"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_tdem6"]
 size = Vector2(126, 126)
@@ -20,7 +19,6 @@ shape = SubResource("RectangleShape2D_tdem6")
 texture = ExtResource("1_tdem6")
 
 [node name="Hitbox" type="Area2D" parent="."]
-script = ExtResource("2_hitbox")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Hitbox"]
 shape = SubResource("RectangleShape2D_area")
