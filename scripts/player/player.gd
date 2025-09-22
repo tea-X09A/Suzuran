@@ -40,6 +40,7 @@ var is_shooting: bool = false
 var is_damaged: bool = false
 var is_jumping_by_input: bool = false
 var ignore_jump_horizontal_velocity: bool = false
+var is_grounded: bool = false
 
 func _ready() -> void:
 	# プレイヤーをplayerグループに追加

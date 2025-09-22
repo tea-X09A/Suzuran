@@ -85,7 +85,7 @@ func apply_gravity(delta: float) -> void:
 
 func apply_variable_jump(delta: float) -> void:
 	var just_landed: bool = false
-	if not player.was_grounded and player.is_on_floor():
+	if player.player_timer.just_landed():
 		jump_horizontal_velocity = 0.0
 		is_jumping = false
 		jump_hold_timer = 0.0
