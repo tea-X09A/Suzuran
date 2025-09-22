@@ -23,6 +23,6 @@ texture = ExtResource("1_tdem6")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
 shape = SubResource("RectangleShape2D_area")
 
-[node name="VisibleOnScreenEnabler2D" type="VisibleOnScreenEnabler2D" parent="."]
+[node name="VisibleOnScreenEnabler2D" type="VisibleOnScreenEnabler2D" parent="." groups=["traps"]]
 rect = Rect2(-70, -70, 140, 140)
 enable_mode = 1
