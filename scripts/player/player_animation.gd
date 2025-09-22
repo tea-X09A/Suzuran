@@ -82,6 +82,10 @@ func force_animation(animation_name: String) -> void:
 	current_animation = animation_name
 	animated_sprite.play(animation_name)
 
+func reset_current_animation() -> void:
+	# 現在のアニメーション状態をリセット（外部モジュールがアニメーションを制御した後の同期用）
+	current_animation = ""
+
 func stop_animation() -> void:
 	animated_sprite.stop()
 	current_animation = ""

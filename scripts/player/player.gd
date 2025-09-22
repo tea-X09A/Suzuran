@@ -171,12 +171,15 @@ func _update_damaged_state(delta: float) -> void:
 # シグナルハンドラー
 func _on_fighting_finished() -> void:
 	is_fighting = false
+	player_animation.reset_current_animation()
 
 func _on_shooting_finished() -> void:
 	is_shooting = false
+	player_animation.reset_current_animation()
 
 func _on_damaged_finished() -> void:
 	is_damaged = false
+	player_animation.reset_current_animation()
 
 func update_animation() -> void:
 	player_animation.update_animation()
