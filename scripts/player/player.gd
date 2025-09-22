@@ -53,6 +53,9 @@ var previous_is_running: bool = false
 var previous_is_squatting: bool = false
 
 func _ready() -> void:
+	# プレイヤーをplayerグループに追加
+	add_to_group("player")
+
 	# 初期設定
 	condition = initial_condition
 	animated_sprite_2d.flip_h = true
@@ -535,6 +538,10 @@ func _update_modules_condition(new_condition: PLAYER_CONDITION) -> void:
 
 func take_damage(damage: int, animation_type: String, knockback_direction: Vector2, knockback_force: float) -> void:
 	if is_damaged:
+		return
+
+	# 無敵状態のチェック
+	if player_damaged and player_damaged.is_in_invincible_state():
 		return
 
 	_log_damage_received(damage, animation_type, knockback_direction)
