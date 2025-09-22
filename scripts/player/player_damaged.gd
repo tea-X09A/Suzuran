@@ -67,7 +67,7 @@ func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CON
 func get_parameter(key: String) -> Variant:
 	return damage_parameters[condition][key]
 
-func handle_damage(damage: int, animation_type: String, direction: Vector2, force: float) -> void:
+func handle_damage(_damage: int, animation_type: String, direction: Vector2, force: float) -> void:
 	is_damaged = true
 	current_animation_type = animation_type
 

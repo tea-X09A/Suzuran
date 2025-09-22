@@ -14,7 +14,7 @@ extends StaticBody2D
 func _ready() -> void:
 	pass
 
-func _physics_process(delta: float) -> void:
+func _physics_process(_delta: float) -> void:
 	check_overlapping_bodies()
 
 func apply_damage_to_player(player: Player) -> void:
