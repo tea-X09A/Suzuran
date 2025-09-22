@@ -1,7 +1,8 @@
-[gd_scene load_steps=15 format=3 uid="uid://daofj62a4corn"]
+[gd_scene load_steps=17 format=3 uid="uid://daofj62a4corn"]
 
 [ext_resource type="Texture2D" uid="uid://cp0ria1m7rv2l" path="res://assets/images/player/normal_fall/frame_fall_001.png" id="1_gmlin"]
 [ext_resource type="Script" uid="uid://cyb2ijm5xuo6s" path="res://scripts/player/player.gd" id="1_lvxji"]
+[ext_resource type="Script" uid="uid://coshjkkcpx6m8" path="res://scripts/player/player_hitbox.gd" id="1_xqw8k"]
 [ext_resource type="Texture2D" uid="uid://dc6u6wrdvkosi" path="res://assets/images/player/normal_idle/frame_idle_001.png" id="2_lvxji"]
 [ext_resource type="Texture2D" uid="uid://dubgvda2jklcn" path="res://assets/images/player/normal_run/frame_run_001.png" id="2_p47bc"]
 [ext_resource type="Texture2D" uid="uid://2y7250olx2dl" path="res://assets/images/player/normal_damaged/frame_damaged_001.png" id="3_fm80t"]
@@ -105,15 +106,25 @@ animations = [{
 }]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ry65h"]
-size = Vector2(78.5, 169)
+size = Vector2(68, 167)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
+size = Vector2(80, 173.75)
 
 [node name="Player" type="CharacterBody2D"]
 script = ExtResource("1_lvxji")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_cperm")
-animation = &"normal_down_01"
+animation = &"normal_idle"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(0, 11.5)
+position = Vector2(-1, 12.5)
 shape = SubResource("RectangleShape2D_ry65h")
+
+[node name="Hitbox" type="Area2D" parent="."]
+script = ExtResource("1_xqw8k")
+
+[node name="HitboxCollisionShape2D" type="CollisionShape2D" parent="Hitbox"]
+position = Vector2(-1, 10)
+shape = SubResource("RectangleShape2D_hitbox")
