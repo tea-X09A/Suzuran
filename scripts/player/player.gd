@@ -26,7 +26,6 @@ var player_damaged: PlayerDamaged
 # 新コンポーネント参照
 var player_input: PlayerInput
 var player_state: PlayerState
-var player_animation: PlayerAnimation
 var player_timer: PlayerTimer
 var player_visual_effects: PlayerVisualEffects
 var player_logger: PlayerLogger
@@ -67,7 +66,6 @@ func _initialize_modules() -> void:
 	# 新コンポーネント
 	player_input = PlayerInput.new(self, condition)
 	player_state = PlayerState.new(self, condition)
-	player_animation = PlayerAnimation.new(self, condition)
 	player_timer = PlayerTimer.new(self, condition)
 	player_visual_effects = PlayerVisualEffects.new(self, condition)
 	player_logger = PlayerLogger.new(self, condition)
@@ -171,18 +169,16 @@ func _update_damaged_state(delta: float) -> void:
 # シグナルハンドラー
 func _on_fighting_finished() -> void:
 	is_fighting = false
-	player_animation.reset_current_animation()
+	player_state.reset_animation_state()
 
 func _on_shooting_finished() -> void:
 	is_shooting = false
-	player_animation.reset_current_animation()
+	player_state.reset_animation_state()
 
 func _on_damaged_finished() -> void:
 	is_damaged = false
-	player_animation.reset_current_animation()
+	player_state.reset_animation_state()
 
-func update_animation() -> void:
-	player_animation.update_animation()
 
 func get_condition() -> PLAYER_CONDITION:
 	return condition
@@ -192,7 +188,6 @@ func set_condition(new_condition: PLAYER_CONDITION) -> void:
 	player_state.set_condition(new_condition)
 	_update_modules_condition(new_condition)
 	player_input.update_condition(new_condition)
-	player_animation.update_condition(new_condition)
 	player_timer.update_condition(new_condition)
 	player_visual_effects.update_condition(new_condition)
 	player_logger.update_condition(new_condition)

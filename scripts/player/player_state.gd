@@ -6,6 +6,15 @@ var player: CharacterBody2D
 # プレイヤーの状態
 var condition: Player.PLAYER_CONDITION
 
+# アニメーション名プレフィックス（conditionに依存）
+var animation_prefix_map: Dictionary = {
+	Player.PLAYER_CONDITION.NORMAL: "normal",
+	Player.PLAYER_CONDITION.EXPANSION: "expansion"
+}
+
+# 現在のアニメーション名（重複再生を避けるため）
+var current_animation: String = ""
+
 # 状態名の辞書（ログ用）
 var state_names: Dictionary = {
 	Player.PLAYER_STATE.IDLE: "待機",
@@ -72,13 +81,13 @@ func set_state(new_state: Player.PLAYER_STATE) -> void:
 
 	_log_state_change(new_state)
 	player.state = new_state
-	player.update_animation()
+	_update_animation()
 
 func force_state(new_state: Player.PLAYER_STATE) -> void:
 	# 強制的に状態を変更（アクション状態でも変更可能）
 	_log_state_change(new_state)
 	player.state = new_state
-	player.update_animation()
+	_update_animation()
 
 # =====================================================
 # 条件管理
@@ -119,6 +128,53 @@ func can_transition_to(target_state: Player.PLAYER_STATE) -> bool:
 		return target_state in [Player.PLAYER_STATE.FIGHTING, Player.PLAYER_STATE.SHOOTING, Player.PLAYER_STATE.DAMAGED]
 
 	return true
+
+# =====================================================
+# アニメーション制御
+# =====================================================
+
+func _update_animation() -> void:
+	# アクション状態ではアニメーション制御を行わない（各モジュールが担当）
+	if is_action_state():
+		return
+
+	var animation_name: String = _get_animation_name()
+	if animation_name != "" and animation_name != current_animation:
+		_play_animation(animation_name)
+
+func _play_animation(animation_name: String) -> void:
+	current_animation = animation_name
+	player.animated_sprite_2d.play(animation_name)
+
+func _get_animation_name() -> String:
+	var condition_prefix: String = _get_condition_prefix()
+
+	match player.state:
+		Player.PLAYER_STATE.IDLE:
+			return condition_prefix + "_idle"
+		Player.PLAYER_STATE.WALK:
+			return condition_prefix + "_walk"
+		Player.PLAYER_STATE.RUN:
+			return condition_prefix + "_run"
+		Player.PLAYER_STATE.JUMP:
+			return condition_prefix + "_jump"
+		Player.PLAYER_STATE.FALL:
+			return condition_prefix + "_fall"
+		Player.PLAYER_STATE.SQUAT:
+			return condition_prefix + "_squat"
+		_:
+			return ""
+
+func _get_condition_prefix() -> String:
+	return animation_prefix_map[condition]
+
+func get_condition_prefix() -> String:
+	# 各アクションモジュールからアクセス可能な公開関数
+	return _get_condition_prefix()
+
+func reset_animation_state() -> void:
+	# アクション終了時にアニメーション状態をリセット（重複再生回避を解除）
+	current_animation = ""
 
 # =====================================================
 # ログ処理
