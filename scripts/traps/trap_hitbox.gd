@@ -1,43 +1,14 @@
 class_name TrapHitbox
 extends Area2D
 
-# 親トラップの参照
-var trap: Trap01
-
-# ダメージ関連の情報
-var damage: int = 1
-var knockback_force: float = 150.0
-var effect_type: String = "damage"
-
 # デバッグ用
 var debug_enabled: bool = false
 
 func _ready() -> void:
-	# 親トラップの参照を取得
-	trap = get_parent() as Trap01
-
-	# トラップからダメージ情報を取得
-	if trap:
-		damage = trap.damage
-		knockback_force = trap.knockback_force
-
 	# グループに追加
-	add_to_group("enemy_attacks")
+	add_to_group("traps")
 
-	_log_debug("TrapHitboxが初期化されました - ダメージ: " + str(damage))
-
-# =====================================================
-# ダメージ情報提供メソッド
-# =====================================================
-
-func get_damage() -> int:
-	return damage
-
-func get_knockback_force() -> float:
-	return knockback_force
-
-func get_effect_type() -> String:
-	return effect_type
+	_log_debug("TrapHitboxが初期化されました")
 
 # =====================================================
 # デバッグ機能
