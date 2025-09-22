@@ -1,7 +1,7 @@
-class_name PlayerHitbox
+class_name PlayerHurtbox
 extends Area2D
 
-# ヒットボックスで検知する対象の種類定義
+# ハートボックスで検知する対象の種類定義
 enum HIT_TYPE { ENEMY_ATTACK, TRAP, ITEM, PROJECTILE, DAMAGE_AREA }
 
 # シグナル定義
@@ -107,7 +107,7 @@ func _determine_hit_type(area: Area2D) -> HIT_TYPE:
 
 	# ノード名による判定（フォールバック）
 	var area_name: String = area.name.to_lower()
-	if "attack" in area_name or "enemy" in area_name:
+	if "attack" in area_name or "enemy" in area_name or "hitbox" in area_name:
 		return HIT_TYPE.ENEMY_ATTACK
 	elif "trap" in area_name:
 		return HIT_TYPE.TRAP
@@ -275,4 +275,4 @@ func set_debug_enabled(enabled: bool) -> void:
 
 func _log_debug(message: String) -> void:
 	if debug_enabled:
-		print("[PlayerHitbox] " + message)
+		print("[PlayerHurtbox] " + message)

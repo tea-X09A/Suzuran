@@ -8,7 +8,7 @@ enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT, FIGHTING, SHOOTING, DAMA
 # ノード参照（_ready()でキャッシュ）
 @onready var animated_sprite_2d: AnimatedSprite2D = $AnimatedSprite2D
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
-@onready var hitbox: PlayerHitbox = $Hitbox
+@onready var hurtbox: PlayerHurtbox = $Hurtbox
 
 # エクスポート変数
 @export var initial_condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
@@ -75,13 +75,11 @@ func _connect_signals() -> void:
 	player_shooting.shooting_finished.connect(_on_shooting_finished)
 	player_damaged.damaged_finished.connect(_on_damaged_finished)
 
-	# Hitboxのシグナル接続
-	hitbox.enemy_attack_detected.connect(_on_enemy_attack_detected)
-	hitbox.trap_detected.connect(_on_trap_detected)
-	hitbox.item_detected.connect(_on_item_detected)
-	hitbox.projectile_detected.connect(_on_projectile_detected)
-	hitbox.damage_area_entered.connect(_on_damage_area_entered)
-	hitbox.damage_area_exited.connect(_on_damage_area_exited)
+	# Hurtboxのシグナル接続
+	hurtbox.enemy_attack_detected.connect(_on_enemy_attack_detected)
+	hurtbox.trap_detected.connect(_on_trap_detected)
+	hurtbox.item_detected.connect(_on_item_detected)
+	hurtbox.projectile_detected.connect(_on_projectile_detected)
 
 func _process(delta: float) -> void:
 	_update_visual_effects(delta)
@@ -150,8 +148,8 @@ func get_current_jump() -> PlayerJump:
 func get_current_damaged() -> PlayerDamaged:
 	return player_damaged
 
-func get_hitbox() -> PlayerHitbox:
-	return hitbox
+func get_hurtbox() -> PlayerHurtbox:
+	return hurtbox
 
 # =====================================================
 # タイマー管理
@@ -383,45 +381,36 @@ func _on_damaged_finished() -> void:
 	is_damaged = false
 
 # =====================================================
-# Hitboxシグナルハンドラー
+# Hurtboxシグナルハンドラー
 # =====================================================
 
 func _on_enemy_attack_detected(attacker: Node2D, damage: int, knockback_direction: Vector2, knockback_force: float) -> void:
-	print("敵攻撃検知: ダメージ", damage, ", ノックバック方向:", knockback_direction, ", 力:", knockback_force)
+	# 敵の攻撃がプレイヤーに当たった時の処理
+	# 指定されたダメージとノックバック効果でダメージ処理を実行
 	take_damage(damage, "damaged", knockback_direction, knockback_force)
 
 func _on_trap_detected(trap: Node2D, damage: int, effect_type: String) -> void:
-	print("トラップ検知: ダメージ", damage, ", 効果タイプ:", effect_type)
+	# トラップがプレイヤーに作動した時の処理
+	# プレイヤーからトラップの方向とは逆方向にノックバック
 	var knockback_direction: Vector2 = (global_position - trap.global_position).normalized()
 	take_damage(damage, "damaged", knockback_direction, 100.0)
 
 func _on_item_detected(item: Node2D, item_type: String, value: int) -> void:
-	print("アイテム検知: タイプ", item_type, ", 値:", value)
+	# アイテムがプレイヤーに触れた時の処理
+	# アイテムタイプに応じたピックアップ処理を実行
 	_handle_item_pickup(item, item_type, value)
 
 func _on_projectile_detected(projectile: Node2D, damage: int, knockback_direction: Vector2) -> void:
-	print("飛び道具検知: ダメージ", damage, ", ノックバック方向:", knockback_direction)
+	# 発射物（弾丸など）がプレイヤーに当たった時の処理
+	# 80.0の固定ノックバック力でダメージ処理を実行
 	take_damage(damage, "damaged", knockback_direction, 80.0)
 
-func _on_damage_area_entered(area: Area2D, damage: int, damage_type: String) -> void:
-	print("ダメージエリア進入: ダメージ", damage, ", タイプ:", damage_type)
-	# 継続ダメージエリアなど、特殊な処理が必要な場合はここで実装
-
-func _on_damage_area_exited(area: Area2D) -> void:
-	print("ダメージエリア退出:", area.name)
-	# 継続ダメージエリアから脱出した際の処理
-
 func _handle_item_pickup(item: Node2D, item_type: String, value: int) -> void:
-	# アイテムタイプに応じた処理
-	match item_type:
-		"health":
-			_restore_health(value)
-		"score":
-			_add_score(value)
-		"powerup":
-			_apply_powerup(value)
-		_:
-			print("未知のアイテムタイプ:", item_type)
+	# 体力回復アイテムの処理
+	if item_type == "health":
+		_restore_health(value)
+	else:
+		print("未知のアイテムタイプ:", item_type)
 
 	# アイテムを削除
 	if item and is_instance_valid(item):
@@ -430,14 +419,6 @@ func _handle_item_pickup(item: Node2D, item_type: String, value: int) -> void:
 func _restore_health(amount: int) -> void:
 	print("体力回復:", amount)
 	# 体力システムが実装されたら、ここで体力を回復する処理を追加
-
-func _add_score(amount: int) -> void:
-	print("スコア追加:", amount)
-	# スコアシステムが実装されたら、ここでスコアを追加する処理を追加
-
-func _apply_powerup(powerup_id: int) -> void:
-	print("パワーアップ適用:", powerup_id)
-	# パワーアップシステムが実装されたら、ここでパワーアップを適用する処理を追加
 
 # =====================================================
 # 状態管理

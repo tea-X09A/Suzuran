@@ -9,11 +9,14 @@ extends StaticBody2D
 @export var knockback_force: float = 300.0
 
 # ノード参照をキャッシュ
-@onready var area_2d: Area2D = $Area2D
+@onready var hitbox: TrapHitbox = $Hitbox
 @onready var visibility_enabler: VisibleOnScreenEnabler2D = $VisibleOnScreenEnabler2D
 
 # 処理が有効かどうかのフラグ
 var processing_enabled: bool = true
+# ダメージ実行のクールダウン時間
+var damage_cooldown: float = 0.5
+var last_damage_time: float = 0.0
 
 func _ready() -> void:
 	# trapsグループに追加
@@ -24,40 +27,14 @@ func _ready() -> void:
 		visibility_enabler.screen_entered.connect(_on_screen_entered)
 		visibility_enabler.screen_exited.connect(_on_screen_exited)
 
-func _physics_process(_delta: float) -> void:
-	# カメラ範囲外では処理をスキップ
-	if not processing_enabled:
-		return
-	check_overlapping_bodies()
+func get_damage() -> int:
+	return damage
 
-func apply_damage_to_player(player: Player) -> void:
-	# ダメージ状態の無敵状態をチェック（down状態からの復帰時無敵も含む）
-	if player.get_current_damaged().is_in_invincible_state():
-		return
+func get_knockback_force() -> float:
+	return knockback_force
 
-	# ダメージ中（ノックバック中やdown状態）の場合は追加ダメージを与えない
-	if player.is_damaged:
-		return
-
-	var knockback_direction: Vector2 = Vector2.ZERO
-
-	if player.global_position.x < global_position.x:
-		knockback_direction = Vector2.LEFT
-	else:
-		knockback_direction = Vector2.RIGHT
-
-	player.take_damage(damage, animation_type, knockback_direction, knockback_force)
-
-func check_overlapping_bodies() -> void:
-	if not area_2d:
-		return
-
-	var overlapping_bodies: Array[Node2D] = area_2d.get_overlapping_bodies()
-
-	for body in overlapping_bodies:
-		if body is Player:
-			var player: Player = body as Player
-			apply_damage_to_player(player)
+func get_effect_type() -> String:
+	return "damage"
 
 # VisibleOnScreenEnabler2Dのシグナルハンドラ
 func _on_screen_entered() -> void:

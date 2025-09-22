@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://cp0ria1m7rv2l" path="res://assets/images/player/normal_fall/frame_fall_001.png" id="1_gmlin"]
 [ext_resource type="Script" uid="uid://cyb2ijm5xuo6s" path="res://scripts/player/player.gd" id="1_lvxji"]
-[ext_resource type="Script" uid="uid://coshjkkcpx6m8" path="res://scripts/player/player_hitbox.gd" id="1_xqw8k"]
+[ext_resource type="Script" uid="uid://7cgnpnv21g8o" path="res://scripts/player/player_hurtbox.gd" id="1_xqw8k"]
 [ext_resource type="Texture2D" uid="uid://dc6u6wrdvkosi" path="res://assets/images/player/normal_idle/frame_idle_001.png" id="2_lvxji"]
 [ext_resource type="Texture2D" uid="uid://dubgvda2jklcn" path="res://assets/images/player/normal_run/frame_run_001.png" id="2_p47bc"]
 [ext_resource type="Texture2D" uid="uid://2y7250olx2dl" path="res://assets/images/player/normal_damaged/frame_damaged_001.png" id="3_fm80t"]
@@ -122,9 +122,9 @@ animation = &"normal_idle"
 position = Vector2(-1, 12.5)
 shape = SubResource("RectangleShape2D_ry65h")
 
-[node name="Hitbox" type="Area2D" parent="."]
+[node name="Hurtbox" type="Area2D" parent="."]
 script = ExtResource("1_xqw8k")
 
-[node name="HitboxCollisionShape2D" type="CollisionShape2D" parent="Hitbox"]
+[node name="HurtboxCollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
 position = Vector2(-1, 10)
 shape = SubResource("RectangleShape2D_hitbox")
