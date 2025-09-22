@@ -8,7 +8,6 @@ enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT, FIGHTING, SHOOTING, DAMA
 # ノード参照（_ready()でキャッシュ）
 @onready var animated_sprite_2d: AnimatedSprite2D = $AnimatedSprite2D
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
-@onready var hurtbox: PlayerHurtbox = $Hurtbox
 
 # エクスポート変数
 @export var initial_condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
@@ -78,11 +77,6 @@ func _connect_signals() -> void:
 	player_shooting.shooting_finished.connect(_on_shooting_finished)
 	player_damaged.damaged_finished.connect(_on_damaged_finished)
 
-	# Hurtboxのシグナル接続
-	hurtbox.enemy_attack_detected.connect(_on_enemy_attack_detected)
-	hurtbox.trap_detected.connect(_on_trap_detected)
-	hurtbox.item_detected.connect(_on_item_detected)
-	hurtbox.projectile_detected.connect(_on_projectile_detected)
 
 func _process(delta: float) -> void:
 	_update_visual_effects(delta)
@@ -151,8 +145,6 @@ func get_current_jump() -> PlayerJump:
 func get_current_damaged() -> PlayerDamaged:
 	return player_damaged
 
-func get_hurtbox() -> PlayerHurtbox:
-	return hurtbox
 
 # =====================================================
 # タイマー管理
@@ -384,46 +376,6 @@ func _on_damaged_finished() -> void:
 	is_damaged = false
 
 # =====================================================
-# Hurtboxシグナルハンドラー
-# =====================================================
-
-func _on_enemy_attack_detected(attacker: Node2D, damage: int, knockback_direction: Vector2, knockback_force: float) -> void:
-	# 敵の攻撃がプレイヤーに当たった時の処理
-	# 指定されたダメージとノックバック効果でダメージ処理を実行
-	take_damage(damage, "damaged", knockback_direction, knockback_force)
-
-func _on_trap_detected(trap: Node2D, damage: int, effect_type: String) -> void:
-	# トラップがプレイヤーに作動した時の処理
-	# プレイヤーからトラップの方向とは逆方向にノックバック
-	var knockback_direction: Vector2 = (global_position - trap.global_position).normalized()
-	take_damage(damage, "damaged", knockback_direction, 100.0)
-
-func _on_item_detected(item: Node2D, item_type: String, value: int) -> void:
-	# アイテムがプレイヤーに触れた時の処理
-	# アイテムタイプに応じたピックアップ処理を実行
-	_handle_item_pickup(item, item_type, value)
-
-func _on_projectile_detected(projectile: Node2D, damage: int, knockback_direction: Vector2) -> void:
-	# 発射物（弾丸など）がプレイヤーに当たった時の処理
-	# 80.0の固定ノックバック力でダメージ処理を実行
-	take_damage(damage, "damaged", knockback_direction, 80.0)
-
-func _handle_item_pickup(item: Node2D, item_type: String, value: int) -> void:
-	# 体力回復アイテムの処理
-	if item_type == "health":
-		_restore_health(value)
-	else:
-		print("未知のアイテムタイプ:", item_type)
-
-	# アイテムを削除
-	if item and is_instance_valid(item):
-		item.queue_free()
-
-func _restore_health(amount: int) -> void:
-	print("体力回復:", amount)
-	# 体力システムが実装されたら、ここで体力を回復する処理を追加
-
-# =====================================================
 # 状態管理
 # =====================================================
 
@@ -535,33 +487,3 @@ func _update_modules_condition(new_condition: PLAYER_CONDITION) -> void:
 		player_fighting.update_condition(new_condition)
 	if player_shooting:
 		player_shooting.update_condition(new_condition)
-
-func take_damage(damage: int, animation_type: String, knockback_direction: Vector2, knockback_force: float) -> void:
-	if is_damaged:
-		return
-
-	# 無敵状態のチェック
-	if player_damaged and player_damaged.is_in_invincible_state():
-		return
-
-	_log_damage_received(damage, animation_type, knockback_direction)
-	_cancel_current_actions()
-	_apply_damage_effects(damage, knockback_direction, knockback_force)
-
-func _log_damage_received(damage: int, animation_type: String, knockback_direction: Vector2) -> void:
-	print("プレイヤーダメージ処理: ダメージ", damage, ", アニメーション:", animation_type, ", 方向:", knockback_direction)
-
-func _cancel_current_actions() -> void:
-	if is_fighting:
-		get_current_fighting().cancel_fighting()
-		is_fighting = false
-
-	if is_shooting:
-		get_current_shooting().cancel_shooting()
-		is_shooting = false
-
-func _apply_damage_effects(damage: int, knockback_direction: Vector2, knockback_force: float) -> void:
-	is_damaged = true
-	state = PLAYER_STATE.DAMAGED
-	ignore_jump_horizontal_velocity = true
-	player_damaged.handle_damage(damage, "damaged", knockback_direction, knockback_force)
