@@ -65,6 +65,9 @@ func check_player_collision() -> void:
 
 	for body in overlapping_bodies:
 		if body.is_in_group("player"):
+			# damaged状態ではトラップの検知を無効化
+			if body.is_damaged:
+				continue
 			apply_damage_to_player(body)
 			last_damage_time = current_time
 			break
