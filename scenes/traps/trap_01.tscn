@@ -9,7 +9,7 @@ size = Vector2(126, 126)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_area"]
 size = Vector2(140, 140)
 
-[node name="Trap_01" type="StaticBody2D"]
+[node name="Trap_01" type="StaticBody2D" groups=["traps"]]
 script = ExtResource("1_5w2d0")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
@@ -22,3 +22,7 @@ texture = ExtResource("1_tdem6")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
 shape = SubResource("RectangleShape2D_area")
+
+[node name="VisibleOnScreenEnabler2D" type="VisibleOnScreenEnabler2D" parent="."]
+rect = Rect2(-70, -70, 140, 140)
+enable_mode = 1
