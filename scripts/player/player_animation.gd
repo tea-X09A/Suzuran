@@ -8,19 +8,15 @@ var animated_sprite: AnimatedSprite2D
 # プレイヤーの状態
 var condition: Player.PLAYER_CONDITION
 
-# アニメーション関連パラメータの定義 - conditionに応じて選択される
-var animation_parameters: Dictionary = {
-	Player.PLAYER_CONDITION.NORMAL: {
-		"animation_prefix": "normal",         # アニメーション名のプレフィックス
-		"animation_speed_scale": 1.0,         # アニメーション速度倍率
-		"transition_speed": 1.0               # アニメーション遷移速度
-	},
-	Player.PLAYER_CONDITION.EXPANSION: {
-		"animation_prefix": "expansion",      # 拡張状態のアニメーション名プレフィックス
-		"animation_speed_scale": 1.1,         # 拡張状態でのアニメーション速度倍率
-		"transition_speed": 1.2               # 拡張状態でのアニメーション遷移速度
-	}
+# アニメーション関連パラメータの定義
+# アニメーション名プレフィックス（conditionに依存）
+var animation_prefix_map: Dictionary = {
+	Player.PLAYER_CONDITION.NORMAL: "normal",
+	Player.PLAYER_CONDITION.EXPANSION: "expansion"
 }
+
+# 基本仕様として固定のパラメータ
+var animation_speed_scale: float = 1.0     # アニメーション速度倍率
 
 # 現在のアニメーション名（重複再生を避けるため）
 var current_animation: String = ""
@@ -29,9 +25,6 @@ func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CON
 	player = player_instance
 	condition = player_condition
 	animated_sprite = player.get_node("AnimatedSprite2D") as AnimatedSprite2D
-
-func get_parameter(key: String) -> Variant:
-	return animation_parameters[condition][key]
 
 func update_condition(new_condition: Player.PLAYER_CONDITION) -> void:
 	condition = new_condition
@@ -52,8 +45,7 @@ func _play_animation(animation_name: String) -> void:
 	animated_sprite.play(animation_name)
 
 	# アニメーション速度を調整
-	var speed_scale: float = get_parameter("animation_speed_scale")
-	animated_sprite.speed_scale = speed_scale
+	animated_sprite.speed_scale = animation_speed_scale
 
 func _get_animation_name() -> String:
 	var condition_prefix: String = _get_condition_prefix()
@@ -79,7 +71,7 @@ func _get_animation_name() -> String:
 			return ""
 
 func _get_condition_prefix() -> String:
-	return get_parameter("animation_prefix")
+	return animation_prefix_map[condition]
 
 # =====================================================
 # アニメーション制御
@@ -104,8 +96,7 @@ func set_animation_speed(speed: float) -> void:
 	animated_sprite.speed_scale = speed
 
 func reset_animation_speed() -> void:
-	var default_speed: float = get_parameter("animation_speed_scale")
-	animated_sprite.speed_scale = default_speed
+	animated_sprite.speed_scale = animation_speed_scale
 
 # =====================================================
 # スプライト制御

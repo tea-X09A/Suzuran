@@ -6,21 +6,11 @@ var player: CharacterBody2D
 # プレイヤーの状態
 var condition: Player.PLAYER_CONDITION
 
-# タイマー関連パラメータの定義 - conditionに応じて選択される
-var timer_parameters: Dictionary = {
-	Player.PLAYER_CONDITION.NORMAL: {
-		"jump_buffer_time": 0.1,              # ジャンプバッファ時間（秒）
-		"jump_coyote_time": 0.1,              # コヨーテタイム（秒）
-		"action_buffer_time": 0.05,           # アクションバッファ時間（秒）
-		"state_lock_time": 0.1                # 状態ロック時間（秒）
-	},
-	Player.PLAYER_CONDITION.EXPANSION: {
-		"jump_buffer_time": 0.12,             # 拡張状態でのジャンプバッファ時間（秒）
-		"jump_coyote_time": 0.12,             # 拡張状態でのコヨーテタイム（秒）
-		"action_buffer_time": 0.06,           # 拡張状態でのアクションバッファ時間（秒）
-		"state_lock_time": 0.08               # 拡張状態での状態ロック時間（秒）
-	}
-}
+# タイマー関連パラメータの定義 (基本仕様として固定)
+var jump_buffer_time: float = 0.1              # ジャンプバッファ時間（秒）
+var jump_coyote_time: float = 0.1              # コヨーテタイム（秒）
+var action_buffer_time: float = 0.05           # アクションバッファ時間（秒）
+var state_lock_time: float = 0.1               # 状態ロック時間（秒）
 
 # タイマー変数
 var jump_buffer_timer: float = 0.0
@@ -34,9 +24,6 @@ var was_grounded: bool = false
 func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CONDITION) -> void:
 	player = player_instance
 	condition = player_condition
-
-func get_parameter(key: String) -> Variant:
-	return timer_parameters[condition][key]
 
 func update_condition(new_condition: Player.PLAYER_CONDITION) -> void:
 	condition = new_condition
@@ -74,7 +61,7 @@ func _handle_landing_events() -> void:
 func _update_jump_timers(delta: float) -> void:
 	# コヨーテタイマー（地面から離れた後の猶予時間）
 	if player.is_grounded:
-		coyote_timer = get_parameter("jump_coyote_time")
+		coyote_timer = jump_coyote_time
 	else:
 		coyote_timer = max(0.0, coyote_timer - delta)
 
@@ -82,7 +69,7 @@ func _update_jump_timers(delta: float) -> void:
 	jump_buffer_timer = max(0.0, jump_buffer_timer - delta)
 
 func set_jump_buffer() -> void:
-	jump_buffer_timer = get_parameter("jump_buffer_time")
+	jump_buffer_timer = jump_buffer_time
 
 func reset_jump_timers() -> void:
 	jump_buffer_timer = 0.0
@@ -92,10 +79,10 @@ func can_buffer_jump() -> bool:
 	return jump_buffer_timer > 0.0 and coyote_timer > 0.0
 
 func get_jump_buffer_time() -> float:
-	return get_parameter("jump_buffer_time")
+	return jump_buffer_time
 
 func get_coyote_time() -> float:
-	return get_parameter("jump_coyote_time")
+	return jump_coyote_time
 
 # =====================================================
 # アクションタイマー管理
@@ -105,13 +92,13 @@ func _update_action_timers(delta: float) -> void:
 	action_buffer_timer = max(0.0, action_buffer_timer - delta)
 
 func set_action_buffer() -> void:
-	action_buffer_timer = get_parameter("action_buffer_time")
+	action_buffer_timer = action_buffer_time
 
 func can_buffer_action() -> bool:
 	return action_buffer_timer > 0.0
 
 func get_action_buffer_time() -> float:
-	return get_parameter("action_buffer_time")
+	return action_buffer_time
 
 # =====================================================
 # 状態タイマー管理
@@ -121,13 +108,13 @@ func _update_state_timers(delta: float) -> void:
 	state_lock_timer = max(0.0, state_lock_timer - delta)
 
 func set_state_lock() -> void:
-	state_lock_timer = get_parameter("state_lock_time")
+	state_lock_timer = state_lock_time
 
 func is_state_locked() -> bool:
 	return state_lock_timer > 0.0
 
 func get_state_lock_time() -> float:
-	return get_parameter("state_lock_time")
+	return state_lock_time
 
 # =====================================================
 # 接地状態管理

@@ -6,24 +6,9 @@ var player: CharacterBody2D
 # プレイヤーの状態
 var condition: Player.PLAYER_CONDITION
 
-# 入力関連パラメータの定義 - conditionに応じて選択される
-var input_parameters: Dictionary = {
-	Player.PLAYER_CONDITION.NORMAL: {
-		"input_responsiveness": 1.0,         # 入力応答性倍率
-		"buffer_tolerance": 1.0              # バッファ許容度倍率
-	},
-	Player.PLAYER_CONDITION.EXPANSION: {
-		"input_responsiveness": 1.2,         # 拡張状態での入力応答性倍率
-		"buffer_tolerance": 1.1              # 拡張状態でのバッファ許容度倍率
-	}
-}
-
 func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CONDITION) -> void:
 	player = player_instance
 	condition = player_condition
-
-func get_parameter(key: String) -> Variant:
-	return input_parameters[condition][key]
 
 func update_condition(new_condition: Player.PLAYER_CONDITION) -> void:
 	condition = new_condition

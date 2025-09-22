@@ -6,18 +6,6 @@ var player: CharacterBody2D
 # プレイヤーの状態
 var condition: Player.PLAYER_CONDITION
 
-# 状態関連パラメータの定義 - conditionに応じて選択される
-var state_parameters: Dictionary = {
-	Player.PLAYER_CONDITION.NORMAL: {
-		"state_transition_speed": 1.0,       # 状態遷移の速度倍率
-		"state_lock_duration": 0.1           # 状態ロック持続時間
-	},
-	Player.PLAYER_CONDITION.EXPANSION: {
-		"state_transition_speed": 1.2,       # 拡張状態での状態遷移速度倍率
-		"state_lock_duration": 0.08          # 拡張状態での状態ロック持続時間
-	}
-}
-
 # 状態名の辞書（ログ用）
 var state_names: Dictionary = {
 	Player.PLAYER_STATE.IDLE: "待機",
@@ -34,9 +22,6 @@ var state_names: Dictionary = {
 func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CONDITION) -> void:
 	player = player_instance
 	condition = player_condition
-
-func get_parameter(key: String) -> Variant:
-	return state_parameters[condition][key]
 
 func update_condition(new_condition: Player.PLAYER_CONDITION) -> void:
 	condition = new_condition

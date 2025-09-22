@@ -8,25 +8,12 @@ var animated_sprite: AnimatedSprite2D
 # プレイヤーの状態
 var condition: Player.PLAYER_CONDITION
 
-# 視覚効果関連パラメータの定義 - conditionに応じて選択される
-var effect_parameters: Dictionary = {
-	Player.PLAYER_CONDITION.NORMAL: {
-		"blink_frequency": 10.0,              # 点滅の周波数（Hz）
-		"blink_min_alpha": 0.3,               # 点滅時の最小透明度
-		"blink_max_alpha": 1.0,               # 点滅時の最大透明度
-		"damage_flash_duration": 0.1,         # ダメージフラッシュ持続時間（秒）
-		"damage_flash_color": Color.RED,      # ダメージフラッシュの色
-		"effect_intensity": 1.0               # エフェクト強度倍率
-	},
-	Player.PLAYER_CONDITION.EXPANSION: {
-		"blink_frequency": 12.0,              # 拡張状態での点滅周波数（Hz）
-		"blink_min_alpha": 0.2,               # 拡張状態での最小透明度
-		"blink_max_alpha": 1.0,               # 拡張状態での最大透明度
-		"damage_flash_duration": 0.12,        # 拡張状態でのダメージフラッシュ持続時間（秒）
-		"damage_flash_color": Color.ORANGE_RED, # 拡張状態でのダメージフラッシュ色
-		"effect_intensity": 1.2               # 拡張状態でのエフェクト強度倍率
-	}
-}
+# 視覚効果関連パラメータの定義 (基本仕様として固定)
+var blink_frequency: float = 10.0              # 点滅の周波数（Hz）
+var blink_min_alpha: float = 0.3               # 点滅時の最小透明度
+var blink_max_alpha: float = 1.0               # 点滅時の最大透明度
+var damage_flash_duration: float = 0.1         # ダメージフラッシュ持続時間（秒）
+var damage_flash_color: Color = Color.RED      # ダメージフラッシュの色
 
 # エフェクトタイマー
 var blink_timer: float = 0.0
@@ -46,9 +33,6 @@ func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CON
 	condition = player_condition
 	animated_sprite = player.get_node("AnimatedSprite2D") as AnimatedSprite2D
 	original_modulate = animated_sprite.modulate
-
-func get_parameter(key: String) -> Variant:
-	return effect_parameters[condition][key]
 
 func update_condition(new_condition: Player.PLAYER_CONDITION) -> void:
 	condition = new_condition
@@ -70,9 +54,9 @@ func _update_blink_effect(delta: float) -> void:
 			_start_blink_effect()
 
 		# 無敵状態時の点滅効果（sinカーブ）
-		var frequency: float = get_parameter("blink_frequency")
-		var min_alpha: float = get_parameter("blink_min_alpha")
-		var max_alpha: float = get_parameter("blink_max_alpha")
+		var frequency: float = blink_frequency
+		var min_alpha: float = blink_min_alpha
+		var max_alpha: float = blink_max_alpha
 
 		var blink_alpha: float = (sin(blink_timer * PI * frequency) + 1.0) / 2.0
 		var final_alpha: float = min_alpha + (blink_alpha * (max_alpha - min_alpha))
@@ -101,14 +85,14 @@ func _update_damage_flash(delta: float) -> void:
 			_stop_damage_flash()
 		else:
 			# フラッシュ効果の強度を時間に応じて減衰
-			var flash_intensity: float = damage_flash_timer / get_parameter("damage_flash_duration")
-			var flash_color: Color = get_parameter("damage_flash_color")
+			var flash_intensity: float = damage_flash_timer / damage_flash_duration
+			var flash_color: Color = damage_flash_color
 			var current_color: Color = original_modulate.lerp(flash_color, flash_intensity)
 			animated_sprite.modulate = current_color
 
 func start_damage_flash() -> void:
 	is_damage_flashing = true
-	damage_flash_timer = get_parameter("damage_flash_duration")
+	damage_flash_timer = damage_flash_duration
 
 func _stop_damage_flash() -> void:
 	is_damage_flashing = false
