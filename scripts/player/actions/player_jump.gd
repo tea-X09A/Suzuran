@@ -22,6 +22,8 @@ var jump_parameters: Dictionary = {
 	}
 }
 
+# ======================== 初期化処理 ========================
+
 func _init(player_instance: CharacterBody2D, movement_ref: RefCounted, player_condition: Player.PLAYER_CONDITION) -> void:
 	player = player_instance
 	movement_action = movement_ref
@@ -29,6 +31,8 @@ func _init(player_instance: CharacterBody2D, movement_ref: RefCounted, player_co
 
 func get_parameter(key: String) -> Variant:
 	return jump_parameters[condition][key]
+
+# ======================== ジャンプ処理 ========================
 
 func handle_jump() -> void:
 	var effective_jump_force: float = get_parameter("jump_force")
@@ -41,6 +45,8 @@ func handle_jump() -> void:
 	player.velocity.y = -effective_jump_force
 	# ジャンプ状態を設定
 	movement_action.set_jumping_state(true, 0.0)
+
+# ======================== アクセサー関数 ========================
 
 func get_jump_force() -> float:
 	return get_parameter("jump_force")

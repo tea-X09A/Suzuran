@@ -49,6 +49,8 @@ var state_names: Dictionary = {
 	Player.PLAYER_STATE.DAMAGED: "ダメージ"
 }
 
+# ======================== 初期化処理 ========================
+
 func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CONDITION) -> void:
 	player = player_instance
 	condition = player_condition
@@ -59,9 +61,7 @@ func get_parameter(key: String) -> Variant:
 func update_condition(new_condition: Player.PLAYER_CONDITION) -> void:
 	condition = new_condition
 
-# =====================================================
-# 移動ログ
-# =====================================================
+# ======================== 移動ログ ========================
 
 func log_movement_changes() -> void:
 	if not get_parameter("movement_log_enabled"):
@@ -103,9 +103,7 @@ func _update_previous_movement_state() -> void:
 	previous_is_running = player.is_running
 	previous_is_squatting = player.is_squatting
 
-# =====================================================
-# アクションログ
-# =====================================================
+# ======================== アクションログ ========================
 
 func log_action(action_name: String) -> void:
 	if not get_parameter("action_log_enabled"):
@@ -128,9 +126,7 @@ func log_action_with_details(action_name: String, details: Dictionary) -> void:
 
 	_log_with_level("INFO", log_message, "ACTION")
 
-# =====================================================
-# 状態変更ログ
-# =====================================================
+# ======================== 状態変更ログ ========================
 
 func log_state_change(new_state: Player.PLAYER_STATE) -> void:
 	if not get_parameter("state_log_enabled"):
@@ -146,9 +142,7 @@ func log_state_change(new_state: Player.PLAYER_STATE) -> void:
 	_log_with_level("INFO", log_message, "STATE")
 	previous_state = new_state
 
-# =====================================================
-# 汎用ログ機能
-# =====================================================
+# ======================== 汎用ログ機能 ========================
 
 func log_debug(message: String, category: String = "DEBUG") -> void:
 	_log_with_level("DEBUG", message, category)
@@ -192,9 +186,7 @@ func _should_log_level(message_level: String, current_level: String) -> bool:
 
 	return message_priority >= current_priority
 
-# =====================================================
-# ログ履歴管理
-# =====================================================
+# ======================== ログ履歴管理 ========================
 
 func _add_to_history(level: String, category: String, message: String, timestamp: float) -> void:
 	var log_entry: Dictionary = {
@@ -231,9 +223,7 @@ func get_logs_by_level(level: String) -> Array[Dictionary]:
 			filtered_logs.append(log_entry)
 	return filtered_logs
 
-# =====================================================
-# ユーティリティ関数
-# =====================================================
+# ======================== ユーティリティ関数 ========================
 
 func _get_condition_text() -> String:
 	return "expansion" if condition == Player.PLAYER_CONDITION.EXPANSION else "normal"
@@ -261,9 +251,7 @@ func get_logging_status() -> Dictionary:
 		"history_count": log_history.size()
 	}
 
-# =====================================================
-# デバッグ機能
-# =====================================================
+# ======================== デバッグ機能 ========================
 
 func dump_all_logs() -> void:
 	print("=== Player Log History ===")

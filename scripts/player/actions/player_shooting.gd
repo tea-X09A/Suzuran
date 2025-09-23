@@ -1,9 +1,13 @@
 class_name PlayerShooting
 extends RefCounted
 
+# ======================== シグナル・定数定義 ========================
+
 signal shooting_finished
 
 const KUNAI_SCENE = preload("res://scenes/bullets/kunai.tscn")
+
+# ======================== 変数定義 ========================
 
 # プレイヤーノードへの参照
 var player: CharacterBody2D
@@ -38,6 +42,8 @@ var can_back_jump: bool = false
 var shooting_timer: float = 0.0
 var shooting_grounded: bool = false
 
+# ======================== 初期化処理 ========================
+
 func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CONDITION) -> void:
 	player = player_instance
 	condition = player_condition
@@ -45,6 +51,8 @@ func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CON
 
 func get_parameter(key: String) -> Variant:
 	return shooting_parameters[condition][key]
+
+# ======================== 射撃処理 ========================
 
 func handle_shooting() -> void:
 	shooting_cooldown_timer = get_parameter("shooting_cooldown")
@@ -105,6 +113,8 @@ func spawn_kunai() -> void:
 	if kunai_instance.has_method("initialize"):
 		kunai_instance.initialize(shooting_direction, get_parameter("shooting_kunai_speed"), player)
 
+# ======================== 状態管理 ========================
+
 ## 射撃クールダウンの更新
 func update_shooting_cooldown(delta: float) -> void:
 	shooting_cooldown_timer = max(0.0, shooting_cooldown_timer - delta)
@@ -135,6 +145,8 @@ func end_shooting() -> void:
 
 	# 完了シグナルの発信
 	shooting_finished.emit()
+
+# ======================== アクセサー・ユーティリティ ========================
 
 ## 空中射撃かどうかの判定
 func is_airborne_attack() -> bool:

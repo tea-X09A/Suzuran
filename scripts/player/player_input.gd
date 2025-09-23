@@ -6,6 +6,8 @@ var player: CharacterBody2D
 # プレイヤーの状態
 var condition: Player.PLAYER_CONDITION
 
+# ======================== 初期化処理 ========================
+
 func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CONDITION) -> void:
 	player = player_instance
 	condition = player_condition
@@ -13,9 +15,7 @@ func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CON
 func update_condition(new_condition: Player.PLAYER_CONDITION) -> void:
 	condition = new_condition
 
-# =====================================================
-# メイン入力処理
-# =====================================================
+# ======================== メイン入力処理 ========================
 
 func handle_input() -> void:
 	_handle_action_inputs()
@@ -33,9 +33,7 @@ func handle_damaged_input() -> void:
 		player.player_damaged.handle_recovery_jump()
 		player.handle_jump()
 
-# =====================================================
-# 個別入力処理
-# =====================================================
+# ======================== 個別入力処理 ========================
 
 func _handle_action_inputs() -> void:
 	player.is_squatting = player.is_grounded and Input.is_action_pressed("squat") and _can_perform_action()
@@ -73,9 +71,7 @@ func _handle_jump_inputs() -> void:
 	if player.player_timer.can_buffer_jump():
 		player.handle_jump()
 
-# =====================================================
-# 入力条件チェック
-# =====================================================
+# ======================== 入力条件チェック ========================
 
 func _can_perform_action() -> bool:
 	return not player.is_fighting and not player.is_shooting and not player.is_damaged
@@ -125,9 +121,7 @@ func _set_direction_only(left_key: bool, right_key: bool) -> void:
 	else:
 		player.direction_x = 0.0
 
-# =====================================================
-# 入力バリデーション
-# =====================================================
+# ======================== 入力バリデーション ========================
 
 func validate_input_state() -> bool:
 	# 入力状態の整合性チェック

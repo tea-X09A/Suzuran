@@ -21,6 +21,8 @@ var state_lock_timer: float = 0.0
 # 前フレームの接地状態
 var was_grounded: bool = false
 
+# ======================== 初期化処理 ========================
+
 func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CONDITION) -> void:
 	player = player_instance
 	condition = player_condition
@@ -28,9 +30,7 @@ func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CON
 func update_condition(new_condition: Player.PLAYER_CONDITION) -> void:
 	condition = new_condition
 
-# =====================================================
-# メインタイマー更新
-# =====================================================
+# ======================== メインタイマー更新 ========================
 
 func update_timers(delta: float) -> void:
 	_handle_landing_events()
@@ -54,9 +54,7 @@ func _handle_landing_events() -> void:
 		if player.is_shooting and player.get_current_shooting().is_airborne_attack():
 			player.get_current_shooting().cancel_shooting()
 
-# =====================================================
-# ジャンプタイマー管理
-# =====================================================
+# ======================== ジャンプタイマー管理 ========================
 
 func _update_jump_timers(delta: float) -> void:
 	# コヨーテタイマー（地面から離れた後の猶予時間）
@@ -84,9 +82,7 @@ func get_jump_buffer_time() -> float:
 func get_coyote_time() -> float:
 	return jump_coyote_time
 
-# =====================================================
-# アクションタイマー管理
-# =====================================================
+# ======================== アクションタイマー管理 ========================
 
 func _update_action_timers(delta: float) -> void:
 	action_buffer_timer = max(0.0, action_buffer_timer - delta)
@@ -100,9 +96,7 @@ func can_buffer_action() -> bool:
 func get_action_buffer_time() -> float:
 	return action_buffer_time
 
-# =====================================================
-# 状態タイマー管理
-# =====================================================
+# ======================== 状態タイマー管理 ========================
 
 func _update_state_timers(delta: float) -> void:
 	state_lock_timer = max(0.0, state_lock_timer - delta)
@@ -116,9 +110,7 @@ func is_state_locked() -> bool:
 func get_state_lock_time() -> float:
 	return state_lock_time
 
-# =====================================================
-# 接地状態管理
-# =====================================================
+# ======================== 接地状態管理 ========================
 
 func update_ground_state() -> void:
 	was_grounded = player.is_grounded
@@ -130,9 +122,7 @@ func just_landed() -> bool:
 func just_left_ground() -> bool:
 	return was_grounded and not player.is_grounded
 
-# =====================================================
-# カスタムタイマー管理
-# =====================================================
+# ======================== カスタムタイマー管理 ========================
 
 var custom_timers: Dictionary = {}
 
@@ -154,9 +144,7 @@ func has_custom_timer(name: String) -> bool:
 func remove_custom_timer(name: String) -> void:
 	custom_timers.erase(name)
 
-# =====================================================
-# タイマー情報取得
-# =====================================================
+# ======================== タイマー情報取得 ========================
 
 func get_timer_info() -> Dictionary:
 	return {

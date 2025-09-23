@@ -58,6 +58,8 @@ var down_timer: float = 0.0
 var is_recovery_invincible: bool = false
 var recovery_invincibility_timer: float = 0.0
 
+# ======================== 初期化処理 ========================
+
 func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CONDITION) -> void:
 	player = player_instance
 	condition = player_condition
@@ -66,6 +68,8 @@ func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CON
 
 func get_parameter(key: String) -> Variant:
 	return damage_parameters[condition][key]
+
+# ======================== ダメージ処理 ========================
 
 func handle_damage(_damage: int, animation_type: String, direction: Vector2, force: float) -> void:
 	is_damaged = true
@@ -93,6 +97,8 @@ func handle_damage(_damage: int, animation_type: String, direction: Vector2, for
 	# 常にdamagedアニメーションを再生
 	animated_sprite.play(condition_prefix + "_damaged")
 
+# ======================== タイマー更新処理 ========================
+
 func update_damaged_timer(delta: float) -> void:
 	if not is_damaged:
 		return
@@ -119,6 +125,8 @@ func apply_continuous_knockback() -> void:
 	else:
 		# 空中では元の力を維持
 		player.velocity.x = knockback_direction.x * knockback_force_value * knockback_multiplier
+
+# ======================== ダウン状態処理 ========================
 
 func start_down_state() -> void:
 	if is_in_down_state:
@@ -160,6 +168,8 @@ func cancel_damaged() -> void:
 	if is_damaged:
 		finish_damaged()
 
+# ======================== 無敵状態管理 ========================
+
 func update_invincibility_timer(delta: float) -> void:
 	if is_invincible and invincibility_timer > 0.0:
 		invincibility_timer -= delta
@@ -176,6 +186,8 @@ func is_in_knockback_landing_state() -> bool:
 
 func is_in_knockback_state() -> bool:
 	return is_damaged and not is_in_down_state
+
+# ======================== 復帰処理 ========================
 
 func handle_recovery_jump() -> void:
 	if is_in_down_state:

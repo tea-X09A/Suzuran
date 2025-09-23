@@ -1,6 +1,8 @@
 class_name PlayerMovement
 extends RefCounted
 
+# ======================== 変数定義 ========================
+
 # プレイヤーノードへの参照
 var player: CharacterBody2D
 # アニメーションスプライトへの参照
@@ -49,6 +51,8 @@ var is_jumping: bool = false
 var jump_hold_timer: float = 0.0
 var jump_hold_max_time: float = 0.4  # ジャンプボタン長押し最大時間（秒）
 
+# ======================== 初期化処理 ========================
+
 func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CONDITION) -> void:
 	player = player_instance
 	condition = player_condition
@@ -58,6 +62,8 @@ func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CON
 
 func get_parameter(key: String) -> Variant:
 	return movement_parameters[condition][key]
+
+# ======================== 移動処理 ========================
 
 func handle_movement(direction_x: float, is_running: bool, is_squatting: bool) -> void:
 	if player.is_on_floor():
@@ -114,6 +120,8 @@ func _handle_air_movement(direction_x: float) -> void:
 		# 方向入力がない場合：空気抵抗で徐々に減速（慣性維持）
 		player.velocity.x *= air_friction
 
+# ======================== 物理処理 ========================
+
 func apply_gravity(delta: float) -> void:
 	if not player.is_on_floor():
 		var effective_gravity: float = GRAVITY * get_parameter("jump_gravity_scale")
@@ -144,6 +152,8 @@ func apply_variable_jump(delta: float) -> void:
 	elif is_jumping:
 		is_jumping = false
 
+# ======================== コリジョン処理 ========================
+
 func update_collision_shape(is_squatting: bool) -> void:
 	if is_squatting != was_squatting:
 		var shape: RectangleShape2D = collision_shape.shape as RectangleShape2D
@@ -156,6 +166,8 @@ func update_collision_shape(is_squatting: bool) -> void:
 			collision_shape.position.y -= collision_squat_offset.y
 
 		was_squatting = is_squatting
+
+# ======================== アクセサー関数 ========================
 
 func get_move_walk_speed() -> float:
 	return get_parameter("move_walk_speed")

@@ -1,7 +1,11 @@
 class_name PlayerFighting
 extends RefCounted
 
+# ======================== シグナル定義 ========================
+
 signal fighting_finished
+
+# ======================== 変数定義 ========================
 
 # プレイヤーノードへの参照
 var player: CharacterBody2D
@@ -34,6 +38,8 @@ var current_fighting_speed: float = 0.0
 var fighting_grounded: bool = false
 var fighting_timer: float = 0.0
 
+# ======================== 初期化処理 ========================
+
 func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CONDITION) -> void:
 	player = player_instance
 	condition = player_condition
@@ -41,6 +47,8 @@ func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CON
 
 func get_parameter(key: String) -> Variant:
 	return fighting_parameters[condition][key]
+
+# ======================== 攻撃処理 ========================
 
 func handle_fighting() -> void:
 	# 攻撃が有効でない場合は処理を停止
@@ -82,6 +90,8 @@ func apply_fighting_movement() -> void:
 	if fighting_grounded:
 		player.velocity.x = fighting_direction * current_fighting_speed
 
+# ======================== 状態管理 ========================
+
 func update_fighting_timer(delta: float) -> bool:
 	# 攻撃が有効でない場合は即座にfalseを返す
 	if not get_parameter("enabled"):
@@ -108,6 +118,8 @@ func end_fighting() -> void:
 
 	# 完了シグナルの発信
 	fighting_finished.emit()
+
+# ======================== アクセサー・ユーティリティ ========================
 
 func is_airborne_attack() -> bool:
 	# 攻撃が有効でない場合は常にfalse

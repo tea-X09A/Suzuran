@@ -28,6 +28,8 @@ var original_modulate: Color = Color.WHITE
 # カスタムエフェクト
 var custom_effects: Dictionary = {}
 
+# ======================== 初期化処理 ========================
+
 func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CONDITION) -> void:
 	player = player_instance
 	condition = player_condition
@@ -37,9 +39,7 @@ func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CON
 func update_condition(new_condition: Player.PLAYER_CONDITION) -> void:
 	condition = new_condition
 
-# =====================================================
-# メイン視覚効果更新
-# =====================================================
+# ======================== メイン視覚効果更新 ========================
 
 func update_visual_effects(delta: float) -> void:
 	_update_blink_effect(delta)
@@ -73,9 +73,7 @@ func _stop_blink_effect() -> void:
 	is_blinking = false
 	animated_sprite.modulate.a = original_modulate.a
 
-# =====================================================
-# ダメージフラッシュ効果
-# =====================================================
+# ======================== ダメージフラッシュ効果 ========================
 
 func _update_damage_flash(delta: float) -> void:
 	if is_damage_flashing:
@@ -102,9 +100,7 @@ func _stop_damage_flash() -> void:
 func is_damage_flash_active() -> bool:
 	return is_damage_flashing
 
-# =====================================================
-# スケール効果
-# =====================================================
+# ======================== スケール効果 ========================
 
 func apply_scale_effect(scale_factor: Vector2, duration: float) -> void:
 	var tween: Tween = player.create_tween()
@@ -119,9 +115,7 @@ func apply_bounce_effect(bounce_strength: float = 1.2, duration: float = 0.2) ->
 func apply_squash_effect(squash_factor: Vector2 = Vector2(1.3, 0.7), duration: float = 0.15) -> void:
 	apply_scale_effect(squash_factor, duration)
 
-# =====================================================
-# 色調効果
-# =====================================================
+# ======================== 色調効果 ========================
 
 func apply_color_tint(color: Color, duration: float) -> void:
 	var tween: Tween = player.create_tween()
@@ -141,9 +135,7 @@ func reset_visual_state() -> void:
 	animated_sprite.modulate = original_modulate
 	animated_sprite.scale = Vector2.ONE
 
-# =====================================================
-# カスタム視覚効果
-# =====================================================
+# ======================== カスタム視覚効果 ========================
 
 func _update_custom_effects(delta: float) -> void:
 	for effect_name in custom_effects.keys():
@@ -202,9 +194,7 @@ func _remove_custom_effect(name: String) -> void:
 		"pulse":
 			animated_sprite.scale = Vector2.ONE
 
-# =====================================================
-# 視覚効果情報取得
-# =====================================================
+# ======================== 視覚効果情報取得 ========================
 
 func get_visual_effects_info() -> Dictionary:
 	return {

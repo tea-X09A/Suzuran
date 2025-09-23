@@ -1,6 +1,8 @@
 class_name PlayerState
 extends RefCounted
 
+# ======================== 変数定義 ========================
+
 # プレイヤーノードへの参照
 var player: CharacterBody2D
 # プレイヤーの状態
@@ -28,6 +30,8 @@ var state_names: Dictionary = {
 	Player.PLAYER_STATE.DAMAGED: "ダメージ"
 }
 
+# ======================== 初期化処理 ========================
+
 func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CONDITION) -> void:
 	player = player_instance
 	condition = player_condition
@@ -35,9 +39,7 @@ func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CON
 func update_condition(new_condition: Player.PLAYER_CONDITION) -> void:
 	condition = new_condition
 
-# =====================================================
-# 状態更新メイン処理
-# =====================================================
+# ======================== 状態更新メイン処理 ========================
 
 func update_state() -> void:
 	if _is_in_action_state():
@@ -71,9 +73,7 @@ func _get_airborne_state() -> Player.PLAYER_STATE:
 	else:
 		return Player.PLAYER_STATE.FALL
 
-# =====================================================
-# 状態設定
-# =====================================================
+# ======================== 状態設定 =========================
 
 func set_state(new_state: Player.PLAYER_STATE) -> void:
 	if new_state == player.state:
@@ -89,9 +89,7 @@ func force_state(new_state: Player.PLAYER_STATE) -> void:
 	player.state = new_state
 	_update_animation()
 
-# =====================================================
-# 条件管理
-# =====================================================
+# ======================== 条件管理 =========================
 
 func get_condition() -> Player.PLAYER_CONDITION:
 	return condition
@@ -106,9 +104,7 @@ func _update_modules_condition(new_condition: Player.PLAYER_CONDITION) -> void:
 	if player.player_shooting:
 		player.player_shooting.update_condition(new_condition)
 
-# =====================================================
-# 状態チェック関数
-# =====================================================
+# ======================== 状態チェック関数 ========================
 
 func is_grounded_state() -> bool:
 	return player.state in [Player.PLAYER_STATE.IDLE, Player.PLAYER_STATE.WALK, Player.PLAYER_STATE.RUN, Player.PLAYER_STATE.SQUAT]
@@ -129,9 +125,7 @@ func can_transition_to(target_state: Player.PLAYER_STATE) -> bool:
 
 	return true
 
-# =====================================================
-# アニメーション制御
-# =====================================================
+# ======================== アニメーション制御 ========================
 
 func _update_animation() -> void:
 	# アクション状態ではアニメーション制御を行わない（各モジュールが担当）
@@ -176,18 +170,14 @@ func reset_animation_state() -> void:
 	# アクション終了時にアニメーション状態をリセット（重複再生回避を解除）
 	current_animation = ""
 
-# =====================================================
-# ログ処理
-# =====================================================
+# ======================== ログ処理 ========================
 
 func _log_state_change(new_state: Player.PLAYER_STATE) -> void:
 	var old_state_name: String = state_names.get(player.state, "不明")
 	var new_state_name: String = state_names.get(new_state, "不明")
 	print("プレイヤー状態変更: ", old_state_name, " → ", new_state_name)
 
-# =====================================================
-# 状態情報取得
-# =====================================================
+# ======================== 状態情報取得 ========================
 
 func get_state_info() -> Dictionary:
 	return {

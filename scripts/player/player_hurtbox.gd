@@ -18,6 +18,8 @@ var player: Player
 # デバッグ用
 var debug_enabled: bool = false
 
+# ======================== 初期化処理 ========================
+
 func _ready() -> void:
 	# プレイヤー参照を取得
 	player = get_parent() as Player
@@ -35,9 +37,7 @@ func _connect_body_signals() -> void:
 	body_exited.connect(_on_body_exited)
 
 
-# =====================================================
-# エリア進入・退出処理
-# =====================================================
+# ======================== エリア進入・退出処理 ========================
 
 func _on_area_entered(area: Area2D) -> void:
 	if not area or not is_instance_valid(area):
@@ -68,9 +68,7 @@ func _on_area_exited(area: Area2D) -> void:
 	if hit_type == HIT_TYPE.DAMAGE_AREA:
 		damage_area_exited.emit(area)
 
-# =====================================================
-# ボディ進入・退出処理
-# =====================================================
+# ======================== ボディ進入・退出処理 ========================
 
 func _on_body_entered(body: Node2D) -> void:
 	if not body or not is_instance_valid(body):
@@ -88,9 +86,7 @@ func _on_body_exited(body: Node2D) -> void:
 
 	_log_debug("ボディ退出検知: " + body.name)
 
-# =====================================================
-# ヒットタイプ判定
-# =====================================================
+# ======================== ヒットタイプ判定 ========================
 
 func _determine_hit_type(area: Area2D) -> HIT_TYPE:
 	# グループ名による判定
@@ -124,9 +120,7 @@ func _determine_hit_type(area: Area2D) -> HIT_TYPE:
 func _is_enemy_body(body: Node2D) -> bool:
 	return body.is_in_group("enemies") or body.name.to_lower().begins_with("enemy")
 
-# =====================================================
-# 各種ヒット処理
-# =====================================================
+# ======================== 各種ヒット処理 ========================
 
 func _handle_enemy_attack_area(area: Area2D) -> void:
 	if _is_player_invincible():
@@ -195,9 +189,7 @@ func _handle_enemy_body_contact(body: Node2D) -> void:
 
 	enemy_attack_detected.emit(body, damage, knockback_direction, knockback_force)
 
-# =====================================================
-# データ抽出ヘルパー関数
-# =====================================================
+# ======================== データ抽出ヘルパー関数 ========================
 
 func _extract_damage_from_area(area: Area2D) -> int:
 	if area.has_method("get_damage"):
@@ -246,9 +238,7 @@ func _extract_contact_damage_from_body(body: Node2D) -> int:
 		return body.get_contact_damage()
 	return 1  # デフォルト値
 
-# =====================================================
-# ノックバック方向計算
-# =====================================================
+# ======================== ノックバック方向計算 ========================
 
 func _calculate_knockback_direction(area: Area2D) -> Vector2:
 	return _calculate_knockback_direction_from_position(area.global_position)
@@ -257,18 +247,14 @@ func _calculate_knockback_direction_from_position(attacker_position: Vector2) ->
 	var direction: Vector2 = global_position - attacker_position
 	return direction.normalized()
 
-# =====================================================
-# 無敵状態チェック
-# =====================================================
+# ======================== 無敵状態チェック ========================
 
 func _is_player_invincible() -> bool:
 	if not player:
 		return false
 	return player.get_current_damaged().is_in_invincible_state()
 
-# =====================================================
-# デバッグ機能
-# =====================================================
+# ======================== デバッグ機能 ========================
 
 func set_debug_enabled(enabled: bool) -> void:
 	debug_enabled = enabled
