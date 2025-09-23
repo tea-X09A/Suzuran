@@ -56,8 +56,8 @@ var player_input: PlayerInput
 var player_state: PlayerState
 # タイマー管理を担当するコンポーネント
 var player_timer: PlayerTimer
-# 視覚効果を管理するコンポーネント
-var player_visual_effects: PlayerVisualEffects
+# 無敵状態エフェクトを管理するコンポーネント
+var invincibility_effect: InvincibilityEffect
 # ログ出力を管理するコンポーネント
 var player_logger: PlayerLogger
 
@@ -118,7 +118,7 @@ func _initialize_modules() -> void:
 	player_input = PlayerInput.new(self, condition)
 	player_state = PlayerState.new(self, condition)
 	player_timer = PlayerTimer.new(self, condition)
-	player_visual_effects = PlayerVisualEffects.new(self, condition)
+	invincibility_effect = InvincibilityEffect.new(self, condition)
 	player_logger = PlayerLogger.new(self, condition)
 
 func _connect_signals() -> void:
@@ -133,9 +133,9 @@ func _connect_signals() -> void:
 # ======================== フレーム処理 ========================
 
 func _process(delta: float) -> void:
-	# 毎フレーム実行される視覚効果の更新処理
-	# パーティクル、アニメーション効果、UIエフェクトなどを更新
-	player_visual_effects.update_visual_effects(delta)
+	# 毎フレーム実行される無敵エフェクトの更新処理
+	# 無敵状態時の点滅エフェクトを更新
+	invincibility_effect.update_invincibility_effect(delta)
 
 
 func _physics_process(delta: float) -> void:
@@ -346,7 +346,7 @@ func set_condition(new_condition: PLAYER_CONDITION) -> void:
 	# システム系コンポーネントのコンディションを更新
 	player_input.update_condition(new_condition)
 	player_timer.update_condition(new_condition)
-	player_visual_effects.update_condition(new_condition)
+	invincibility_effect.update_condition(new_condition)
 	player_logger.update_condition(new_condition)
 
 func _update_modules_condition(new_condition: PLAYER_CONDITION) -> void:
