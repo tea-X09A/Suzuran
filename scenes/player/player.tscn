@@ -166,7 +166,6 @@ shape = SubResource("RectangleShape2D_lgqa7")
 disabled = true
 
 [node name="JumpHurtbox" type="Area2D" parent="."]
-visible = false
 script = ExtResource("1_xqw8k")
 
 [node name="HurtboxCollision" type="CollisionShape2D" parent="JumpHurtbox"]
@@ -175,7 +174,6 @@ shape = SubResource("RectangleShape2D_jump_hurtbox")
 disabled = true
 
 [node name="RunHurtbox" type="Area2D" parent="."]
-visible = false
 script = ExtResource("1_xqw8k")
 
 [node name="HurtboxCollision" type="CollisionShape2D" parent="RunHurtbox"]
@@ -184,7 +182,6 @@ shape = SubResource("RectangleShape2D_run_hurtbox")
 disabled = true
 
 [node name="FightingHurtbox" type="Area2D" parent="."]
-visible = false
 script = ExtResource("1_xqw8k")
 
 [node name="HurtboxCollision" type="CollisionShape2D" parent="FightingHurtbox"]
@@ -193,7 +190,6 @@ shape = SubResource("RectangleShape2D_fighting_hurtbox")
 disabled = true
 
 [node name="ShootingHurtbox" type="Area2D" parent="."]
-visible = false
 script = ExtResource("1_xqw8k")
 
 [node name="HurtboxCollision" type="CollisionShape2D" parent="ShootingHurtbox"]
@@ -202,7 +198,6 @@ shape = SubResource("RectangleShape2D_shooting_hurtbox")
 disabled = true
 
 [node name="DownHurtbox" type="Area2D" parent="."]
-visible = false
 script = ExtResource("1_xqw8k")
 
 [node name="HurtboxCollision" type="CollisionShape2D" parent="DownHurtbox"]
@@ -211,7 +206,6 @@ shape = SubResource("RectangleShape2D_down_hurtbox")
 disabled = true
 
 [node name="FallHurtbox" type="Area2D" parent="."]
-visible = false
 script = ExtResource("1_xqw8k")
 
 [node name="HurtboxCollision" type="CollisionShape2D" parent="FallHurtbox"]
@@ -220,7 +214,6 @@ shape = SubResource("RectangleShape2D_fall_hurtbox")
 disabled = true
 
 [node name="WalkHurtbox" type="Area2D" parent="."]
-visible = false
 script = ExtResource("1_xqw8k")
 
 [node name="HurtboxCollision" type="CollisionShape2D" parent="WalkHurtbox"]
