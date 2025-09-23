@@ -80,8 +80,8 @@ func handle_movement(direction_x: float, is_running: bool, is_squatting: bool) -
 	update_collision_shape(is_squatting)
 
 func _handle_ground_movement(direction_x: float, is_running: bool) -> void:
-	# バックジャンプ等の特殊な水平速度保護中は地上移動制御を無効化
-	if player.ignore_jump_horizontal_velocity:
+	# 物理制御が無効化されている場合は地上移動制御を無効化
+	if player.is_physics_control_disabled():
 		return
 
 	# アクション中は適切な速度を使用（running 状態を保持）
@@ -96,8 +96,8 @@ func _handle_ground_movement(direction_x: float, is_running: bool) -> void:
 		player.velocity.x = 0.0
 
 func _handle_air_movement(direction_x: float) -> void:
-	# ダメージ後のノックバック保持中は空中制御を無効化
-	if player.ignore_jump_horizontal_velocity:
+	# 物理制御が無効化されている場合は空中制御を無効化
+	if player.is_physics_control_disabled():
 		return
 
 	var air_control_strength: float = get_parameter("air_control_strength")
@@ -132,6 +132,8 @@ func apply_variable_jump(delta: float) -> void:
 	if player.player_timer.just_landed():
 		is_jumping = false
 		jump_hold_timer = 0.0
+		# バックジャンプ等の特殊水平速度制御フラグをリセット
+		player.ignore_jump_horizontal_velocity = false
 		just_landed = true
 
 	# 着地したフレームではジャンプ処理をスキップ
@@ -139,16 +141,18 @@ func apply_variable_jump(delta: float) -> void:
 		player.velocity.y -= get_parameter("jump_hold_vertical_bonus") * delta
 		jump_hold_timer += delta
 
-		# ジャンプ長押し時の水平ボーナス（保存されたrunning状態を考慮）
-		if player.direction_x != 0.0 and not player.is_on_floor():
-			var effective_running: bool = player.running_state_when_airborne
+		# 物理制御が無効化されている場合は水平ボーナスも無効化
+		if not player.is_physics_control_disabled():
+			# ジャンプ長押し時の水平ボーナス（保存されたrunning状態を考慮）
+			if player.direction_x != 0.0 and not player.is_on_floor():
+				var effective_running: bool = player.running_state_when_airborne
 
-			if player.is_fighting or player.is_shooting:
-				effective_running = player.running_state_when_action_started
+				if player.is_fighting or player.is_shooting:
+					effective_running = player.running_state_when_action_started
 
-			var bonus_multiplier: float = 1.5 if effective_running else 1.0
-			var horizontal_bonus: float = player.direction_x * get_parameter("jump_hold_horizontal_bonus") * delta * bonus_multiplier
-			player.velocity.x += horizontal_bonus
+				var bonus_multiplier: float = 1.5 if effective_running else 1.0
+				var horizontal_bonus: float = player.direction_x * get_parameter("jump_hold_horizontal_bonus") * delta * bonus_multiplier
+				player.velocity.x += horizontal_bonus
 	elif is_jumping:
 		is_jumping = false
 

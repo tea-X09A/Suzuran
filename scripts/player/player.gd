@@ -179,15 +179,20 @@ func _handle_airborne_state_changes() -> void:
 	if not was_airborne and current_airborne:
 		running_state_when_airborne = is_running
 
-	# 空中から地上に着地した瞬間：入力状態を確認してrun状態を適切に設定
+	# 空中から地上に着地した瞬間：run状態を適切に設定
 	elif was_airborne and not current_airborne:
-		var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
-		var has_direction: bool = Input.is_action_pressed("left") or Input.is_action_pressed("right")
-
-		if shift_pressed and has_direction:
-			is_running = true
+		# アクション中の場合：アクション開始時の走行状態を維持
+		if is_fighting or is_shooting:
+			is_running = running_state_when_action_started
 		else:
-			is_running = false
+			# 通常時：入力状態を確認してrun状態を設定
+			var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
+			var has_direction: bool = Input.is_action_pressed("left") or Input.is_action_pressed("right")
+
+			if shift_pressed and has_direction:
+				is_running = true
+			else:
+				is_running = false
 
 	# 次フレームでの比較用に現在の状態を保存
 	was_airborne = current_airborne
@@ -277,8 +282,10 @@ func _update_fighting_state(delta: float) -> void:
 	if is_fighting:
 		# 戦闘タイマーを更新し、移動可能かチェック
 		if get_current_fighting().update_fighting_timer(delta):
-			# 戦闘中の移動処理を適用（攻撃中の微移動など）
-			get_current_fighting().apply_fighting_movement()
+			# 物理制御が無効化されていない場合のみ戦闘移動処理を適用
+			if not is_physics_control_disabled():
+				# 戦闘中の移動処理を適用（攻撃中の微移動など）
+				get_current_fighting().apply_fighting_movement()
 
 func _update_shooting_state(delta: float) -> void:
 	# 射撃状態の場合：射撃タイマーを更新
@@ -319,6 +326,32 @@ func _on_damaged_finished() -> void:
 	# アニメーション状態をリセット
 	player_state.reset_animation_state()
 
+
+# ======================== 物理分離状態判定 ========================
+
+## 空中でのアクション実行中かどうかの判定（他システムからのアクセス用）
+func is_airborne_action_active() -> bool:
+	# 戦闘アクション中の空中状態判定
+	if is_fighting and get_current_fighting().is_airborne_action_active():
+		return true
+
+	# 射撃アクション中の空中状態判定
+	if is_shooting and get_current_shooting().is_airborne_action_active():
+		return true
+
+	return false
+
+## 物理制御が無効化されているかどうかの判定
+func is_physics_control_disabled() -> bool:
+	# 特殊な水平速度保護中（バックジャンプ等）
+	if ignore_jump_horizontal_velocity:
+		return true
+
+	# 空中でのアクション実行中
+	if is_airborne_action_active():
+		return true
+
+	return false
 
 # ======================== コンディション管理 ========================
 

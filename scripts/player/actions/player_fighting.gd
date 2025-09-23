@@ -87,7 +87,8 @@ func apply_fighting_movement() -> void:
 	if not get_parameter("enabled"):
 		return
 
-	if fighting_grounded:
+	# 地上でのみ格闘移動を適用（空中での軌道干渉を防止）
+	if fighting_grounded and player.is_on_floor():
 		player.velocity.x = fighting_direction * current_fighting_speed
 
 # ======================== 状態管理 ========================
@@ -127,6 +128,14 @@ func is_airborne_attack() -> bool:
 		return false
 
 	return not fighting_grounded
+
+## 空中でのアクション実行中かどうかの判定（物理分離用）
+func is_airborne_action_active() -> bool:
+	# 攻撃が有効でない場合は常にfalse
+	if not get_parameter("enabled"):
+		return false
+
+	return is_airborne_attack() and fighting_timer > 0.0
 
 func cancel_fighting() -> void:
 	end_fighting()

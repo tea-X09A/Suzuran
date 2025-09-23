@@ -78,11 +78,16 @@ func handle_back_jump_shooting() -> void:
 
 	can_back_jump = false
 
+	# バックジャンプ射撃は地上でのみ実行可能（空中での軌道干渉を防止）
+	if not player.is_on_floor():
+		return
+
 	var current_direction: float = 1.0 if animated_sprite.flip_h else -1.0
 	var back_direction: float = -current_direction
 
 	var back_velocity: float = back_direction * player.get_current_movement().get_move_walk_speed()
 
+	# 物理演算への影響は地上でのみ適用（空中軌道保護）
 	player.velocity.y = -get_parameter("jump_force")
 	player.velocity.x = back_velocity
 
@@ -151,6 +156,10 @@ func end_shooting() -> void:
 ## 空中射撃かどうかの判定
 func is_airborne_attack() -> bool:
 	return not shooting_grounded
+
+## 空中でのアクション実行中かどうかの判定（物理分離用）
+func is_airborne_action_active() -> bool:
+	return is_airborne_attack() and shooting_timer > 0.0
 
 ## 射撃のキャンセル
 func cancel_shooting() -> void:
