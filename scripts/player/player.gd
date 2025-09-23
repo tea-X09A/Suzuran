@@ -382,13 +382,15 @@ func is_physics_control_disabled() -> bool:
 
 ## 指定されたhurtboxに切り替える（他のhurtboxは無効化）
 func switch_hurtbox(new_hurtbox: PlayerHurtbox) -> void:
-	# 現在のhurtboxを無効化
+	# 現在のhurtboxを無効化して非表示に
 	if current_active_hurtbox != null and current_active_hurtbox != new_hurtbox:
 		current_active_hurtbox.deactivate_hurtbox()
+		current_active_hurtbox.visible = false
 
-	# 新しいhurtboxを有効化
+	# 新しいhurtboxを有効化して表示
 	if new_hurtbox != null:
 		new_hurtbox.activate_hurtbox()
+		new_hurtbox.visible = true
 		current_active_hurtbox = new_hurtbox
 
 ## 現在の状態に応じた適切なhurtboxに切り替える
@@ -441,6 +443,7 @@ func update_hurtbox_for_current_state() -> void:
 func deactivate_all_hurtboxes() -> void:
 	if current_active_hurtbox != null:
 		current_active_hurtbox.deactivate_hurtbox()
+		current_active_hurtbox.visible = false
 		current_active_hurtbox = null
 
 ## 現在アクティブなhurtboxを再有効化（無敵解除用）

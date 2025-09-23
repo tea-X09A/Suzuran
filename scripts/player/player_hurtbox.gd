@@ -28,4 +28,4 @@ func _set_collision_enabled(enabled: bool) -> void:
 	for child in get_children():
 		if child is CollisionShape2D:
 			child.disabled = not enabled
-			child.visible = enabled
+			# 表示制御はプレイヤー側で管理するため、ここでは制御しない
