@@ -164,6 +164,7 @@ func handle_back_jump_shooting() -> void:
 
 func handle_jump() -> void:
 	player_logger.log_action("ジャンプ")
+	is_jumping_by_input = true
 	get_current_jump().handle_jump()
 	player_timer.reset_jump_timers()
 

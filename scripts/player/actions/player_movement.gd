@@ -65,7 +65,7 @@ func handle_movement(direction_x: float, is_running: bool, is_squatting: bool) -
 		_handle_ground_movement(direction_x, is_running)
 	else:
 		# 空中での移動処理
-		_handle_air_movement(direction_x, is_running)
+		_handle_air_movement(direction_x)
 
 	# スプライトの向きを更新（地上・空中両方で左右入力があるときに更新）
 	if direction_x != 0.0:
@@ -85,7 +85,7 @@ func _handle_ground_movement(direction_x: float, is_running: bool) -> void:
 	else:
 		player.velocity.x = 0.0
 
-func _handle_air_movement(direction_x: float, is_running: bool) -> void:
+func _handle_air_movement(direction_x: float) -> void:
 	# ダメージ後のノックバック保持中は空中制御を無効化
 	if player.ignore_jump_horizontal_velocity:
 		return
