@@ -7,8 +7,6 @@ signal damaged_finished
 var player: CharacterBody2D
 # アニメーションスプライトへの参照
 var animated_sprite: AnimatedSprite2D
-# 当たり判定コライダーへの参照
-var collision_shape: CollisionShape2D
 # プレイヤーの状態
 var condition: Player.PLAYER_CONDITION
 
@@ -64,7 +62,6 @@ func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CON
 	player = player_instance
 	condition = player_condition
 	animated_sprite = player.get_node("AnimatedSprite2D") as AnimatedSprite2D
-	collision_shape = player.get_node("IdleCollision") as CollisionShape2D
 
 func get_parameter(key: String) -> Variant:
 	return damage_parameters[condition][key]

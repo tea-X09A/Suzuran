@@ -7,8 +7,6 @@ extends RefCounted
 var player: CharacterBody2D
 # アニメーションスプライトへの参照
 var animated_sprite: AnimatedSprite2D
-# 当たり判定コライダーへの参照
-var collision_shape: CollisionShape2D
 # プレイヤーの状態
 var condition: Player.PLAYER_CONDITION
 
@@ -40,13 +38,7 @@ var movement_parameters: Dictionary = {
 
 # 重力加速度（プロジェクト設定から取得）
 @export var GRAVITY: float
-# コリジョンサイズ
-var collision_normal_size: Vector2 = Vector2(78.5, 168)
-var collision_squat_size: Vector2 = Vector2(78.5, 84)
-var collision_squat_offset: Vector2 = Vector2(0, 42)
-
 # 内部状態
-var was_squatting: bool = false
 var is_jumping: bool = false
 var jump_hold_timer: float = 0.0
 var jump_hold_max_time: float = 0.4  # ジャンプボタン長押し最大時間（秒）
@@ -57,7 +49,6 @@ func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CON
 	player = player_instance
 	condition = player_condition
 	animated_sprite = player.get_node("AnimatedSprite2D") as AnimatedSprite2D
-	collision_shape = player.get_node("IdleCollision") as CollisionShape2D
 	GRAVITY = ProjectSettings.get_setting("physics/2d/default_gravity")
 
 func get_parameter(key: String) -> Variant:
@@ -77,7 +68,6 @@ func handle_movement(direction_x: float, is_running: bool, is_squatting: bool) -
 	if direction_x != 0.0:
 		animated_sprite.flip_h = direction_x > 0.0
 
-	update_collision_shape(is_squatting)
 
 func _handle_ground_movement(direction_x: float, is_running: bool) -> void:
 	# 物理制御が無効化されている場合は地上移動制御を無効化
@@ -155,21 +145,6 @@ func apply_variable_jump(delta: float) -> void:
 				player.velocity.x += horizontal_bonus
 	elif is_jumping:
 		is_jumping = false
-
-# ======================== コリジョン処理 ========================
-
-func update_collision_shape(is_squatting: bool) -> void:
-	if is_squatting != was_squatting:
-		var shape: RectangleShape2D = collision_shape.shape as RectangleShape2D
-
-		if is_squatting:
-			shape.size = collision_squat_size
-			collision_shape.position.y += collision_squat_offset.y
-		else:
-			shape.size = collision_normal_size
-			collision_shape.position.y -= collision_squat_offset.y
-
-		was_squatting = is_squatting
 
 # ======================== アクセサー関数 ========================
 

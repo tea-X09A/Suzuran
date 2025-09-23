@@ -25,7 +25,7 @@ enum PLAYER_STATE {
 # アニメーションコンポーネント（_ready()でキャッシュして高速化）
 @onready var animated_sprite_2d: AnimatedSprite2D = $AnimatedSprite2D
 # コリジョンシェイプ（当たり判定）
-@onready var collision_shape_2d: CollisionShape2D = $IdleCollision
+@onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
 
 # ======================== エクスポート変数 ========================
 # インスペクタから設定可能な初期コンディション
