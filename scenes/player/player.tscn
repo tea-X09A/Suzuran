@@ -165,7 +165,6 @@ animation = &"normal_shooting_01_002"
 [node name="IdleCollision" type="CollisionShape2D" parent="."]
 position = Vector2(-1, 12.5)
 shape = SubResource("RectangleShape2D_ry65h")
-disabled = true
 
 [node name="SquatCollision" type="CollisionShape2D" parent="."]
 visible = false

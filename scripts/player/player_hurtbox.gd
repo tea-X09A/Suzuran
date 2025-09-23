@@ -18,11 +18,17 @@ var player: Player
 # デバッグ用
 var debug_enabled: bool = false
 
+# ハートボックス制御用
+var hurtbox_enabled: bool = true
+
 # ======================== 初期化処理 ========================
 
 func _ready() -> void:
 	# プレイヤー参照を取得
 	player = get_parent() as Player
+
+	# デフォルトでハートボックスを有効化
+	_set_collision_enabled(true)
 
 	# シグナル接続
 	_connect_area_signals()
@@ -36,11 +42,40 @@ func _connect_body_signals() -> void:
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 
+# ======================== ハートボックス制御 ========================
+
+## ハートボックスを有効化（ダメージ検知を開始）
+func activate_hurtbox() -> void:
+	hurtbox_enabled = true
+	_set_collision_enabled(true)
+	_log_debug("ハートボックスを有効化")
+
+## ハートボックスを無効化（ダメージ検知を停止）
+func deactivate_hurtbox() -> void:
+	hurtbox_enabled = false
+	_set_collision_enabled(false)
+	_log_debug("ハートボックスを無効化")
+
+## ハートボックスの有効状態を取得
+func is_hurtbox_enabled() -> bool:
+	return hurtbox_enabled
+
+func _set_collision_enabled(enabled: bool) -> void:
+	# 全ての CollisionShape2D を有効/無効化
+	for child in get_children():
+		if child is CollisionShape2D:
+			child.disabled = not enabled
+
 
 # ======================== エリア進入・退出処理 ========================
 
 func _on_area_entered(area: Area2D) -> void:
 	if not area or not is_instance_valid(area):
+		return
+
+	# ハートボックスが無効化されている場合は処理しない
+	if not hurtbox_enabled:
+		_log_debug("ハートボックス無効化中のため処理をスキップ: " + area.name)
 		return
 
 	var hit_type: HIT_TYPE = _determine_hit_type(area)
@@ -72,6 +107,11 @@ func _on_area_exited(area: Area2D) -> void:
 
 func _on_body_entered(body: Node2D) -> void:
 	if not body or not is_instance_valid(body):
+		return
+
+	# ハートボックスが無効化されている場合は処理しない
+	if not hurtbox_enabled:
+		_log_debug("ハートボックス無効化中のため処理をスキップ: " + body.name)
 		return
 
 	_log_debug("ボディ進入検知: " + body.name)
