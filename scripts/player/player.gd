@@ -58,8 +58,6 @@ var player_state: PlayerState
 var player_timer: PlayerTimer
 # 無敵状態エフェクトを管理するコンポーネント
 var invincibility_effect: InvincibilityEffect
-# ログ出力を管理するコンポーネント
-var player_logger: PlayerLogger
 
 # ======================== 移動・入力状態変数 ========================
 # 水平方向の入力値（-1.0 ～ 1.0）
@@ -114,12 +112,11 @@ func _initialize_modules() -> void:
 	player_shooting = PlayerShooting.new(self, condition)
 	player_damaged = PlayerDamaged.new(self, condition)
 
-	# システム系コンポーネントの初期化（入力、状態管理、ログなど）
+	# システム系コンポーネントの初期化（入力、状態管理など）
 	player_input = PlayerInput.new(self, condition)
 	player_state = PlayerState.new(self, condition)
 	player_timer = PlayerTimer.new(self, condition)
 	invincibility_effect = InvincibilityEffect.new(self, condition)
-	player_logger = PlayerLogger.new(self, condition)
 
 func _connect_signals() -> void:
 	# 戦闘終了シグナルを接続（戦闘アニメーション完了時に呼ばれる）
@@ -232,14 +229,10 @@ func get_current_damaged() -> PlayerDamaged:
 # ======================== プレイヤーアクション処理 ========================
 
 func handle_movement() -> void:
-	# 移動状態の変化をログに出力
-	player_logger.log_movement_changes()
 	# 移動モジュールに方向、走行状態、しゃがみ状態を渡して移動処理を実行
 	get_current_movement().handle_movement(direction_x, is_running, is_squatting)
 
 func handle_fighting() -> void:
-	# 戦闘アクション開始をログに記録
-	player_logger.log_action("戦闘")
 	# 戦闘開始時の走行状態を保存（戦闘終了後に復元するため）
 	running_state_when_action_started = is_running
 	# 戦闘状態フラグを設定
@@ -251,8 +244,6 @@ func handle_fighting() -> void:
 func handle_shooting() -> void:
 	# 射撃可能かどうかをチェック（クールダウン時間等）
 	if get_current_shooting().can_shoot():
-		# 射撃アクション開始をログに記録
-		player_logger.log_action("射撃")
 		# 射撃開始時の走行状態を保存（射撃終了後に復元するため）
 		running_state_when_action_started = is_running
 		# 射撃状態フラグを設定
@@ -262,14 +253,10 @@ func handle_shooting() -> void:
 		get_current_shooting().handle_shooting()
 
 func handle_back_jump_shooting() -> void:
-	# 後方ジャンプ射撃アクション開始をログに記録
-	player_logger.log_action("後方ジャンプ射撃")
 	# 射撃モジュールで後方ジャンプ射撃処理を実行
 	get_current_shooting().handle_back_jump_shooting()
 
 func handle_jump() -> void:
-	# ジャンプアクション開始をログに記録
-	player_logger.log_action("ジャンプ")
 	# プレイヤー入力によるジャンプフラグを設定
 	is_jumping_by_input = true
 	# ジャンプモジュールでジャンプ処理を実行
@@ -353,7 +340,6 @@ func set_condition(new_condition: PLAYER_CONDITION) -> void:
 	player_input.update_condition(new_condition)
 	player_timer.update_condition(new_condition)
 	invincibility_effect.update_condition(new_condition)
-	player_logger.update_condition(new_condition)
 
 func _update_modules_condition(new_condition: PLAYER_CONDITION) -> void:
 	# アクション系モジュールのコンディションを安全に更新
