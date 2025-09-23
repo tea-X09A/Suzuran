@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://daofj62a4corn"]
+[gd_scene load_steps=17 format=3 uid="uid://daofj62a4corn"]
 
 [ext_resource type="Texture2D" uid="uid://cp0ria1m7rv2l" path="res://assets/images/player/normal_fall/frame_fall_001.png" id="1_gmlin"]
 [ext_resource type="Script" uid="uid://cyb2ijm5xuo6s" path="res://scripts/player/player.gd" id="1_lvxji"]
@@ -108,14 +108,17 @@ animations = [{
 size = Vector2(68, 167)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
-size = Vector2(80, 173.75)
+size = Vector2(80, 179.875)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_fm80t"]
+size = Vector2(60, 30)
 
 [node name="Player" type="CharacterBody2D"]
 script = ExtResource("1_lvxji")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_cperm")
-animation = &"normal_jump"
+animation = &"normal_attack_01"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(-1, 12.5)
@@ -125,5 +128,12 @@ shape = SubResource("RectangleShape2D_ry65h")
 script = ExtResource("1_xqw8k")
 
 [node name="HurtboxCollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
-position = Vector2(-1, 10)
+position = Vector2(-1, 12)
 shape = SubResource("RectangleShape2D_hitbox")
+
+[node name="Hitbox" type="Area2D" parent="."]
+
+[node name="HittboxCollisionShape2D" type="CollisionShape2D" parent="Hitbox"]
+position = Vector2(-50, 21)
+shape = SubResource("RectangleShape2D_fm80t")
+debug_color = Color(0.860735, 0.306094, 0.501864, 0.42)
