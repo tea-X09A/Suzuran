@@ -47,17 +47,23 @@ func initialize(direction: float, speed: float, shooter: Node2D) -> void:
 
 # 物理ボディとの衝突処理
 func _on_body_entered(body: Node2D) -> void:
-	# 発射したキャラクター以外との衝突をチェック
-	if body != owner_character:
-		# ダメージ処理（対象がダメージを受けられる場合）
-		if body.has_method("take_damage"):
-			body.take_damage(damage)
+	# 発射したキャラクターとの衝突を無視
+	if body == owner_character:
+		return
 
-		# クナイを破壊
-		destroy_kunai()
+	# ダメージ処理（対象がダメージを受けられる場合）
+	if body.has_method("take_damage"):
+		body.take_damage(damage)
+
+	# クナイを破壊
+	destroy_kunai()
 
 # エリア（Area2D）との衝突処理
 func _on_area_entered(area: Area2D) -> void:
+	# 発射したキャラクターのhurtboxとの衝突を無視
+	if area.get_parent() == owner_character:
+		return
+
 	# 発射したキャラクター以外との衝突をチェック
 	if area != owner_character:
 		# 他のクナイとの衝突処理
