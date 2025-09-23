@@ -117,7 +117,7 @@ size = Vector2(80, 82)
 size = Vector2(80, 173)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_run_hurtbox"]
-size = Vector2(80, 179)
+size = Vector2(80, 180)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_fighting_hurtbox"]
 size = Vector2(149, 145)
@@ -132,7 +132,7 @@ size = Vector2(157, 63)
 size = Vector2(80, 173)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_walk_hurtbox"]
-size = Vector2(80, 179)
+size = Vector2(80, 180)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_fm80t"]
 size = Vector2(60, 30)
@@ -142,7 +142,7 @@ script = ExtResource("1_lvxji")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_cperm")
-animation = &"normal_shooting_01_002"
+animation = &"normal_idle"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 visible = false
@@ -172,7 +172,7 @@ visible = false
 script = ExtResource("1_xqw8k")
 
 [node name="HurtboxCollision" type="CollisionShape2D" parent="JumpHurtbox"]
-position = Vector2(-12, 3.5)
+position = Vector2(-1, 3.5)
 shape = SubResource("RectangleShape2D_jump_hurtbox")
 disabled = true
 
@@ -181,7 +181,7 @@ visible = false
 script = ExtResource("1_xqw8k")
 
 [node name="HurtboxCollision" type="CollisionShape2D" parent="RunHurtbox"]
-position = Vector2(-9, 12)
+position = Vector2(-1, 12)
 shape = SubResource("RectangleShape2D_run_hurtbox")
 disabled = true
 
@@ -217,7 +217,7 @@ visible = false
 script = ExtResource("1_xqw8k")
 
 [node name="HurtboxCollision" type="CollisionShape2D" parent="FallHurtbox"]
-position = Vector2(-12, 3.5)
+position = Vector2(-1, 3.5)
 shape = SubResource("RectangleShape2D_fall_hurtbox")
 disabled = true
 
@@ -226,7 +226,7 @@ visible = false
 script = ExtResource("1_xqw8k")
 
 [node name="HurtboxCollision" type="CollisionShape2D" parent="WalkHurtbox"]
-position = Vector2(-9, 12)
+position = Vector2(-1, 12)
 shape = SubResource("RectangleShape2D_walk_hurtbox")
 disabled = true
 
