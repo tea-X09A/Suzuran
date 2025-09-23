@@ -27,6 +27,17 @@ enum PLAYER_STATE {
 # コリジョンシェイプ（当たり判定）
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
 
+# Hurtboxコンポーネント（各状態に対応したダメージ判定ボックス）
+@onready var idle_hurtbox: PlayerHurtbox = $IdleHurtbox
+@onready var walk_hurtbox: PlayerHurtbox = $WalkHurtbox
+@onready var run_hurtbox: PlayerHurtbox = $RunHurtbox
+@onready var jump_hurtbox: PlayerHurtbox = $JumpHurtbox
+@onready var fall_hurtbox: PlayerHurtbox = $FallHurtbox
+@onready var squat_hurtbox: PlayerHurtbox = $SquatHurtbox
+@onready var fighting_hurtbox: PlayerHurtbox = $FightingHurtbox
+@onready var shooting_hurtbox: PlayerHurtbox = $ShootingHurtbox
+@onready var down_hurtbox: PlayerHurtbox = $DownHurtbox
+
 # ======================== エクスポート変数 ========================
 # インスペクタから設定可能な初期コンディション
 @export var initial_condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
@@ -87,6 +98,10 @@ var running_state_when_airborne: bool = false
 # 前フレームでの空中状態フラグ（状態変化検出用）
 var was_airborne: bool = false
 
+# ======================== Hurtbox管理変数 ========================
+# 現在アクティブなhurtbox（追跡用）
+var current_active_hurtbox: PlayerHurtbox = null
+
 # ======================== 初期化処理 ========================
 
 func _ready() -> void:
@@ -103,6 +118,9 @@ func _ready() -> void:
 
 	# モジュール間のシグナル接続を設定
 	_connect_signals()
+
+	# 初期hurtboxを設定（IdleHurtboxをアクティブに）
+	switch_hurtbox(idle_hurtbox)
 
 func _initialize_modules() -> void:
 	# アクション系モジュールの初期化（移動、戦闘、射撃など）
@@ -159,6 +177,9 @@ func _physics_process(delta: float) -> void:
 
 	# プレイヤー状態の最終更新（アニメーション等）
 	player_state.update_state()
+
+	# 現在の状態に応じてhurtboxを更新
+	update_hurtbox_for_current_state()
 
 
 # ======================== 物理演算処理 ========================
@@ -243,6 +264,8 @@ func handle_fighting() -> void:
 	# 戦闘状態フラグを設定
 	is_fighting = true
 	state = PLAYER_STATE.FIGHTING
+	# 戦闘用hurtboxに切り替え
+	switch_hurtbox(fighting_hurtbox)
 	# 戦闘モジュールで戦闘処理を実行
 	get_current_fighting().handle_fighting()
 
@@ -254,6 +277,8 @@ func handle_shooting() -> void:
 		# 射撃状態フラグを設定
 		is_shooting = true
 		state = PLAYER_STATE.SHOOTING
+		# 射撃用hurtboxに切り替え
+		switch_hurtbox(shooting_hurtbox)
 		# 射撃モジュールで射撃処理を実行
 		get_current_shooting().handle_shooting()
 
@@ -352,6 +377,75 @@ func is_physics_control_disabled() -> bool:
 		return true
 
 	return false
+
+# ======================== Hurtbox管理 ========================
+
+## 指定されたhurtboxに切り替える（他のhurtboxは無効化）
+func switch_hurtbox(new_hurtbox: PlayerHurtbox) -> void:
+	# 現在のhurtboxを無効化
+	if current_active_hurtbox != null and current_active_hurtbox != new_hurtbox:
+		current_active_hurtbox.deactivate_hurtbox()
+
+	# 新しいhurtboxを有効化
+	if new_hurtbox != null:
+		new_hurtbox.activate_hurtbox()
+		current_active_hurtbox = new_hurtbox
+
+## 現在の状態に応じた適切なhurtboxに切り替える
+func update_hurtbox_for_current_state() -> void:
+	var target_hurtbox: PlayerHurtbox = null
+
+	# ダメージ状態：ダウン中ならdown_hurtbox、そうでなければ現在のhurtboxを維持
+	if is_damaged:
+		if player_damaged and player_damaged.is_in_knockback_landing_state():
+			target_hurtbox = down_hurtbox
+		else:
+			# ダメージ中は現在のhurtboxを維持（切り替えない）
+			return
+	# 戦闘状態：fighting_hurtbox
+	elif is_fighting:
+		target_hurtbox = fighting_hurtbox
+	# 射撃状態：shooting_hurtbox
+	elif is_shooting:
+		target_hurtbox = shooting_hurtbox
+	# 通常の移動状態
+	else:
+		# しゃがみ状態
+		if is_squatting:
+			target_hurtbox = squat_hurtbox
+		# 空中状態
+		elif not is_on_floor():
+			# 上昇中または下降開始
+			if velocity.y < 0:
+				target_hurtbox = jump_hurtbox
+			# 落下中
+			else:
+				target_hurtbox = fall_hurtbox
+		# 地上での移動状態
+		else:
+			# 走行状態
+			if is_running and abs(direction_x) > 0:
+				target_hurtbox = run_hurtbox
+			# 歩行状態
+			elif abs(direction_x) > 0:
+				target_hurtbox = walk_hurtbox
+			# 待機状態
+			else:
+				target_hurtbox = idle_hurtbox
+
+	# 対象hurtboxに切り替え
+	if target_hurtbox != null:
+		switch_hurtbox(target_hurtbox)
+
+## 全てのhurtboxを無効化（無敵状態用）
+func deactivate_all_hurtboxes() -> void:
+	if current_active_hurtbox != null:
+		current_active_hurtbox.deactivate_hurtbox()
+		current_active_hurtbox = null
+
+## 現在アクティブなhurtboxを再有効化（無敵解除用）
+func reactivate_current_hurtbox() -> void:
+	update_hurtbox_for_current_state()
 
 # ======================== コンディション管理 ========================
 

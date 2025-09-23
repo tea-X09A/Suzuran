@@ -76,6 +76,9 @@ func handle_damage(_damage: int, animation_type: String, direction: Vector2, for
 	is_invincible = true
 	invincibility_timer = get_parameter("invincibility_duration")
 
+	# 無敵状態開始時：全hurtboxを無効化
+	player.deactivate_all_hurtboxes()
+
 	# コリジョンは地形との当たり判定のため有効のまま維持
 	damage_timer = get_parameter("damage_duration")
 	knockback_timer = get_parameter("knockback_duration")
@@ -136,6 +139,9 @@ func start_down_state() -> void:
 	is_invincible = false
 	invincibility_timer = 0.0
 
+	# down状態開始時：down_hurtboxを有効化
+	player.switch_hurtbox(player.down_hurtbox)
+
 	var log_prefix: String = get_parameter("log_prefix")
 	var prefix_text: String = (log_prefix + "ダウン状態開始") if log_prefix != "" else "ダウン状態開始"
 	if log_prefix == "":
@@ -172,6 +178,8 @@ func update_invincibility_timer(delta: float) -> void:
 		invincibility_timer -= delta
 		if invincibility_timer <= 0.0:
 			is_invincible = false
+			# 無敵状態解除時：hurtboxを再有効化
+			player.reactivate_current_hurtbox()
 
 	update_recovery_invincibility_timer(delta)
 
@@ -193,6 +201,8 @@ func handle_recovery_jump() -> void:
 		is_recovery_invincible = false
 		invincibility_timer = 0.0
 		recovery_invincibility_timer = 0.0
+		# 無敵強制解除時：hurtboxを再有効化
+		player.reactivate_current_hurtbox()
 		# 水平速度をリセットして垂直ジャンプにする
 		player.velocity.x = 0.0
 		finish_damaged()
@@ -215,6 +225,8 @@ func update_recovery_invincibility_timer(delta: float) -> void:
 		recovery_invincibility_timer -= delta
 		if recovery_invincibility_timer <= 0.0:
 			is_recovery_invincible = false
+			# 復帰無敵解除時：hurtboxを再有効化
+			player.reactivate_current_hurtbox()
 			var log_prefix: String = get_parameter("log_prefix")
 			var prefix_text: String = (log_prefix + " recovery無敵時間終了") if log_prefix != "" else "recovery無敵時間終了"
 			print(prefix_text)
