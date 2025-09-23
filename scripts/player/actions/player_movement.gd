@@ -57,7 +57,7 @@ func _init(player_instance: CharacterBody2D, player_condition: Player.PLAYER_CON
 	player = player_instance
 	condition = player_condition
 	animated_sprite = player.get_node("AnimatedSprite2D") as AnimatedSprite2D
-	collision_shape = player.get_node("CollisionShape2D") as CollisionShape2D
+	collision_shape = player.get_node("IdleCollision") as CollisionShape2D
 	GRAVITY = ProjectSettings.get_setting("physics/2d/default_gravity")
 
 func get_parameter(key: String) -> Variant:
