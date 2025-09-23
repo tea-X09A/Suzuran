@@ -74,6 +74,10 @@ func handle_movement(direction_x: float, is_running: bool, is_squatting: bool) -
 	update_collision_shape(is_squatting)
 
 func _handle_ground_movement(direction_x: float, is_running: bool) -> void:
+	# バックジャンプ等の特殊な水平速度保護中は地上移動制御を無効化
+	if player.ignore_jump_horizontal_velocity:
+		return
+
 	# アクション中は適切な速度を使用（running 状態を保持）
 	var effective_running: bool = is_running
 	if player.is_fighting or player.is_shooting:

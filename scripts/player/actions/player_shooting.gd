@@ -78,6 +78,9 @@ func handle_back_jump_shooting() -> void:
 	player.velocity.y = -get_parameter("jump_force")
 	player.velocity.x = back_velocity
 
+	# バックジャンプの水平速度を保護（着地時に自動的にfalseになる）
+	player.ignore_jump_horizontal_velocity = true
+
 	shooting_cooldown_timer = get_parameter("shooting_cooldown")
 	shooting_timer = get_parameter("shooting_animation_duration")
 
