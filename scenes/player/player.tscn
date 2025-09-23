@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://daofj62a4corn"]
+[gd_scene load_steps=24 format=3 uid="uid://daofj62a4corn"]
 
 [ext_resource type="Texture2D" uid="uid://cp0ria1m7rv2l" path="res://assets/images/player/normal_fall/frame_fall_001.png" id="1_gmlin"]
 [ext_resource type="Script" uid="uid://cyb2ijm5xuo6s" path="res://scripts/player/player.gd" id="1_lvxji"]
@@ -107,8 +107,29 @@ animations = [{
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ry65h"]
 size = Vector2(68, 167)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_gx1jg"]
+size = Vector2(68, 70)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ugbui"]
+size = Vector2(145, 51)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_fcs02"]
+size = Vector2(68, 161)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_myrg7"]
+size = Vector2(68, 167)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_kvlxm"]
+size = Vector2(137, 133)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_uf5tr"]
+size = Vector2(68, 167)
+
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
 size = Vector2(80, 179.875)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_lgqa7"]
+size = Vector2(80, 180)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_fm80t"]
 size = Vector2(60, 30)
@@ -118,22 +139,69 @@ script = ExtResource("1_lvxji")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_cperm")
-animation = &"normal_attack_01"
+animation = &"normal_shooting_01_002"
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="IdleCollision" type="CollisionShape2D" parent="."]
 position = Vector2(-1, 12.5)
 shape = SubResource("RectangleShape2D_ry65h")
 
-[node name="Hurtbox" type="Area2D" parent="."]
+[node name="SquatCollision" type="CollisionShape2D" parent="."]
+visible = false
+position = Vector2(-1, 61)
+shape = SubResource("RectangleShape2D_gx1jg")
+disabled = true
+
+[node name="DownCollision" type="CollisionShape2D" parent="."]
+visible = false
+position = Vector2(17.5, 70.5)
+shape = SubResource("RectangleShape2D_ugbui")
+disabled = true
+
+[node name="JumpCollision" type="CollisionShape2D" parent="."]
+visible = false
+position = Vector2(-12, 3.5)
+shape = SubResource("RectangleShape2D_fcs02")
+disabled = true
+
+[node name="RunCollision" type="CollisionShape2D" parent="."]
+visible = false
+position = Vector2(-9, 12)
+shape = SubResource("RectangleShape2D_myrg7")
+disabled = true
+
+[node name="FightingCollision" type="CollisionShape2D" parent="."]
+visible = false
+position = Vector2(-12.5, 29.5)
+shape = SubResource("RectangleShape2D_kvlxm")
+disabled = true
+
+[node name="ShootingCollision" type="CollisionShape2D" parent="."]
+visible = false
+position = Vector2(-1, 12.5)
+shape = SubResource("RectangleShape2D_uf5tr")
+disabled = true
+
+[node name="IdleHurtbox" type="Area2D" parent="."]
 script = ExtResource("1_xqw8k")
 
-[node name="HurtboxCollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+[node name="HurtboxCollision" type="CollisionShape2D" parent="IdleHurtbox"]
 position = Vector2(-1, 12)
 shape = SubResource("RectangleShape2D_hitbox")
 
-[node name="Hitbox" type="Area2D" parent="."]
+[node name="SquatHurtbox" type="Area2D" parent="."]
+visible = false
+script = ExtResource("1_xqw8k")
 
-[node name="HittboxCollisionShape2D" type="CollisionShape2D" parent="Hitbox"]
+[node name="HurtboxCollision" type="CollisionShape2D" parent="SquatHurtbox"]
+position = Vector2(-1, 12)
+shape = SubResource("RectangleShape2D_lgqa7")
+disabled = true
+
+[node name="FightingHitbox" type="Area2D" parent="."]
+visible = false
+
+[node name="HitboxCollision" type="CollisionShape2D" parent="FightingHitbox"]
 position = Vector2(-50, 21)
 shape = SubResource("RectangleShape2D_fm80t")
+disabled = true
 debug_color = Color(0.860735, 0.306094, 0.501864, 0.42)
