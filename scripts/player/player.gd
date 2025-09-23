@@ -182,11 +182,15 @@ func _handle_airborne_state_changes() -> void:
 	if not was_airborne and current_airborne:
 		running_state_when_airborne = is_running
 
-	# 空中から地上に着地した瞬間：保存した走行状態をリセット
+	# 空中から地上に着地した瞬間：入力状態を確認してrun状態を適切に設定
 	elif was_airborne and not current_airborne:
-		running_state_when_airborne = false
-		# 着地時は走行状態をリセットしてidle状態に遷移
-		is_running = false
+		var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
+		var has_direction: bool = Input.is_action_pressed("left") or Input.is_action_pressed("right")
+
+		if shift_pressed and has_direction:
+			is_running = true
+		else:
+			is_running = false
 
 	# 次フレームでの比較用に現在の状態を保存
 	was_airborne = current_airborne
