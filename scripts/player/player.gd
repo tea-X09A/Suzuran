@@ -41,6 +41,12 @@ var is_jumping_by_input: bool = false
 var ignore_jump_horizontal_velocity: bool = false
 var is_grounded: bool = false
 
+# アクション開始時の状態保持
+var running_state_when_action_started: bool = false
+# 空中時の状態保持
+var running_state_when_airborne: bool = false
+var was_airborne: bool = false
+
 func _ready() -> void:
 	# プレイヤーをplayerグループに追加
 	add_to_group("player")
@@ -85,6 +91,7 @@ func _physics_process(delta: float) -> void:
 	player_timer.update_timers(delta)
 	_apply_physics(delta)
 	_handle_input_based_on_state()
+	_handle_airborne_state_changes()
 	update_fighting_shooting_damaged(delta)
 	move_and_slide()
 	player_state.update_state()
@@ -93,6 +100,19 @@ func _physics_process(delta: float) -> void:
 func _apply_physics(delta: float) -> void:
 	get_current_movement().apply_gravity(delta)
 	get_current_movement().apply_variable_jump(delta)
+
+func _handle_airborne_state_changes() -> void:
+	var current_airborne: bool = not is_on_floor()
+
+	# 地上から空中になった場合：running状態を保存
+	if not was_airborne and current_airborne:
+		running_state_when_airborne = is_running
+
+	# 空中から地上になった場合：running状態をリセット
+	elif was_airborne and not current_airborne:
+		running_state_when_airborne = false
+
+	was_airborne = current_airborne
 
 func _handle_input_based_on_state() -> void:
 	if not is_damaged:
@@ -125,6 +145,7 @@ func handle_movement() -> void:
 
 func handle_fighting() -> void:
 	player_logger.log_action("戦闘")
+	running_state_when_action_started = is_running
 	is_fighting = true
 	state = PLAYER_STATE.FIGHTING
 	get_current_fighting().handle_fighting()
@@ -132,6 +153,7 @@ func handle_fighting() -> void:
 func handle_shooting() -> void:
 	if get_current_shooting().can_shoot():
 		player_logger.log_action("射撃")
+		running_state_when_action_started = is_running
 		is_shooting = true
 		state = PLAYER_STATE.SHOOTING
 		get_current_shooting().handle_shooting()
@@ -169,10 +191,12 @@ func _update_damaged_state(delta: float) -> void:
 # シグナルハンドラー
 func _on_fighting_finished() -> void:
 	is_fighting = false
+	is_running = running_state_when_action_started
 	player_state.reset_animation_state()
 
 func _on_shooting_finished() -> void:
 	is_shooting = false
+	is_running = running_state_when_action_started
 	player_state.reset_animation_state()
 
 func _on_damaged_finished() -> void:

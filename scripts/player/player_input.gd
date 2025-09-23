@@ -57,9 +57,14 @@ func _handle_movement_inputs() -> void:
 	if _can_move():
 		_set_movement_direction(left_key, right_key, shift_pressed)
 	else:
-		player.direction_x = 0.0
-		if player.is_grounded:
-			player.is_running = false
+		# fighting/shooting中でも左右入力は処理する（空中制御のため）
+		if player.player_state.is_airborne_state() and (player.is_fighting or player.is_shooting):
+			_set_direction_only(left_key, right_key)
+		else:
+			player.direction_x = 0.0
+			# アクション中でない場合のみ running 状態をリセット
+			if player.is_grounded and not (player.is_fighting or player.is_shooting):
+				player.is_running = false
 
 func _handle_jump_inputs() -> void:
 	if Input.is_action_just_pressed("jump") and _can_jump():
@@ -76,7 +81,16 @@ func _can_perform_action() -> bool:
 	return not player.is_fighting and not player.is_shooting and not player.is_damaged
 
 func _can_move() -> bool:
-	return not player.is_squatting and _can_perform_action()
+	# しゃがみ中は移動不可
+	if player.is_squatting:
+		return false
+
+	# 空中（jump/fall状態）では常に左右移動を許可
+	if player.player_state.is_airborne_state():
+		return true
+
+	# 地上では通常のアクション制限を適用
+	return _can_perform_action()
 
 func _can_jump() -> bool:
 	return not player.is_squatting and _can_perform_action()
@@ -85,21 +99,31 @@ func _set_movement_direction(left_key: bool, right_key: bool, shift_pressed: boo
 	if player.is_grounded:
 		if left_key:
 			player.direction_x = -1.0
-			player.is_running = shift_pressed
+			# アクション中でない場合のみ running 状態を更新
+			if not (player.is_fighting or player.is_shooting):
+				player.is_running = shift_pressed
 		elif right_key:
 			player.direction_x = 1.0
-			player.is_running = shift_pressed
+			# アクション中でない場合のみ running 状態を更新
+			if not (player.is_fighting or player.is_shooting):
+				player.is_running = shift_pressed
 		else:
 			player.direction_x = 0.0
-			player.is_running = false
+			# アクション中でない場合のみ running 状態をリセット
+			if not (player.is_fighting or player.is_shooting):
+				player.is_running = false
 	else:
-		if left_key:
-			player.direction_x = -1.0
-		elif right_key:
-			player.direction_x = 1.0
-		else:
-			player.direction_x = 0.0
-		player.is_running = shift_pressed and (left_key or right_key)
+		# 空中では方向のみ設定し、running状態は変更しない（保存された状態を維持）
+		_set_direction_only(left_key, right_key)
+
+func _set_direction_only(left_key: bool, right_key: bool) -> void:
+	# 方向のみを設定し、running 状態は変更しない
+	if left_key:
+		player.direction_x = -1.0
+	elif right_key:
+		player.direction_x = 1.0
+	else:
+		player.direction_x = 0.0
 
 # =====================================================
 # 入力バリデーション
