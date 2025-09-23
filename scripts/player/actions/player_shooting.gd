@@ -78,9 +78,6 @@ func handle_back_jump_shooting() -> void:
 	player.velocity.y = -get_parameter("jump_force")
 	player.velocity.x = back_velocity
 
-	# jump_horizontal_velocityも設定して、handle_movement()での上書きを防ぐ
-	player.get_current_movement().set_jump_horizontal_velocity(back_velocity)
-
 	shooting_cooldown_timer = get_parameter("shooting_cooldown")
 	shooting_timer = get_parameter("shooting_animation_duration")
 

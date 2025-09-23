@@ -45,7 +45,6 @@ var collision_squat_offset: Vector2 = Vector2(0, 42)
 
 # 内部状態
 var was_squatting: bool = false
-var jump_horizontal_velocity: float = 0.0
 var is_jumping: bool = false
 var jump_hold_timer: float = 0.0
 var jump_hold_max_time: float = 0.4  # ジャンプボタン長押し最大時間（秒）
@@ -160,8 +159,6 @@ func get_move_walk_speed() -> float:
 func get_move_run_speed() -> float:
 	return get_parameter("move_run_speed")
 
-func set_jump_horizontal_velocity(velocity: float) -> void:
-	jump_horizontal_velocity = velocity
 
 func set_jumping_state(jumping: bool, timer: float = 0.0) -> void:
 	is_jumping = jumping
