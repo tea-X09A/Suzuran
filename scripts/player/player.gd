@@ -151,14 +151,14 @@ func _physics_process(delta: float) -> void:
 	# 現在の状態に応じた入力処理を実行
 	_handle_input_based_on_state()
 
-	# 空中⇔地上の状態変化を検出・処理
-	_handle_airborne_state_changes()
-
 	# 戦闘・射撃・ダメージ状態の更新処理
 	update_fighting_shooting_damaged(delta)
 
 	# Godotの物理移動システムでキャラクターを移動
 	move_and_slide()
+
+	# move_and_slide後の正確な地面接触状態で空中⇔地上の状態変化を検出・処理
+	_handle_airborne_state_changes()
 
 	# プレイヤー状態の最終更新（アニメーション等）
 	player_state.update_state()
@@ -185,6 +185,8 @@ func _handle_airborne_state_changes() -> void:
 	# 空中から地上に着地した瞬間：保存した走行状態をリセット
 	elif was_airborne and not current_airborne:
 		running_state_when_airborne = false
+		# 着地時は走行状態をリセットしてidle状態に遷移
+		is_running = false
 
 	# 次フレームでの比較用に現在の状態を保存
 	was_airborne = current_airborne
