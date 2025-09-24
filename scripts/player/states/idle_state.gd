@@ -5,39 +5,41 @@ func enter() -> void:
 	player.state = Player.PLAYER_STATE.IDLE
 	player.is_running = false
 
+	# アイドルアニメーション開始
+	play_animation("idle")
+
 func process_physics(delta: float) -> void:
-	# テンプレートメソッドを使用して共通物理処理を実行
-	process_common_physics(delta)
+	# 重力適用
+	apply_gravity(delta)
 
-	# テンプレートで取得した入力方向を再取得して状態遷移判定
-	var direction_x: float = Input.get_axis("left", "right")
+	# 入力処理（入力システムに委譲）
+	player.player_input.handle_input()
 
-	if direction_x != 0:
-		var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
-		if shift_pressed:
+	# 状態遷移チェック
+	check_state_transitions()
+
+	# 地上での速度リセット
+	if player.is_on_floor():
+		player.velocity.x = 0.0
+
+func check_state_transitions() -> void:
+	# 移動入力による状態遷移
+	if player.direction_x != 0.0:
+		if player.is_running:
 			player.change_state("run")
 		else:
 			player.change_state("walk")
 		return
 
-	# 共通のアクション入力をチェック
-	var action: String = handle_common_action_inputs()
-	if action != "":
-		player.change_state(action)
+	# しゃがみ状態
+	if player.is_squatting:
+		player.change_state("squat")
 		return
 
-	# 待機中は水平方向の速度をリセット
-	if player.is_on_floor():
-		player.velocity.x = 0.0
-
-# ======================== テンプレートメソッドのフックメソッドオーバーライド ========================
-
-# IdleStateでは方向設定とムーブメント処理をスキップ
-func should_set_direction() -> bool:
-	return false
-
-func should_handle_movement() -> bool:
-	return false
+	# ジャンプ入力（バッファ対応）
+	if player.player_input.can_buffer_jump():
+		player.change_state("jump")
+		return
 
 func exit() -> void:
 	pass

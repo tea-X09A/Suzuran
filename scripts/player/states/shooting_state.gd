@@ -32,8 +32,16 @@ func process_physics(delta: float) -> void:
 
 	# 射撃が終了したかチェック
 	if shooting_timer <= 0.0:
-		# 射撃終了後は適切な状態に遷移
-		transition_to_appropriate_state()
+		# 射撃終了後は入力状況によって適切な状態に遷移
+		var direction_x: float = Input.get_axis("left", "right")
+		if direction_x == 0.0:
+			player.change_state("idle")
+		else:
+			var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
+			if shift_pressed:
+				player.change_state("run")
+			else:
+				player.change_state("walk")
 		return
 
 	# 射撃中のバックジャンプ射撃対応
@@ -42,7 +50,7 @@ func process_physics(delta: float) -> void:
 		return
 
 	# 射撃中でも戦闘アクションへの遷移は可能
-	if check_for_fighting_input():
+	if Input.is_action_just_pressed("fighting"):
 		player.change_state("fighting")
 		return
 
@@ -53,8 +61,6 @@ func exit() -> void:
 	# 射撃状態は State Machine で管理（状態遷移で自動解除）
 	# 射撃開始前の走行状態を復元
 	player.is_running = player.running_state_when_action_started
-	# アニメーション状態をリセット（統合マネージャーに委譲）
-	player.player_manager.reset_animation_state()
 
 	# 状態のリセット
 	can_back_jump = false
@@ -75,10 +81,10 @@ func handle_shooting() -> void:
 	spawn_kunai()
 
 	if player.is_on_floor():
-		animated_sprite.play(get_grounded_animation_name())
+		play_animation(get_grounded_animation_name().replace(get_parameter("animation_prefix") + "_", ""))
 		can_back_jump = true
 	else:
-		animated_sprite.play(get_airborne_animation_name())
+		play_animation(get_airborne_animation_name().replace(get_parameter("animation_prefix") + "_", ""))
 		can_back_jump = false
 
 	# アニメーション完了シグナルの接続（重複接続を防止）
@@ -110,7 +116,7 @@ func handle_back_jump_shooting() -> void:
 	shooting_timer = get_parameter("shooting_animation_duration")
 
 	spawn_kunai()
-	animated_sprite.play(get_airborne_animation_name())
+	play_animation(get_airborne_animation_name().replace(get_parameter("animation_prefix") + "_", ""))
 
 	shooting_grounded = false
 

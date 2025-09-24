@@ -28,15 +28,23 @@ func enter() -> void:
 func process_physics(delta: float) -> void:
 	# 戦闘タイマーを更新し、戦闘が終了したかチェック
 	if not update_fighting_timer(delta):
-		# 戦闘終了後は適切な状態に遷移
-		transition_to_appropriate_state()
+		# 戦闘終了後は入力状況によって適切な状態に遷移
+		var direction_x: float = Input.get_axis("left", "right")
+		if direction_x == 0.0:
+			player.change_state("idle")
+		else:
+			var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
+			if shift_pressed:
+				player.change_state("run")
+			else:
+				player.change_state("walk")
 		return
 
 	# 戦闘中の移動を適用
 	apply_fighting_movement()
 
 	# 戦闘中でも他のアクションへの遷移は可能
-	if check_for_shooting_input():
+	if Input.is_action_just_pressed("shooting") and player.can_shoot():
 		cancel_fighting()
 		player.change_state("shooting")
 		return
@@ -49,7 +57,6 @@ func exit() -> void:
 func handle_fighting() -> void:
 	# 攻撃が有効でない場合は処理を停止
 	if not get_parameter("fighting_enabled"):
-		print("攻撃が無効化されています")
 		return
 
 	# 攻撃方向の決定
@@ -72,7 +79,7 @@ func handle_fighting() -> void:
 	fighting_timer = get_parameter("move_fighting_duration")
 
 	# アニメーション再生
-	animated_sprite.play(get_animation_name())
+	play_animation("attack_01")
 
 	# アニメーション完了シグナルの接続（重複接続を防止）
 	connect_animation_signal(_on_fighting_animation_finished)
@@ -119,9 +126,6 @@ func end_fighting() -> void:
 func cancel_fighting() -> void:
 	end_fighting()
 
-func get_animation_name() -> String:
-	var prefix: String = get_parameter("animation_prefix")
-	return prefix + "_attack_01"
 
 func is_airborne_attack() -> bool:
 	# 攻撃が有効でない場合は常にfalse

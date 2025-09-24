@@ -37,8 +37,16 @@ func process_physics(delta: float) -> void:
 
 	# ダメージが終了したかチェック
 	if not is_damaged:
-		# ダメージ終了後は適切な状態に遷移
-		transition_to_appropriate_state()
+		# ダメージ終了後は入力状況によって適切な状態に遷移
+		var direction_x: float = Input.get_axis("left", "right")
+		if direction_x == 0.0:
+			player.change_state("idle")
+		else:
+			var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
+			if shift_pressed:
+				player.change_state("run")
+			else:
+				player.change_state("walk")
 		return
 
 	# ノックバック着地状態の場合は限定的な移動を許可
@@ -46,7 +54,12 @@ func process_physics(delta: float) -> void:
 		var direction_x: float = Input.get_axis("left", "right")
 		player.direction_x = direction_x
 		# ダメージ中の制限された移動処理
-		handle_movement(direction_x, false, false)
+		if direction_x != 0.0:
+			var walk_speed: float = get_parameter("move_walk_speed") * 0.5  # ダメージ中は速度半分
+			player.velocity.x = direction_x * walk_speed
+			update_sprite_direction(direction_x)
+		else:
+			player.velocity.x = 0.0
 
 func handle_input(event: InputEvent) -> void:
 	# ダメージ状態でのジャンプ入力処理
@@ -84,13 +97,9 @@ func handle_damage(_damage: int, animation_type: String, direction: Vector2, for
 	player.velocity.x = direction.x * force * knockback_multiplier
 	player.velocity.y = -get_parameter("knockback_vertical_force")
 
-	var log_prefix: String = get_parameter("log_prefix")
-	var prefix_text: String = (log_prefix + "ダメージアニメーション開始: ") if log_prefix != "" else "ダメージアニメーション開始: "
-	print(prefix_text, animation_type)
 
-	var condition_prefix: String = get_parameter("animation_prefix")
 	# 常にdamagedアニメーションを再生
-	animated_sprite.play(condition_prefix + "_damaged")
+	play_animation("damaged")
 
 # ======================== タイマー更新処理 ========================
 
@@ -137,14 +146,8 @@ func start_down_state() -> void:
 	# down状態開始時：down_hurtboxを有効化
 	player.switch_hurtbox(player.down_hurtbox)
 
-	var log_prefix: String = get_parameter("log_prefix")
-	var prefix_text: String = (log_prefix + "ダウン状態開始") if log_prefix != "" else "ダウン状態開始"
-	if log_prefix == "":
-		prefix_text += " - 無敵解除"
-	print(prefix_text)
 
-	var condition_prefix: String = get_parameter("animation_prefix")
-	animated_sprite.play(condition_prefix + "_down_01")
+	play_animation("down_01")
 
 func finish_damaged() -> void:
 	is_damaged = false
@@ -158,9 +161,6 @@ func finish_damaged() -> void:
 	is_recovery_invincible = true
 	recovery_invincibility_timer = get_parameter("recovery_invincibility_duration")
 
-	var log_prefix: String = get_parameter("log_prefix")
-	var prefix_text: String = (log_prefix + "ダメージ状態終了 - 無敵時間付与") if log_prefix != "" else "ダメージ状態終了 - 無敵時間付与"
-	print(prefix_text)
 	damaged_finished.emit()
 
 func cancel_damaged() -> void:
@@ -204,9 +204,6 @@ func handle_recovery_jump() -> void:
 		finish_damaged()
 	elif is_damaged and not is_in_down_state:
 		# ノックバック状態からのジャンプ: モーションキャンセルと無敵時間付与
-		var log_prefix: String = get_parameter("log_prefix")
-		var prefix_text: String = (log_prefix + "ノックバック状態からのジャンプ復帰") if log_prefix != "" else "ノックバック状態からのジャンプ復帰"
-		print(prefix_text)
 		# ノックバック効果をキャンセル
 		knockback_timer = 0.0
 		knockback_direction = Vector2.ZERO
@@ -223,6 +220,3 @@ func update_recovery_invincibility_timer(delta: float) -> void:
 			is_recovery_invincible = false
 			# 復帰無敵解除時：hurtboxを再有効化
 			player.reactivate_current_hurtbox()
-			var log_prefix: String = get_parameter("log_prefix")
-			var prefix_text: String = (log_prefix + " recovery無敵時間終了") if log_prefix != "" else "recovery無敵時間終了"
-			print(prefix_text)
