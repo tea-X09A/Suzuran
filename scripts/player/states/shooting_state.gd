@@ -53,8 +53,8 @@ func exit() -> void:
 	# 射撃状態は State Machine で管理（状態遷移で自動解除）
 	# 射撃開始前の走行状態を復元
 	player.is_running = player.running_state_when_action_started
-	# アニメーション状態をリセット
-	player.player_state.reset_animation_state()
+	# アニメーション状態をリセット（統合マネージャーに委譲）
+	player.player_manager.reset_animation_state()
 
 	# 状態のリセット
 	can_back_jump = false

@@ -10,7 +10,8 @@ var GRAVITY: float
 
 func _init(player_instance: CharacterBody2D) -> void:
 	player = player_instance
-	animated_sprite = player.get_node("AnimatedSprite2D") as AnimatedSprite2D
+	# 安全な参照取得: プレイヤーのキャッシュされたanimated_sprite_2dを直接利用
+	animated_sprite = player.animated_sprite_2d
 	condition = player.condition
 	GRAVITY = ProjectSettings.get_setting("physics/2d/default_gravity")
 

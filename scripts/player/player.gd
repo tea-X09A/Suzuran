@@ -59,12 +59,8 @@ var states: Dictionary
 # これらの処理はState Machineで管理される
 
 # ======================== システムコンポーネント参照 ========================
-# 入力処理を管理するコンポーネント
-var player_input: PlayerInput
-# 状態管理を担当するコンポーネント
-var player_state: PlayerState
-# タイマー管理を担当するコンポーネント
-var player_timer: PlayerTimer
+# 入力処理とタイマー管理を統合したマネージャー（PlayerInputとPlayerTimerを統合）
+var player_manager: PlayerManager
 # 無敵状態エフェクトを管理するコンポーネント
 var invincibility_effect: InvincibilityEffect
 
@@ -89,8 +85,7 @@ var is_grounded: bool = false
 var running_state_when_action_started: bool = false
 # 空中になった瞬間の走行状態を保持
 var running_state_when_airborne: bool = false
-# 前フレームでの空中状態フラグ（状態変化検出用）
-var was_airborne: bool = false
+# 削除: was_airborne - 状態変化検出処理を各状態に委譲したため不要
 
 # ======================== 射撃管理変数 ========================
 # 射撃クールダウンタイマー（全状態で共有）
@@ -128,10 +123,8 @@ func _initialize_modules() -> void:
 	# 削除: player_movement, player_jumpの初期化
 	# これらの処理はState Machineで管理される
 
-	# システム系コンポーネントの初期化（入力、状態管理など）
-	player_input = PlayerInput.new(self, condition)
-	player_state = PlayerState.new(self, condition)
-	player_timer = PlayerTimer.new(self, condition)
+	# システム系コンポーネントの初期化（統合マネージャーを使用）
+	player_manager = PlayerManager.new(self, condition)
 	invincibility_effect = InvincibilityEffect.new(self, condition)
 
 func _connect_signals() -> void:
@@ -172,9 +165,9 @@ func _process(delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	# 物理演算のステップごとに固定間隔で実行される処理
 
-	# 地面接触状態の更新とタイマー管理
-	player_timer.update_ground_state()
-	player_timer.update_timers(delta)
+	# 地面接触状態の更新とタイマー管理（統合マネージャーに委譲）
+	player_manager.update_ground_state()
+	player_manager.update_timers(delta)
 
 	# 重力とジャンプの物理演算を適用（全状態共通）
 	_apply_physics(delta)
@@ -183,22 +176,17 @@ func _physics_process(delta: float) -> void:
 	if current_state != null:
 		current_state.process_physics(delta)
 
-	# 削除: _handle_input_based_on_state()
-	# 入力処理はState Machineで管理される
-
-	# 削除: update_fighting_damaged() - State Machineで管理
-
 	# 射撃クールダウンタイマーの更新
 	update_shooting_cooldown(delta)
 
 	# Godotの物理移動システムでキャラクターを移動
 	move_and_slide()
 
-	# move_and_slide後の正確な地面接触状態で空中⇔地上の状態変化を検出・処理
-	_handle_airborne_state_changes()
+	# 削除: _handle_airborne_state_changes()
+	# 空中⇔地上の状態変化検出・処理は各状態に委譲
 
-	# プレイヤー状態の最終更新（アニメーション等）
-	player_state.update_state()
+	# 削除: player_state.update_state()
+	# 状態更新処理は各状態のenter()/exit()で管理
 
 	# 現在の状態に応じてhurtboxを更新
 	update_hurtbox_for_current_state()
@@ -213,31 +201,9 @@ func _apply_physics(delta: float) -> void:
 
 # ======================== 状態変化処理 ========================
 
-func _handle_airborne_state_changes() -> void:
-	# 現在の空中状態を判定（地面に接触していない = 空中）
-	var current_airborne: bool = not is_on_floor()
-
-	# 地上から空中になった瞬間：現在の走行状態を保存
-	if not was_airborne and current_airborne:
-		running_state_when_airborne = is_running
-
-	# 空中から地上に着地した瞬間：run状態を適切に設定
-	elif was_airborne and not current_airborne:
-		# アクション中の場合：アクション開始時の走行状態を維持
-		if is_fighting() or is_shooting():
-			is_running = running_state_when_action_started
-		else:
-			# 通常時：入力状態を確認してrun状態を設定
-			var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
-			var has_direction: bool = Input.is_action_pressed("left") or Input.is_action_pressed("right")
-
-			if shift_pressed and has_direction:
-				is_running = true
-			else:
-				is_running = false
-
-	# 次フレームでの比較用に現在の状態を保存
-	was_airborne = current_airborne
+# 削除: _handle_airborne_state_changes()
+# 空中⇔地上の状態変化検出・処理は各状態に委譲
+# State Machineの設計思想に従い、各状態が独自に判断・遷移する
 
 # 削除: _handle_input_based_on_state()
 # 入力処理はState Machineで管理される
@@ -266,8 +232,8 @@ func handle_jump() -> void:
 	is_jumping_by_input = true
 	# State Machineでジャンプ処理を管理するため、モジュール呼び出しは不要
 	# current_stateのジャンプ処理で実行される
-	# ジャンプ関連のタイマーをリセット
-	player_timer.reset_jump_timers()
+	# ジャンプ関連のタイマーをリセット（統合マネージャーに委譲）
+	player_manager.reset_jump_timers()
 
 # ======================== 射撃管理 ========================
 
@@ -310,15 +276,15 @@ func _on_fighting_finished() -> void:
 	# 削除: is_fighting = false (State Machineで管理)
 	# 戦闘開始前の走行状態を復元
 	is_running = running_state_when_action_started
-	# アニメーション状態をリセット
-	player_state.reset_animation_state()
+	# アニメーション状態をリセット（統合マネージャーに委譲）
+	player_manager.reset_animation_state()
 
 
 func _on_damaged_finished() -> void:
 	# ダメージアニメーション完了時の処理
 	# 削除: is_damaged = false (State Machineで管理)
-	# アニメーション状態をリセット
-	player_state.reset_animation_state()
+	# アニメーション状態をリセット（統合マネージャーに委譲）
+	player_manager.reset_animation_state()
 
 
 # ======================== State Machine状態判定 ========================
@@ -439,15 +405,11 @@ func set_condition(new_condition: PLAYER_CONDITION) -> void:
 	# プレイヤーコンディションを変更し、全モジュールに反映
 	condition = new_condition
 
-	# 状態管理コンポーネントのコンディションを更新
-	player_state.set_condition(new_condition)
-
 	# アクション系モジュールのコンディションを更新
 	_update_modules_condition(new_condition)
 
-	# システム系コンポーネントのコンディションを更新
-	player_input.update_condition(new_condition)
-	player_timer.update_condition(new_condition)
+	# システム系コンポーネントのコンディションを更新（統合マネージャーに委譲）
+	player_manager.update_condition(new_condition)
 	invincibility_effect.update_condition(new_condition)
 
 func _update_modules_condition(new_condition: PLAYER_CONDITION) -> void:
