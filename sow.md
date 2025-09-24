@@ -1,98 +1,119 @@
-# プレイヤー状態異常システム実装 - 作業完了レポート
+### \#\# 中心的な考え方
 
-## 完了事項
+  * **`Player.gd` (マネージャー)**: 全体を管理し、現在の担当者（State）に仕事を割り振るのが役目です。自分自身で具体的な作業はしません。
+  * **各`State.gd` (専門担当者)**: 「歩く」「ジャンプする」といった特定の作業を専門に行う担当者です。自分の仕事に集中し、他の担当者の仕事内容は知りません。
 
-### ✅ 基本システム実装
-- プレイヤーの状態異常管理システムの構築
-- NORMAL / EXPANSION 状態の実装
-- `transform` キーによる状態切り替え機能
+-----
 
-### ✅ ファイル構造の整理
-```
-scripts/player/
-├── player.gd (統合済み状態管理コントローラー)
-├── player.jump.gd (統合済みジャンプシステム - パラメータテーブル方式)
-├── player_damaged.gd (ダメージシステム - パラメータテーブル方式)
-├── normal/
-│   ├── normal_movement.gd
-│   ├── normal_fighting.gd (旧 normal_attack.gd)
-│   └── normal_shooting.gd (旧 normal_throw.gd)
-└── expansion/
-    ├── expansion_movement.gd
-    ├── expansion_fighting.gd (旧 expansion_attack.gd)
-    └── expansion_shooting.gd (旧 expansion_throw.gd)
-```
+### \#\#\# `Player.gd` の役割 (マネージャー)
 
-### ✅ 機能改善
-- attack/throw → fighting/shooting への名前変更（用途を明確化）
-- 過度な抽象化の削除（player_action_interface.gd, base_player_state.gd等）
-- player.gdへの状態管理統合
+`Player.gd`は、プレイヤーキャラクターの「体」そのものであり、状態を管理する「頭脳」の司令塔です。
 
-### ✅ コード整理
-- 不要ファイルの削除
-- ファイル数削減（13 → 9ファイル）
-- CLAUDE.mdガイドライン準拠の確認
+1.  **状態(State)を保持し、切り替える**
 
-## 🔧 次回修正事項
+      * 現在の`State`オブジェクト（現在の担当者）は誰なのかを、変数 (`current_state`) で保持します。
+      * `State`からの要求に応じて、担当者を交代させる `change_state()` メソッドを持ちます。**状態遷移のロジックはここに集約されます。**
 
-### 1. アクションファイルの最適化
-- [ ] normal_movement.gdの不要処理削除
-- [ ] normal_fighting.gdのエラーハンドリング改善
-- [ ] normal_shooting.gdのタイマー管理統一
-- [ ] expansion系ファイルの重複コード削除
+2.  **共有データと機能を提供する**
 
-### 2. 型安全性の向上
-- [ ] 全アクションクラスの戻り値型明示
-- [ ] null安全性チェックの追加
-- [ ] export変数の型指定統一
+      * 全ての`State`が共通で使う変数やノードへの参照を持ちます。
+          * `velocity` (速度)
+          * `$AnimationPlayer` や `$AnimatedSprite2D` への参照
+          * `JUMP_VELOCITY` や `MAX_SPEED` などの定数
+      * 物理的な移動の最終的な実行命令である `move_and_slide()` を呼び出します。各`State`は`velocity`を操作するだけで、`move_and_slide()` は呼び出しません。
 
-### 3. パフォーマンス最適化
-- [ ] 不要なget_node()呼び出しの削除
-- [ ] シグナル接続の重複チェック
-- [ ] 重複処理の統合
+3.  **Godotからの命令を現在の`State`に横流し（委譲）する**
 
-### 4. システム拡張準備
-- [ ] 新しい状態異常追加のためのインターフェース設計
-- [ ] 状態異常効果の時間管理システム
-- [ ] 複数状態異常の同時適用対応
+      * `_physics_process(delta)` や `_input(event)` がGodotから呼び出されたら、その中身を**そのまま現在の`State`オブジェクトの対応するメソッドに渡します。**
 
-### 5. ドキュメント整備
-- [ ] 各状態異常の性能差一覧表作成
-- [ ] 新規状態追加手順のドキュメント化
-- [ ] アニメーション名規則の統一ドキュメント
+#### `Player.gd` が「しない」こと
 
-### 6. テスト・検証
-- [ ] 状態切り替えのテスト
-- [ ] expansion状態の性能値検証
-- [ ] メモリリーク検査
+  * **「もし現在の状態がRunなら…」のような `if` や `match` 文での条件分岐は書きません。**
+  * 個別の状態（歩く、走るなど）の具体的な処理は一切書きません。
 
-## 📝 技術的注意事項
+-----
 
-### 性能差設定（expansion状態）
-- **移動**: walk速度 1.2倍, run速度 1.3倍
-- **格闘**: 速度1.25倍, 持続時間0.8倍
-- **射撃**: 速度1.3倍, クールダウン0.7倍
-- **ジャンプ**: 力1.15倍
+### \#\#\# 各`State.gd` の役割 (専門担当者)
 
-### アニメーション命名規則
-```
-normal_[action]    // 通常状態
-expansion_[action] // 拡張状態
-```
+各`State.gd`は、特定の状態における「振る舞い」そのものです。
 
-### 状態管理API
+1.  **担当する状態の処理を全て実行する**
+
+      * **入力の監視**: `Run.gd`は左右の移動キーが押されているかを監視し、`Idle.gd`はキー入力が何もないことを監視します。
+      * **物理演算**: `Jump.gd`は重力を`player.velocity`に加算し、`Run.gd`は`player.velocity.x`を更新します。
+      * **アニメーションの再生**: 状態に入った時 (`enter()` メソッド) に、対応するアニメーション（例: `run`）を再生する命令を出します。
+
+2.  **次の状態へ遷移する「条件」を判断し、`Player`に「要求」する**
+
+      * `Run`状態で移動キーが離されたら、「`Idle`状態に遷移すべきだ」と判断します。
+      * そして、マネージャーである`player`に対して `player.change_state("Idle")` のように状態の変更を**要求**します。`State`自身が勝手に他の`State`を作ったり、`player`の`current_state`を書き換えることはしません。
+
+#### 各`State.gd` が「しない」こと
+
+  * 自分の担当外の状態の処理は一切気にしません。
+  * `move_and_slide()` は呼び出しません。（`velocity`を更新するだけ）
+
+-----
+
+### \#\# 役割分担のまとめ表
+
+| 項目 | `Player.gd` (マネージャー) | 各`State.gd` (専門担当者) |
+| :--- | :--- | :--- |
+| **主な責任** | 全体の管理と状態遷移の実行 | 特定の状態における処理の実行 |
+| **状態の管理** | **持つ。** 現在の状態を保持し、切り替える。 | **持たない。** 自分が何の担当者かは知っている。 |
+| **`if state == RUN:`** | **書かない。** | **書かない。** (ファイル自体がRUNの処理なので不要) |
+| **物理演算** | `move_and_slide()` を呼び出す。 | `player.velocity` を変更する。 |
+| **アニメーション** | `AnimationPlayer`ノードへの参照を提供する。 | `player.animation_player.play()` を呼び出す。 |
+| **状態遷移** | `change_state()`を**実行**する。 | `player.change_state()`を**要求**する。 |
+| **他Stateとの関係** | 全てのStateを知っていて、インスタンス化する。 | 他のStateのことは知らない。 |
+
+### \#\# コードのイメージ
+
+**Player.gd (マネージャー)**
+
 ```gdscript
-player.get_current_condition()           // 現在の状態取得
-player.set_condition(PLAYER_CONDITION)   // 状態設定
-player.toggle_condition()                // 状態切り替え
+# ... (変数の定義など)
+
+func _physics_process(delta):
+    # 現在の担当者(State)に、物理演算の仕事を丸投げする
+    if current_state:
+        current_state.process_physics(delta)
+    
+    # 担当者たちが計算した最終的なvelocityを使って移動を実行する
+    move_and_slide()
+
+# 担当者から依頼を受けて、担当者を交代させる
+func change_state(new_state_name):
+    if current_state:
+        current_state.exit()
+    
+    current_state = states[new_state_name]
+    current_state.enter()
 ```
 
-## ⚠️ 既知の課題
-1. 着地時のジャンプ状態リセット処理が複数箇所に分散
-2. アニメーション終了コールバックの重複登録チェック不十分
-3. expansion系ファイルの基底クラス依存が強い
+**Run.gd (「走り」担当者)**
 
----
-**実装者**: Claude Code
-**最終更新**: 2025-09-21
-**ステータス**: 基本実装完了、最適化待ち
+```gdscript
+extends State
+
+# この担当者に仕事が回ってきた時に最初にやること
+func enter():
+    player.animation_player.play("run")
+
+# 毎フレームの仕事
+func process_physics(delta):
+    # 左右入力に応じて速度を計算する
+    var direction = Input.get_axis("ui_left", "ui_right")
+    player.velocity.x = direction * player.RUN_SPEED
+    
+    # もしジャンプボタンが押されたら…
+    if Input.is_action_just_pressed("jump"):
+        # マネージャーに「次はジャンプ担当に代わってください」と要求する
+        player.change_state("Jump")
+        return # 要求したら自分の仕事は終わり
+        
+    # もし入力がなくなったら…
+    if direction == 0:
+        # マネージャーに「次は待機担当に代わってください」と要求する
+        player.change_state("Idle")
+```

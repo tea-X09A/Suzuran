@@ -48,6 +48,12 @@ var condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
 # 現在のプレイヤー行動状態
 var state: PLAYER_STATE = PLAYER_STATE.IDLE
 
+# ======================== State Machine変数 ========================
+# 現在のStateオブジェクト（State Machineマネージャー）
+var current_state: BaseState
+# Stateオブジェクトのマッピング（State名→Stateオブジェクト）
+var states: Dictionary
+
 # ======================== アクションモジュール参照 ========================
 # 移動処理を担当するモジュール
 var player_movement: PlayerMovement
@@ -116,6 +122,9 @@ func _ready() -> void:
 	# 各モジュールの初期化処理を実行
 	_initialize_modules()
 
+	# State Machineの初期化処理を実行
+	_initialize_states()
+
 	# モジュール間のシグナル接続を設定
 	_connect_signals()
 
@@ -144,6 +153,23 @@ func _connect_signals() -> void:
 	# ダメージ終了シグナルを接続（ダメージアニメーション完了時に呼ばれる）
 	player_damaged.damaged_finished.connect(_on_damaged_finished)
 
+func _initialize_states() -> void:
+	# 各Stateオブジェクトを作成し、statesディクショナリーに登録
+	states = {
+		"idle": IdleState.new(self),
+		"walk": WalkState.new(self),
+		"run": RunState.new(self),
+		"jump": JumpState.new(self),
+		"fall": FallState.new(self),
+		"squat": SquatState.new(self),
+		"fighting": FightingState.new(self),
+		"shooting": ShootingState.new(self),
+		"damaged": DamagedState.new(self)
+	}
+
+	# 初期状態をidleに設定
+	change_state("idle")
+
 
 # ======================== フレーム処理 ========================
 
@@ -160,10 +186,14 @@ func _physics_process(delta: float) -> void:
 	player_timer.update_ground_state()
 	player_timer.update_timers(delta)
 
-	# 重力とジャンプの物理演算を適用
+	# 重力とジャンプの物理演算を適用（全状態共通）
 	_apply_physics(delta)
 
-	# 現在の状態に応じた入力処理を実行
+	# State Machineに委譲：現在のStateに物理処理を委譲
+	if current_state != null:
+		current_state.process_physics(delta)
+
+	# 既存の状態に応じた入力処理（段階的移行のため当面保持）
 	_handle_input_based_on_state()
 
 	# 戦闘・射撃・ダメージ状態の更新処理
@@ -293,6 +323,24 @@ func handle_jump() -> void:
 	get_current_jump().handle_jump()
 	# ジャンプ関連のタイマーをリセット
 	player_timer.reset_jump_timers()
+
+# ======================== State Machine管理 ========================
+
+## 状態を切り替える（State Machineマネージャーのコアメソッド）
+func change_state(state_name: String) -> void:
+	# 現在のStateから退出処理を実行
+	if current_state != null:
+		current_state.exit()
+
+	# 新しいStateが存在するかチェック
+	if states.has(state_name):
+		# 新しいStateに切り替え
+		current_state = states[state_name]
+		# 新しいStateの入場処理を実行
+		current_state.enter()
+	else:
+		# 存在しないState名が指定された場合の警告
+		push_warning("Unknown state requested: " + state_name)
 
 # ======================== 状態更新処理 ========================
 
