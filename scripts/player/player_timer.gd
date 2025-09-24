@@ -45,14 +45,16 @@ func _handle_landing_events() -> void:
 		player.ignore_jump_horizontal_velocity = false
 
 		# ダメージ状態の処理
-		if player.is_damaged and player.player_damaged.is_in_knockback_state():
-			player.player_damaged.start_down_state()
+		if player.is_damaged() and player.get_current_damaged().is_in_knockback_state():
+			player.get_current_damaged().start_down_state()
 
-		# 空中アクションのキャンセル
-		if player.is_fighting and player.get_current_fighting().is_airborne_attack():
-			player.get_current_fighting().cancel_fighting()
-		if player.is_shooting and player.get_current_shooting().is_airborne_attack():
-			player.get_current_shooting().cancel_shooting()
+		# 空中アクションのキャンセル（State Machineから呼び出し）
+		if player.is_fighting() and player.current_state != null and player.current_state.has_method("is_airborne_attack") and player.current_state.is_airborne_attack():
+			if player.current_state.has_method("cancel_fighting"):
+				player.current_state.cancel_fighting()
+		if player.is_shooting() and player.current_state != null and player.current_state.has_method("is_airborne_attack") and player.current_state.is_airborne_attack():
+			if player.current_state.has_method("cancel_shooting"):
+				player.current_state.cancel_shooting()
 
 # ======================== ジャンプタイマー管理 ========================
 

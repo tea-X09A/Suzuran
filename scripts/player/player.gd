@@ -55,16 +55,8 @@ var current_state: BaseState
 var states: Dictionary
 
 # ======================== アクションモジュール参照 ========================
-# 移動処理を担当するモジュール
-var player_movement: PlayerMovement
-# 戦闘処理を担当するモジュール
-var player_fighting: PlayerFighting
-# 射撃処理を担当するモジュール
-var player_shooting: PlayerShooting
-# ジャンプ処理を担当するモジュール
-var player_jump: PlayerJump
-# ダメージ処理を担当するモジュール
-var player_damaged: PlayerDamaged
+# 削除: player_movement, player_jump
+# これらの処理はState Machineで管理される
 
 # ======================== システムコンポーネント参照 ========================
 # 入力処理を管理するコンポーネント
@@ -83,12 +75,8 @@ var direction_x: float = 0.0
 var is_running: bool = false
 # しゃがみ状態フラグ
 var is_squatting: bool = false
-# 戦闘実行中フラグ
-var is_fighting: bool = false
-# 射撃実行中フラグ
-var is_shooting: bool = false
-# ダメージ状態フラグ
-var is_damaged: bool = false
+# 削除: is_fighting, is_shooting, is_damaged フラグ
+# これらはState Machineで管理される
 # プレイヤー入力によるジャンプ実行中フラグ
 var is_jumping_by_input: bool = false
 # ジャンプ時の水平速度無視フラグ
@@ -103,6 +91,10 @@ var running_state_when_action_started: bool = false
 var running_state_when_airborne: bool = false
 # 前フレームでの空中状態フラグ（状態変化検出用）
 var was_airborne: bool = false
+
+# ======================== 射撃管理変数 ========================
+# 射撃クールダウンタイマー（全状態で共有）
+var shooting_cooldown_timer: float = 0.0
 
 # ======================== Hurtbox管理変数 ========================
 # 現在アクティブなhurtbox（追跡用）
@@ -132,12 +124,9 @@ func _ready() -> void:
 	switch_hurtbox(idle_hurtbox)
 
 func _initialize_modules() -> void:
-	# アクション系モジュールの初期化（移動、戦闘、射撃など）
-	player_movement = PlayerMovement.new(self, condition)
-	player_jump = PlayerJump.new(self, player_movement, condition)
-	player_fighting = PlayerFighting.new(self, condition)
-	player_shooting = PlayerShooting.new(self, condition)
-	player_damaged = PlayerDamaged.new(self, condition)
+	# アクション系モジュールの初期化（移動、戦闘など）
+	# 削除: player_movement, player_jumpの初期化
+	# これらの処理はState Machineで管理される
 
 	# システム系コンポーネントの初期化（入力、状態管理など）
 	player_input = PlayerInput.new(self, condition)
@@ -146,12 +135,13 @@ func _initialize_modules() -> void:
 	invincibility_effect = InvincibilityEffect.new(self, condition)
 
 func _connect_signals() -> void:
-	# 戦闘終了シグナルを接続（戦闘アニメーション完了時に呼ばれる）
-	player_fighting.fighting_finished.connect(_on_fighting_finished)
-	# 射撃終了シグナルを接続（射撃アニメーション完了時に呼ばれる）
-	player_shooting.shooting_finished.connect(_on_shooting_finished)
+	# FightingStateからの戦闘終了シグナルを接続（戦闘アニメーション完了時に呼ばれる）
+	var fighting_state = states["fighting"] as FightingState
+	fighting_state.fighting_finished.connect(_on_fighting_finished)
 	# ダメージ終了シグナルを接続（ダメージアニメーション完了時に呼ばれる）
-	player_damaged.damaged_finished.connect(_on_damaged_finished)
+	# DamagedStateのシグナルに接続
+	var damaged_state = states["damaged"] as DamagedState
+	damaged_state.damaged_finished.connect(_on_damaged_finished)
 
 func _initialize_states() -> void:
 	# 各Stateオブジェクトを作成し、statesディクショナリーに登録
@@ -193,11 +183,13 @@ func _physics_process(delta: float) -> void:
 	if current_state != null:
 		current_state.process_physics(delta)
 
-	# 既存の状態に応じた入力処理（段階的移行のため当面保持）
-	_handle_input_based_on_state()
+	# 削除: _handle_input_based_on_state()
+	# 入力処理はState Machineで管理される
 
-	# 戦闘・射撃・ダメージ状態の更新処理
-	update_fighting_shooting_damaged(delta)
+	# 削除: update_fighting_damaged() - State Machineで管理
+
+	# 射撃クールダウンタイマーの更新
+	update_shooting_cooldown(delta)
 
 	# Godotの物理移動システムでキャラクターを移動
 	move_and_slide()
@@ -215,10 +207,9 @@ func _physics_process(delta: float) -> void:
 # ======================== 物理演算処理 ========================
 
 func _apply_physics(delta: float) -> void:
-	# 重力を適用（落下処理）
-	get_current_movement().apply_gravity(delta)
-	# 可変ジャンプ処理を適用（ジャンプボタン長押し対応）
-	get_current_movement().apply_variable_jump(delta)
+	# State Machineで物理処理を管理するため、ここでの処理は不要
+	# 重力と可変ジャンプのcurrent_state.process_physics()で処理される
+	pass
 
 # ======================== 状態変化処理 ========================
 
@@ -233,7 +224,7 @@ func _handle_airborne_state_changes() -> void:
 	# 空中から地上に着地した瞬間：run状態を適切に設定
 	elif was_airborne and not current_airborne:
 		# アクション中の場合：アクション開始時の走行状態を維持
-		if is_fighting or is_shooting:
+		if is_fighting() or is_shooting():
 			is_running = running_state_when_action_started
 		else:
 			# 通常時：入力状態を確認してrun状態を設定
@@ -248,81 +239,49 @@ func _handle_airborne_state_changes() -> void:
 	# 次フレームでの比較用に現在の状態を保存
 	was_airborne = current_airborne
 
-func _handle_input_based_on_state() -> void:
-	# ダメージ状態でない場合：通常の入力処理
-	if not is_damaged:
-		player_input.handle_input()
-		handle_movement()
-	# ダメージ状態の場合：制限された入力処理
-	else:
-		player_input.handle_damaged_input()
-		# ノックバック着地状態の場合のみ移動を許可
-		if player_damaged.is_in_knockback_landing_state():
-			handle_movement()
+# 削除: _handle_input_based_on_state()
+# 入力処理はState Machineで管理される
 
 # ======================== モジュールアクセサー ========================
 
-func get_current_movement() -> PlayerMovement:
-	# 現在のコンディションに対応する移動モジュールを取得
-	return player_movement
+# 削除: get_current_movement(), get_current_jump()
+# これらの処理はState Machineで管理される
 
-func get_current_fighting() -> PlayerFighting:
-	# 現在のコンディションに対応する戦闘モジュールを取得
-	return player_fighting
-
-func get_current_shooting() -> PlayerShooting:
-	# 現在のコンディションに対応する射撃モジュールを取得
-	return player_shooting
-
-func get_current_jump() -> PlayerJump:
-	# 現在のコンディションに対応するジャンプモジュールを取得
-	return player_jump
-
-func get_current_damaged() -> PlayerDamaged:
-	# 現在のコンディションに対応するダメージモジュールを取得
-	return player_damaged
+func get_current_damaged() -> DamagedState:
+	# DamagedStateへのアクセサー（一部のレガシー処理で使用）
+	return states["damaged"] as DamagedState
 
 # ======================== プレイヤーアクション処理 ========================
 
-func handle_movement() -> void:
-	# 移動モジュールに方向、走行状態、しゃがみ状態を渡して移動処理を実行
-	get_current_movement().handle_movement(direction_x, is_running, is_squatting)
+# 削除: handle_movement() - State Machineで管理
 
 func handle_fighting() -> void:
 	# 戦闘開始時の走行状態を保存（戦闘終了後に復元するため）
 	running_state_when_action_started = is_running
-	# 戦闘状態フラグを設定
-	is_fighting = true
-	state = PLAYER_STATE.FIGHTING
-	# 戦闘用hurtboxに切り替え
-	switch_hurtbox(fighting_hurtbox)
-	# 戦闘モジュールで戦闘処理を実行
-	get_current_fighting().handle_fighting()
-
-func handle_shooting() -> void:
-	# 射撃可能かどうかをチェック（クールダウン時間等）
-	if get_current_shooting().can_shoot():
-		# 射撃開始時の走行状態を保存（射撃終了後に復元するため）
-		running_state_when_action_started = is_running
-		# 射撃状態フラグを設定
-		is_shooting = true
-		state = PLAYER_STATE.SHOOTING
-		# 射撃用hurtboxに切り替え
-		switch_hurtbox(shooting_hurtbox)
-		# 射撃モジュールで射撃処理を実行
-		get_current_shooting().handle_shooting()
-
-func handle_back_jump_shooting() -> void:
-	# 射撃モジュールで後方ジャンプ射撃処理を実行
-	get_current_shooting().handle_back_jump_shooting()
+	# State Machineを通じて戦闘状態に遷移
+	change_state("fighting")
 
 func handle_jump() -> void:
 	# プレイヤー入力によるジャンプフラグを設定
 	is_jumping_by_input = true
-	# ジャンプモジュールでジャンプ処理を実行
-	get_current_jump().handle_jump()
+	# State Machineでジャンプ処理を管理するため、モジュール呼び出しは不要
+	# current_stateのジャンプ処理で実行される
 	# ジャンプ関連のタイマーをリセット
 	player_timer.reset_jump_timers()
+
+# ======================== 射撃管理 ========================
+
+## 射撃クールダウンタイマーの更新
+func update_shooting_cooldown(delta: float) -> void:
+	shooting_cooldown_timer = max(0.0, shooting_cooldown_timer - delta)
+
+## 射撃クールダウンタイマーを設定
+func set_shooting_cooldown(cooldown_time: float) -> void:
+	shooting_cooldown_timer = cooldown_time
+
+## 射撃可能かどうかの判定
+func can_shoot() -> bool:
+	return shooting_cooldown_timer <= 0.0
 
 # ======================== State Machine管理 ========================
 
@@ -342,75 +301,47 @@ func change_state(state_name: String) -> void:
 		# 存在しないState名が指定された場合の警告
 		push_warning("Unknown state requested: " + state_name)
 
-# ======================== 状態更新処理 ========================
-
-func update_fighting_shooting_damaged(delta: float) -> void:
-	# 各アクション状態の更新処理をまとめて実行
-	_update_fighting_state(delta)
-	_update_shooting_state(delta)
-	_update_damaged_state(delta)
-
-func _update_fighting_state(delta: float) -> void:
-	# 戦闘状態の場合のみ処理
-	if is_fighting:
-		# 戦闘タイマーを更新し、移動可能かチェック
-		if get_current_fighting().update_fighting_timer(delta):
-			# 物理制御が無効化されていない場合のみ戦闘移動処理を適用
-			if not is_physics_control_disabled():
-				# 戦闘中の移動処理を適用（攻撃中の微移動など）
-				get_current_fighting().apply_fighting_movement()
-
-func _update_shooting_state(delta: float) -> void:
-	# 射撃状態の場合：射撃タイマーを更新
-	if is_shooting:
-		get_current_shooting().update_shooting_timer(delta)
-	# 射撃状態に関係なく：射撃クールダウンタイマーを更新
-	get_current_shooting().update_shooting_cooldown(delta)
-
-func _update_damaged_state(delta: float) -> void:
-	# ダメージ状態の場合：ダメージタイマーを更新
-	if is_damaged:
-		player_damaged.update_damaged_timer(delta)
-	# 無敵状態の場合：無敵タイマーを更新
-	elif player_damaged.is_in_invincible_state():
-		player_damaged.update_invincibility_timer(delta)
+# 削除: 状態更新処理セクション - State Machineで管理
 
 # ======================== シグナルハンドラー ========================
 
 func _on_fighting_finished() -> void:
 	# 戦闘アニメーション完了時の処理
-	is_fighting = false
+	# 削除: is_fighting = false (State Machineで管理)
 	# 戦闘開始前の走行状態を復元
 	is_running = running_state_when_action_started
 	# アニメーション状態をリセット
 	player_state.reset_animation_state()
 
-func _on_shooting_finished() -> void:
-	# 射撃アニメーション完了時の処理
-	is_shooting = false
-	# 射撃開始前の走行状態を復元
-	is_running = running_state_when_action_started
-	# アニメーション状態をリセット
-	player_state.reset_animation_state()
 
 func _on_damaged_finished() -> void:
 	# ダメージアニメーション完了時の処理
-	is_damaged = false
+	# 削除: is_damaged = false (State Machineで管理)
 	# アニメーション状態をリセット
 	player_state.reset_animation_state()
 
+
+# ======================== State Machine状態判定 ========================
+
+## 戦闘状態かどうかの判定
+func is_fighting() -> bool:
+	return current_state != null and current_state.get_script().get_path().ends_with("fighting_state.gd")
+
+## 射撃状態かどうかの判定
+func is_shooting() -> bool:
+	return current_state != null and current_state.get_script().get_path().ends_with("shooting_state.gd")
+
+## ダメージ状態かどうかの判定
+func is_damaged() -> bool:
+	return current_state != null and current_state.get_script().get_path().ends_with("damaged_state.gd")
 
 # ======================== 物理分離状態判定 ========================
 
 ## 空中でのアクション実行中かどうかの判定（他システムからのアクセス用）
 func is_airborne_action_active() -> bool:
-	# 戦闘アクション中の空中状態判定
-	if is_fighting and get_current_fighting().is_airborne_action_active():
-		return true
-
-	# 射撃アクション中の空中状態判定
-	if is_shooting and get_current_shooting().is_airborne_action_active():
-		return true
+	# State Machineから空中アクション状態を判定
+	if current_state != null and current_state.has_method("is_airborne_action_active"):
+		return current_state.is_airborne_action_active()
 
 	return false
 
@@ -446,17 +377,17 @@ func update_hurtbox_for_current_state() -> void:
 	var target_hurtbox: PlayerHurtbox = null
 
 	# ダメージ状態：ダウン中ならdown_hurtbox、そうでなければ現在のhurtboxを維持
-	if is_damaged:
-		if player_damaged and player_damaged.is_in_knockback_landing_state():
+	if is_damaged():
+		if get_current_damaged().is_in_knockback_landing_state():
 			target_hurtbox = down_hurtbox
 		else:
 			# ダメージ中は現在のhurtboxを維持（切り替えない）
 			return
 	# 戦闘状態：fighting_hurtbox
-	elif is_fighting:
+	elif is_fighting():
 		target_hurtbox = fighting_hurtbox
 	# 射撃状態：shooting_hurtbox
-	elif is_shooting:
+	elif is_shooting():
 		target_hurtbox = shooting_hurtbox
 	# 通常の移動状態
 	else:
@@ -520,9 +451,7 @@ func set_condition(new_condition: PLAYER_CONDITION) -> void:
 	invincibility_effect.update_condition(new_condition)
 
 func _update_modules_condition(new_condition: PLAYER_CONDITION) -> void:
-	# アクション系モジュールのコンディションを安全に更新
-	# 各モジュールが初期化済みかチェックしてから更新
-	if player_fighting:
-		player_fighting.update_condition(new_condition)
-	if player_shooting:
-		player_shooting.update_condition(new_condition)
+	# 削除されたアクション系モジュールのコンディション更新は不要
+	# StateのコンディションもBaseStateを通じて更新
+	for state_name in states:
+		states[state_name].update_condition(new_condition)

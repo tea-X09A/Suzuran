@@ -49,7 +49,7 @@ func update_state() -> void:
 	set_state(new_state)
 
 func _is_in_action_state() -> bool:
-	return player.is_fighting or player.is_shooting or player.is_damaged
+	return player.is_fighting() or player.is_shooting() or player.is_damaged()
 
 func _determine_new_state() -> Player.PLAYER_STATE:
 	var current_grounded: bool = player.is_on_floor()
@@ -99,10 +99,9 @@ func set_condition(new_condition: Player.PLAYER_CONDITION) -> void:
 	_update_modules_condition(new_condition)
 
 func _update_modules_condition(new_condition: Player.PLAYER_CONDITION) -> void:
-	if player.player_fighting:
-		player.player_fighting.update_condition(new_condition)
-	if player.player_shooting:
-		player.player_shooting.update_condition(new_condition)
+	# Action modules have been replaced with State Machine
+	# State condition updates are handled in Player._update_modules_condition()
+	pass
 
 # ======================== 状態チェック関数 ========================
 

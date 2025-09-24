@@ -6,6 +6,10 @@ func enter() -> void:
 	player.is_running = false
 
 func process_physics(delta: float) -> void:
+	# テンプレートメソッドを使用して共通物理処理を実行
+	process_common_physics(delta)
+
+	# テンプレートで取得した入力方向を再取得して状態遷移判定
 	var direction_x: float = Input.get_axis("left", "right")
 
 	if direction_x != 0:
@@ -16,21 +20,24 @@ func process_physics(delta: float) -> void:
 			player.change_state("walk")
 		return
 
-	if Input.is_action_just_pressed("jump") and player.is_on_floor():
-		player.change_state("jump")
+	# 共通のアクション入力をチェック
+	var action: String = handle_common_action_inputs()
+	if action != "":
+		player.change_state(action)
 		return
 
-	if Input.is_action_pressed("squat"):
-		player.change_state("squat")
-		return
+	# 待機中は水平方向の速度をリセット
+	if player.is_on_floor():
+		player.velocity.x = 0.0
 
-	if Input.is_action_just_pressed("fighting"):
-		player.change_state("fighting")
-		return
+# ======================== テンプレートメソッドのフックメソッドオーバーライド ========================
 
-	if Input.is_action_just_pressed("shooting"):
-		player.change_state("shooting")
-		return
+# IdleStateでは方向設定とムーブメント処理をスキップ
+func should_set_direction() -> bool:
+	return false
+
+func should_handle_movement() -> bool:
+	return false
 
 func exit() -> void:
 	pass

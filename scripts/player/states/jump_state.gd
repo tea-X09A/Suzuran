@@ -4,27 +4,40 @@ extends BaseState
 func enter() -> void:
 	player.state = Player.PLAYER_STATE.JUMP
 	player.is_jumping_by_input = true
-	player.get_current_jump().handle_jump()
+	# BaseStateのジャンプ処理を使用
+	handle_jump()
+	set_jumping_state(true, 0.0)
 	player.player_timer.reset_jump_timers()
 
 func process_physics(delta: float) -> void:
+	# テンプレートメソッドを使用して共通物理処理を実行
+	process_common_physics(delta)
+
 	if player.velocity.y >= 0:
 		player.change_state("fall")
 		return
 
-	if Input.is_action_just_pressed("fighting"):
+	# 空中でのアクション入力をチェック（fighting, shooting）
+	if check_for_fighting_input():
 		player.change_state("fighting")
 		return
 
-	if Input.is_action_just_pressed("shooting"):
+	if check_for_shooting_input():
 		player.change_state("shooting")
 		return
 
-	var direction_x: float = Input.get_axis("left", "right")
-	player.direction_x = direction_x
+# ======================== テンプレートメソッドのフックメソッドオーバーライド ========================
 
-	var is_running_in_air: bool = player.running_state_when_airborne
-	player.get_current_movement().handle_movement(direction_x, is_running_in_air, false)
+# JumpState固有の追加物理処理: 可変ジャンプを適用
+func apply_state_specific_physics(delta: float) -> void:
+	apply_variable_jump(delta)
+
+# JumpStateの移動パラメータ: 空中での移動（空中走行状態に依存、しゃがまない）
+func get_movement_parameters(direction_x: float) -> Dictionary:
+	return {
+		"is_running": player.running_state_when_airborne,
+		"is_squatting": false
+	}
 
 func exit() -> void:
 	pass

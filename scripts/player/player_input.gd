@@ -28,9 +28,10 @@ func handle_damaged_input() -> void:
 	player.is_running = false
 
 	# 特定状態でのジャンプ入力処理
-	var can_jump: bool = player.player_damaged.is_in_knockback_state() or player.player_damaged.is_in_knockback_landing_state()
+	var damaged_state = player.get_current_damaged()
+	var can_jump: bool = damaged_state.is_in_knockback_state() or damaged_state.is_in_knockback_landing_state()
 	if can_jump and Input.is_action_just_pressed("jump"):
-		player.player_damaged.handle_recovery_jump()
+		damaged_state.handle_recovery_jump()
 		player.handle_jump()
 
 # ======================== 個別入力処理 ========================
@@ -38,14 +39,17 @@ func handle_damaged_input() -> void:
 func _handle_action_inputs() -> void:
 	player.is_squatting = player.is_grounded and Input.is_action_pressed("squat") and _can_perform_action()
 
-	if Input.is_action_just_pressed("fight") and _can_perform_action():
+	if Input.is_action_just_pressed("fighting") and _can_perform_action():
 		player.handle_fighting()
 
 	if Input.is_action_just_pressed("shooting"):
-		if _can_perform_action():
-			player.handle_shooting()
-		elif player.is_shooting and not player.is_damaged:
-			player.handle_back_jump_shooting()
+		if _can_perform_action() and _can_shoot():
+			# 射撃開始時の走行状態を保存（射撃終了後に復元するため）
+			player.running_state_when_action_started = player.is_running
+			# ShootingStateに状態遷移（状態設定とhurtbox切り替えはenter()で行われる）
+			player.change_state("shooting")
+		# バックジャンプ射撃は入力のみ処理（実際の処理はShootingState内で実行）
+		# → ShootingState.process_physics()でInput.is_action_just_pressed("back_jump_shooting")をチェック済み
 
 func _handle_movement_inputs() -> void:
 	var left_key: bool = Input.is_action_pressed("left")
@@ -56,12 +60,12 @@ func _handle_movement_inputs() -> void:
 		_set_movement_direction(left_key, right_key, shift_pressed)
 	else:
 		# fighting/shooting中でも左右入力は処理する（空中制御のため）
-		if player.player_state.is_airborne_state() and (player.is_fighting or player.is_shooting):
+		if player.player_state.is_airborne_state() and (player.is_fighting() or player.is_shooting()):
 			_set_direction_only(left_key, right_key)
 		else:
 			player.direction_x = 0.0
 			# アクション中でない場合のみ running 状態をリセット
-			if player.is_grounded and not (player.is_fighting or player.is_shooting):
+			if player.is_grounded and not (player.is_fighting() or player.is_shooting()):
 				player.is_running = false
 
 func _handle_jump_inputs() -> void:
@@ -74,7 +78,11 @@ func _handle_jump_inputs() -> void:
 # ======================== 入力条件チェック ========================
 
 func _can_perform_action() -> bool:
-	return not player.is_fighting and not player.is_shooting and not player.is_damaged
+	return not player.is_fighting() and not player.is_shooting() and not player.is_damaged()
+
+func _can_shoot() -> bool:
+	# Playerクラスから直接射撃可能かどうかを判定
+	return player.can_shoot()
 
 func _can_move() -> bool:
 	# しゃがみ中は移動不可
@@ -96,17 +104,17 @@ func _set_movement_direction(left_key: bool, right_key: bool, shift_pressed: boo
 		if left_key:
 			player.direction_x = -1.0
 			# アクション中でない場合のみ running 状態を更新
-			if not (player.is_fighting or player.is_shooting):
+			if not (player.is_fighting() or player.is_shooting()):
 				player.is_running = shift_pressed
 		elif right_key:
 			player.direction_x = 1.0
 			# アクション中でない場合のみ running 状態を更新
-			if not (player.is_fighting or player.is_shooting):
+			if not (player.is_fighting() or player.is_shooting()):
 				player.is_running = shift_pressed
 		else:
 			player.direction_x = 0.0
 			# アクション中でない場合のみ running 状態をリセット
-			if not (player.is_fighting or player.is_shooting):
+			if not (player.is_fighting() or player.is_shooting()):
 				player.is_running = false
 	else:
 		# 空中では方向のみ設定し、running状態は変更しない（保存された状態を維持）
@@ -125,10 +133,10 @@ func _set_direction_only(left_key: bool, right_key: bool) -> void:
 
 func validate_input_state() -> bool:
 	# 入力状態の整合性チェック
-	if player.is_squatting and (player.is_fighting or player.is_shooting):
+	if player.is_squatting and (player.is_fighting() or player.is_shooting()):
 		return false
 
-	if player.is_damaged and (player.is_fighting or player.is_shooting):
+	if player.is_damaged() and (player.is_fighting() or player.is_shooting()):
 		return false
 
 	return true

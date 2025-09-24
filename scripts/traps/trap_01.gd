@@ -66,7 +66,7 @@ func check_player_collision() -> void:
 	for body in overlapping_bodies:
 		if body.is_in_group("player"):
 			# damaged状態ではトラップの検知を無効化
-			if body.is_damaged:
+			if body.is_damaged():
 				continue
 			apply_damage_to_player(body)
 			last_damage_time = current_time
@@ -85,9 +85,8 @@ func apply_damage_to_player(player: Node2D) -> void:
 	# ノックバック方向を計算（トラップからプレイヤーへの方向）
 	var knockback_direction: Vector2 = (player.global_position - global_position).normalized()
 
-	# プレイヤーの状態を直接変更
-	player.is_damaged = true
-	player.state = Player.PLAYER_STATE.DAMAGED
+	# プレイヤーの状態を State Machine 経由で変更
+	player.change_state("damaged")
 
 	# ダメージ処理を実行
 	var damage_value: int = get_parameter("damage")

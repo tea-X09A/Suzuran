@@ -6,10 +6,14 @@ func enter() -> void:
 	player.is_squatting = true
 
 func process_physics(delta: float) -> void:
+	# テンプレートメソッドを使用して共通物理処理を実行
+	process_common_physics(delta)
+
+	# テンプレートで取得した入力方向を再取得して状態遷移判定
 	var direction_x: float = Input.get_axis("left", "right")
 
 	# しゃがみキーが離されたら立ち上がる
-	if not Input.is_action_pressed("squat"):
+	if not check_for_squat_input():
 		if direction_x == 0:
 			player.change_state("idle")
 		else:
@@ -21,17 +25,22 @@ func process_physics(delta: float) -> void:
 		return
 
 	# しゃがみ中でも戦闘・射撃は可能
-	if Input.is_action_just_pressed("fighting"):
+	if check_for_fighting_input():
 		player.change_state("fighting")
 		return
 
-	if Input.is_action_just_pressed("shooting"):
+	if check_for_shooting_input():
 		player.change_state("shooting")
 		return
 
-	# しゃがみ状態での移動処理
-	player.direction_x = direction_x
-	player.get_current_movement().handle_movement(direction_x, false, true)
+# ======================== テンプレートメソッドのフックメソッドオーバーライド ========================
+
+# SquatStateの移動パラメータ: しゃがみ歩き（走らない、しゃがむ）
+func get_movement_parameters(direction_x: float) -> Dictionary:
+	return {
+		"is_running": false,
+		"is_squatting": true
+	}
 
 func exit() -> void:
 	player.is_squatting = false

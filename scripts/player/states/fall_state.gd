@@ -5,6 +5,9 @@ func enter() -> void:
 	player.state = Player.PLAYER_STATE.FALL
 
 func process_physics(delta: float) -> void:
+	# テンプレートメソッドを使用して共通物理処理を実行
+	process_common_physics(delta)
+
 	if player.is_on_floor():
 		var direction_x: float = Input.get_axis("left", "right")
 		var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
@@ -17,19 +20,23 @@ func process_physics(delta: float) -> void:
 			player.change_state("walk")
 		return
 
-	if Input.is_action_just_pressed("fighting"):
+	# 空中でのアクション入力をチェック（fighting, shooting）
+	if check_for_fighting_input():
 		player.change_state("fighting")
 		return
 
-	if Input.is_action_just_pressed("shooting"):
+	if check_for_shooting_input():
 		player.change_state("shooting")
 		return
 
-	var direction_x: float = Input.get_axis("left", "right")
-	player.direction_x = direction_x
+# ======================== テンプレートメソッドのフックメソッドオーバーライド ========================
 
-	var is_running_in_air: bool = player.running_state_when_airborne
-	player.get_current_movement().handle_movement(direction_x, is_running_in_air, false)
+# FallStateの移動パラメータ: 空中での移動（空中走行状態に依存、しゃがまない）
+func get_movement_parameters(direction_x: float) -> Dictionary:
+	return {
+		"is_running": player.running_state_when_airborne,
+		"is_squatting": false
+	}
 
 func exit() -> void:
 	pass

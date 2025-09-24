@@ -2,7 +2,7 @@ class_name InvincibilityEffect
 extends RefCounted
 
 # プレイヤーの無敵状態時の点滅エフェクト専用クラス
-# player_damaged.is_in_invincible_state()に基づく自動点滅制御
+# DamagedState.is_in_invincible_state()に基づく自動点滅制御
 
 var player: CharacterBody2D
 var animated_sprite: AnimatedSprite2D
@@ -30,7 +30,7 @@ func update_condition(new_condition: Player.PLAYER_CONDITION) -> void:
 func update_invincibility_effect(delta: float) -> void:
 	blink_timer += delta
 
-	if player.player_damaged.is_in_invincible_state():
+	if player.get_current_damaged().is_in_invincible_state():
 		if not is_blinking:
 			is_blinking = true
 			blink_timer = 0.0
