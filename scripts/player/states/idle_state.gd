@@ -8,6 +8,9 @@ func enter() -> void:
 	# アイドルアニメーション開始
 	play_animation("idle")
 
+	# アイドル状態のハートボックスを設定
+	switch_hurtbox(hurtbox.get_idle_hurtbox())
+
 func process_physics(delta: float) -> void:
 	# 重力適用
 	apply_gravity(delta)

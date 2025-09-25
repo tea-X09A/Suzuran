@@ -16,16 +16,8 @@ enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT, FIGHTING, SHOOTING, DAMA
 # 当たり判定用コリジョン
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
 
-# 各状態のハートボックス（被ダメージ判定）
-@onready var idle_hurtbox: PlayerHurtbox = $IdleHurtbox
-@onready var walk_hurtbox: PlayerHurtbox = $WalkHurtbox
-@onready var run_hurtbox: PlayerHurtbox = $RunHurtbox
-@onready var jump_hurtbox: PlayerHurtbox = $JumpHurtbox
-@onready var fall_hurtbox: PlayerHurtbox = $FallHurtbox
-@onready var squat_hurtbox: PlayerHurtbox = $SquatHurtbox
-@onready var fighting_hurtbox: PlayerHurtbox = $FightingHurtbox
-@onready var shooting_hurtbox: PlayerHurtbox = $ShootingHurtbox
-@onready var down_hurtbox: PlayerHurtbox = $DownHurtbox
+# ハートボックス管理システム（統合版）
+var hurtbox: PlayerHurtbox
 
 # ======================== エクスポート設定 ========================
 
@@ -71,7 +63,7 @@ var running_state_when_airborne: bool = false
 # 射撃のクールダウンタイマー（秒）
 var shooting_cooldown_timer: float = 0.0
 # 現在アクティブなハートボックス
-var current_active_hurtbox: PlayerHurtbox = null
+# current_active_hurtboxはhurtboxで管理されるため削除
 
 # ======================== 初期化処理 ========================
 
@@ -83,7 +75,8 @@ func _ready() -> void:
 	_initialize_systems()
 	_initialize_states()
 	_connect_signals()
-	switch_hurtbox(idle_hurtbox)
+	# 初期ハートボックス設定
+	hurtbox.initialize_default_hurtbox()
 
 ## システムコンポーネントの初期化
 func _initialize_systems() -> void:
@@ -91,6 +84,9 @@ func _initialize_systems() -> void:
 	player_input = PlayerInput.new(self)
 	# 無敵エフェクトシステムを生成（現在の変身状態を反映）
 	invincibility_effect = InvincibilityEffect.new(self, condition)
+	# ハートボックス管理システムを初期化（代表ハートボックスを使用）
+	hurtbox = $IdleHurtbox as PlayerHurtbox
+	hurtbox.initialize_manager(self)
 
 ## 状態機械システムの初期化
 func _initialize_states() -> void:
@@ -139,8 +135,8 @@ func _physics_process(delta: float) -> void:
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
 
-	# 現在の状態に応じたハートボックス更新
-	update_hurtbox_for_current_state()
+	# ハートボックス更新は各Stateの責任となったため削除
+	# 各Stateのenterメソッドでハートボックスが自動設定される
 
 # ======================== アクション処理 ========================
 
@@ -199,90 +195,17 @@ func _on_damaged_finished() -> void:
 	# ダメージ状態終了の処理
 	pass
 
-# ======================== 状態判定メソッド ========================
-
-## 攻撃状態かの判定
-func is_fighting() -> bool:
-	return current_state is FightingState
-
-## 射撃状態かの判定
-func is_shooting() -> bool:
-	return current_state is ShootingState
-
-## ダメージ状態かの判定
-func is_damaged() -> bool:
-	return current_state is DamagedState
-
-## 現在のダメージ状態オブジェクト取得
-func get_current_damaged() -> DamagedState:
-	return states["damaged"] as DamagedState
+# 状態判定メソッドは設計思想違反のため削除
+# 各Stateが自分の責任範囲を持つアーキテクチャに変更
 
 ## 物理制御が無効化されているかの判定
 func is_physics_control_disabled() -> bool:
 	# ジャンプ横移動無効フラグまたは空中アクション中は物理制御無効
 	return ignore_jump_horizontal_velocity or (current_state != null and current_state.has_method("is_airborne_action_active") and current_state.is_airborne_action_active())
 
-# ======================== ハートボックス制御 ========================
-
-## ハートボックスの切り替え
-func switch_hurtbox(new_hurtbox: PlayerHurtbox) -> void:
-	# 現在のハートボックスを無効化
-	if current_active_hurtbox != null and current_active_hurtbox != new_hurtbox:
-		current_active_hurtbox.deactivate_hurtbox()
-		current_active_hurtbox.visible = false
-
-	# 新しいハートボックスを有効化
-	if new_hurtbox != null:
-		new_hurtbox.activate_hurtbox()
-		new_hurtbox.visible = true
-		current_active_hurtbox = new_hurtbox
-
-## 現在の状態に応じたハートボックス更新
-func update_hurtbox_for_current_state() -> void:
-	var target_hurtbox: PlayerHurtbox = null
-
-	# ダメージ状態時の判定
-	if is_damaged():
-		if get_current_damaged().is_in_knockback_landing_state():
-			target_hurtbox = down_hurtbox  # ノックダウン時専用
-		else:
-			return  # その他のダメージ状態では変更しない
-	# 特殊アクション状態の判定
-	elif is_fighting():
-		target_hurtbox = fighting_hurtbox
-	elif is_shooting():
-		target_hurtbox = shooting_hurtbox
-	# 通常移動状態の判定
-	else:
-		if is_squatting:
-			target_hurtbox = squat_hurtbox
-		elif not is_on_floor():  # 空中時
-			if velocity.y < 0:
-				target_hurtbox = jump_hurtbox  # 上昇中
-			else:
-				target_hurtbox = fall_hurtbox  # 下降中
-		else:  # 地上時
-			if is_running and abs(direction_x) > 0:
-				target_hurtbox = run_hurtbox
-			elif abs(direction_x) > 0:
-				target_hurtbox = walk_hurtbox
-			else:
-				target_hurtbox = idle_hurtbox
-
-	# 決定されたハートボックスに切り替え
-	if target_hurtbox != null:
-		switch_hurtbox(target_hurtbox)
-
-## 全てのハートボックスを無効化
-func deactivate_all_hurtboxes() -> void:
-	if current_active_hurtbox != null:
-		current_active_hurtbox.deactivate_hurtbox()
-		current_active_hurtbox.visible = false
-		current_active_hurtbox = null
-
-## 現在の状態に応じたハートボックス再有効化
-func reactivate_current_hurtbox() -> void:
-	update_hurtbox_for_current_state()
+# ハートボックス制御メソッドは設計思想違反のため削除
+# 各Stateが自分のハートボックス管理責任を持つアーキテクチャに変更
+# ハートボックス管理はPlayerHurtboxManagerとBaseStateで行う
 
 # ======================== プロパティアクセサ ========================
 

@@ -84,8 +84,8 @@ func handle_fighting() -> void:
 	# アニメーション完了シグナルの接続（重複接続を防止）
 	connect_animation_signal(_on_fighting_animation_finished)
 
-	# 戦闘状態は State Machine で管理（is_fighting() メソッドで判定）
-	player.switch_hurtbox(player.fighting_hurtbox)
+	# 戦闘状態のハートボックスを設定
+	switch_hurtbox(hurtbox.get_fighting_hurtbox())
 
 func apply_fighting_movement() -> void:
 	# 攻撃が有効でない場合は移動も無効化

@@ -23,6 +23,9 @@ func enter() -> void:
 	# プレイヤーの入力システムのジャンプタイマーをリセット
 	player.player_input.reset_jump_timers()
 
+	# ジャンプ状態のハートボックスを設定
+	switch_hurtbox(hurtbox.get_jump_hurtbox())
+
 func process_physics(delta: float) -> void:
 	# 重力適用
 	apply_gravity(delta)

@@ -5,6 +5,12 @@ func enter() -> void:
 	player.state = Player.PLAYER_STATE.SQUAT
 	player.is_squatting = true
 
+	# しゃがみアニメーション開始
+	play_animation("squat")
+
+	# しゃがみ状態のハートボックスを設定
+	switch_hurtbox(hurtbox.get_squat_hurtbox())
+
 func process_physics(delta: float) -> void:
 	# 重力適用
 	apply_gravity(delta)

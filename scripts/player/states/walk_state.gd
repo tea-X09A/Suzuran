@@ -8,6 +8,9 @@ func enter() -> void:
 	# 歩行アニメーション開始
 	play_animation("walk")
 
+	# 歩行状態のハートボックスを設定
+	switch_hurtbox(hurtbox.get_walk_hurtbox())
+
 func process_physics(delta: float) -> void:
 	# 重力適用
 	apply_gravity(delta)

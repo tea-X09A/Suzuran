@@ -20,9 +20,8 @@ func get_parameters() -> Dictionary:
 
 func enter() -> void:
 	player.state = Player.PLAYER_STATE.SHOOTING
-	# 射撃状態は State Machine で管理（is_shooting() メソッドで判定）
-	# 射撃用hurtboxに切り替え
-	player.switch_hurtbox(player.shooting_hurtbox)
+	# 射撃状態のハートボックスを設定
+	switch_hurtbox(hurtbox.get_shooting_hurtbox())
 	# 射撃処理を直接実行
 	handle_shooting()
 

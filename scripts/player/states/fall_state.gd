@@ -7,6 +7,9 @@ func enter() -> void:
 	# 落下アニメーション開始
 	play_animation("fall")
 
+	# 落下状態のハートボックスを設定
+	switch_hurtbox(hurtbox.get_fall_hurtbox())
+
 func process_physics(delta: float) -> void:
 	# 重力適用
 	apply_gravity(delta)

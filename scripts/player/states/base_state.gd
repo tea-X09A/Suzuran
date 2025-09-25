@@ -5,6 +5,7 @@ extends RefCounted
 var player: CharacterBody2D
 var animated_sprite: AnimatedSprite2D
 var condition: Player.PLAYER_CONDITION
+var hurtbox: PlayerHurtbox
 
 # 重力加速度（プロジェクト設定から取得）
 var GRAVITY: float
@@ -15,6 +16,7 @@ func _init(player_instance: CharacterBody2D) -> void:
 	# 安全な参照取得: プレイヤーのキャッシュされたanimated_sprite_2dを直接利用
 	animated_sprite = player.animated_sprite_2d
 	condition = player.condition
+	hurtbox = player.hurtbox
 	GRAVITY = ProjectSettings.get_setting("physics/2d/default_gravity")
 
 # ======================== 抽象メソッド（各Stateで実装必須） ========================
@@ -68,3 +70,19 @@ func connect_animation_signal(callback: Callable) -> void:
 func disconnect_animation_signal(callback: Callable) -> void:
 	if animated_sprite.animation_finished.is_connected(callback):
 		animated_sprite.animation_finished.disconnect(callback)
+
+# ======================== ハートボックス制御（各Stateで利用可能） ========================
+## ハートボックス切り替え（State側の責任として実装）
+func switch_hurtbox(hurtbox: PlayerHurtbox) -> void:
+	if hurtbox:
+		hurtbox.switch_hurtbox(hurtbox)
+
+## 全ハートボックス無効化（ダメージ状態等で使用）
+func deactivate_all_hurtboxes() -> void:
+	if hurtbox:
+		hurtbox.deactivate_all_hurtboxes()
+
+## 無敵状態設定（特殊状態用）
+func set_invincible() -> void:
+	if hurtbox:
+		hurtbox.set_invincible()
