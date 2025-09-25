@@ -31,7 +31,7 @@ func process_physics(delta: float) -> void:
 		return
 
 	# しゃがみ中でも戦闘・射撃は可能
-	if Input.is_action_just_pressed("fighting"):
+	if Input.is_action_just_pressed("fighting_01"):
 		player.change_state("fighting")
 		return
 

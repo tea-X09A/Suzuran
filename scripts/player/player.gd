@@ -222,3 +222,7 @@ func set_condition(new_condition: PLAYER_CONDITION) -> void:
 	# 全ての状態オブジェクトに変身状態の変更を通知
 	for state_name in states:
 		states[state_name].update_condition(new_condition)
+
+## 現在のダメージ状態インスタンスを取得
+func get_current_damaged() -> DamagedState:
+	return states["damaged"] as DamagedState

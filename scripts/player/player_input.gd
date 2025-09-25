@@ -37,11 +37,12 @@ func handle_damaged_input() -> void:
 	player.is_running = false
 
 	# 特定ダメージ状態でのジャンプ入力処理
-	var damaged_state = player.get_current_damaged()
-	var can_jump: bool = damaged_state.is_in_knockback_state() or damaged_state.is_in_knockback_landing_state()
-	if can_jump and Input.is_action_just_pressed("jump"):
-		damaged_state.handle_recovery_jump()
-		player.handle_jump()
+	var damaged_state: DamagedState = player.get_current_damaged()
+	if damaged_state != null:
+		var can_jump: bool = damaged_state.is_in_knockback_state() or damaged_state.is_in_knockback_landing_state()
+		if can_jump and Input.is_action_just_pressed("jump"):
+			# recovery_jump処理はDamagedState内で完結するため、handle_jump()の追加呼び出しは不要
+			damaged_state.handle_recovery_jump()
 
 # ======================== 個別入力処理 ========================
 func _handle_movement_inputs() -> void:
@@ -53,12 +54,12 @@ func _handle_movement_inputs() -> void:
 		_set_movement_direction(left_key, right_key, shift_pressed)
 	else:
 		# 空中でのアクション中は方向のみ設定
-		if _is_airborne() and (player.is_fighting() or player.is_shooting()):
+		if _is_airborne() and (player.state == Player.PLAYER_STATE.FIGHTING or player.state == Player.PLAYER_STATE.SHOOTING):
 			_set_direction_only(left_key, right_key)
 		else:
 			player.direction_x = 0.0
 			# 地上でアクション中でない場合はrunning状態をリセット
-			if player.is_grounded and not (player.is_fighting() or player.is_shooting()):
+			if player.is_grounded and not (player.state == Player.PLAYER_STATE.FIGHTING or player.state == Player.PLAYER_STATE.SHOOTING):
 				player.is_running = false
 
 func _handle_action_inputs() -> void:
@@ -66,7 +67,7 @@ func _handle_action_inputs() -> void:
 	player.is_squatting = player.is_grounded and Input.is_action_pressed("squat") and _can_perform_action()
 
 	# 戦闘入力
-	if Input.is_action_just_pressed("fighting") and _can_perform_action():
+	if Input.is_action_just_pressed("fighting_01") and _can_perform_action():
 		player.handle_fighting()
 
 	# 射撃入力
@@ -84,7 +85,7 @@ func _handle_jump_inputs() -> void:
 
 # ======================== 入力条件チェック ========================
 func _can_perform_action() -> bool:
-	return not player.is_fighting() and not player.is_shooting() and not player.is_damaged()
+	return not (player.state == Player.PLAYER_STATE.FIGHTING or player.state == Player.PLAYER_STATE.SHOOTING or player.state == Player.PLAYER_STATE.DAMAGED)
 
 func _can_move() -> bool:
 	# しゃがみ中は移動不可
@@ -107,17 +108,17 @@ func _set_movement_direction(left_key: bool, right_key: bool, shift_pressed: boo
 		if left_key:
 			player.direction_x = -1.0
 			# アクション中でない場合のみrunning状態を更新
-			if not (player.is_fighting() or player.is_shooting()):
+			if not (player.state == Player.PLAYER_STATE.FIGHTING or player.state == Player.PLAYER_STATE.SHOOTING):
 				player.is_running = shift_pressed
 		elif right_key:
 			player.direction_x = 1.0
 			# アクション中でない場合のみrunning状態を更新
-			if not (player.is_fighting() or player.is_shooting()):
+			if not (player.state == Player.PLAYER_STATE.FIGHTING or player.state == Player.PLAYER_STATE.SHOOTING):
 				player.is_running = shift_pressed
 		else:
 			player.direction_x = 0.0
 			# アクション中でない場合のみrunning状態をリセット
-			if not (player.is_fighting() or player.is_shooting()):
+			if not (player.state == Player.PLAYER_STATE.FIGHTING or player.state == Player.PLAYER_STATE.SHOOTING):
 				player.is_running = false
 	else:
 		# 空中では方向のみ設定（running状態は保存された状態を維持）

@@ -83,7 +83,7 @@ func apply_horizontal_jump_bonus(delta: float) -> void:
 		var effective_running: bool = player.running_state_when_airborne
 
 		# アクション中は開始時の走行状態を使用
-		if player.is_fighting() or player.is_shooting():
+		if player.state == Player.PLAYER_STATE.FIGHTING or player.state == Player.PLAYER_STATE.SHOOTING:
 			effective_running = player.running_state_when_action_started
 
 		var bonus_multiplier: float = 1.5 if effective_running else 1.0
@@ -107,7 +107,7 @@ func handle_air_movement() -> void:
 
 	# 有効な走行状態判定
 	var effective_running: bool = player.running_state_when_airborne
-	if player.is_fighting() or player.is_shooting():
+	if player.state == Player.PLAYER_STATE.FIGHTING or player.state == Player.PLAYER_STATE.SHOOTING:
 		effective_running = player.running_state_when_action_started
 
 	var target_speed: float = get_parameter("move_run_speed") if effective_running else get_parameter("move_walk_speed")
@@ -128,7 +128,7 @@ func check_state_transitions() -> void:
 		return
 
 	# 空中でのアクション入力チェック
-	if Input.is_action_just_pressed("fighting"):
+	if Input.is_action_just_pressed("fighting_01"):
 		player.change_state("fighting")
 		return
 

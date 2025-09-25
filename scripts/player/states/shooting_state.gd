@@ -49,7 +49,7 @@ func process_physics(delta: float) -> void:
 		return
 
 	# 射撃中でも戦闘アクションへの遷移は可能
-	if Input.is_action_just_pressed("fighting"):
+	if Input.is_action_just_pressed("fighting_01"):
 		player.change_state("fighting")
 		return
 
@@ -66,7 +66,7 @@ func exit() -> void:
 	shooting_timer = 0.0
 	shooting_grounded = false
 
-func handle_input(event: InputEvent) -> void:
+func handle_input(_event: InputEvent) -> void:
 	# 射撃中の入力処理
 	pass
 

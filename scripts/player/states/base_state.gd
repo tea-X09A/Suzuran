@@ -28,7 +28,7 @@ func exit() -> void:
 	# 状態終了時の処理（各Stateで実装）
 	pass
 
-func process_physics(delta: float) -> void:
+func process_physics(_delta: float) -> void:
 	# 物理処理（各Stateで実装）
 	pass
 
@@ -73,9 +73,9 @@ func disconnect_animation_signal(callback: Callable) -> void:
 
 # ======================== ハートボックス制御（各Stateで利用可能） ========================
 ## ハートボックス切り替え（State側の責任として実装）
-func switch_hurtbox(hurtbox: PlayerHurtbox) -> void:
+func switch_hurtbox(target_hurtbox: PlayerHurtbox) -> void:
 	if hurtbox:
-		hurtbox.switch_hurtbox(hurtbox)
+		hurtbox.switch_hurtbox(target_hurtbox)
 
 ## 全ハートボックス無効化（ダメージ状態等で使用）
 func deactivate_all_hurtboxes() -> void:

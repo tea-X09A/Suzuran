@@ -66,7 +66,7 @@ func check_player_collision() -> void:
 	for body in overlapping_bodies:
 		if body.is_in_group("player"):
 			# damaged状態ではトラップの検知を無効化
-			if body.is_damaged():
+			if body.state == Player.PLAYER_STATE.DAMAGED:
 				continue
 			apply_damage_to_player(body)
 			last_damage_time = current_time
@@ -78,8 +78,8 @@ func apply_damage_to_player(player: Node2D) -> void:
 		target_condition = player.get_condition()
 
 	# プレイヤーの無敵状態をチェック
-	var damaged_module = player.get_current_damaged()
-	if damaged_module.is_in_invincible_state():
+	var damaged_module: DamagedState = player.get_current_damaged()
+	if damaged_module != null and damaged_module.is_in_invincible_state():
 		return
 
 	# ノックバック方向を計算（トラップからプレイヤーへの方向）

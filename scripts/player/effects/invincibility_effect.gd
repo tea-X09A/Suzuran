@@ -30,7 +30,9 @@ func update_condition(new_condition: Player.PLAYER_CONDITION) -> void:
 func update_invincibility_effect(delta: float) -> void:
 	blink_timer += delta
 
-	if player.get_current_damaged().is_in_invincible_state():
+	# 型安全な無敵状態チェック
+	var damaged_state: DamagedState = player.get_current_damaged()
+	if damaged_state != null and damaged_state.is_in_invincible_state():
 		if not is_blinking:
 			is_blinking = true
 			blink_timer = 0.0
