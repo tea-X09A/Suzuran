@@ -6,7 +6,7 @@ extends CharacterBody2D
 # プレイヤーの変身状態
 enum PLAYER_CONDITION { NORMAL, EXPANSION }
 
-# プレイヤーのアクション状態
+# プレイヤーのアクション状態（State Machineアーキテクチャへの移行により将来削除予定）
 enum PLAYER_STATE { IDLE, WALK, RUN, JUMP, FALL, SQUAT, FIGHTING, SHOOTING, DAMAGED }
 
 # ======================== ノード参照キャッシュ ========================
@@ -34,16 +34,12 @@ var hurtbox: PlayerHurtbox
 
 # 現在の変身状態（NORMAL/EXPANSION）
 var condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
-# 現在のアクション状態（IDLE/WALK等）
-var state: PLAYER_STATE = PLAYER_STATE.IDLE
-# 現在アクティブな状態オブジェクト
-var current_state: BaseState
-# 全状態オブジェクトの辞書
-var states: Dictionary
 # 入力処理システム
 var player_input: PlayerInput
 # 無敵エフェクト処理システム
 var invincibility_effect: InvincibilityEffect
+# ダメージ状態管理（外部アクセス用）
+var damaged_state: DamagedState
 # アニメーションツリーのステートマシン
 var state_machine: AnimationNodeStateMachinePlayback
 
@@ -94,21 +90,8 @@ func _initialize_systems() -> void:
 
 ## 状態機械システムの初期化
 func _initialize_states() -> void:
-	# 全ての状態オブジェクトを生成
-	states = {
-		"idle": IdleState.new(self),
-		"walk": WalkState.new(self),
-		"run": RunState.new(self),
-		"jump": JumpState.new(self),
-		"fall": FallState.new(self),
-		"squat": SquatState.new(self),
-		"fighting": FightingState.new(self),
-		"shooting": ShootingState.new(self),
-		"damaged": DamagedState.new(self)
-	}
-	# 初期状態をAnimationTreeに設定
-	if state_machine:
-		state_machine.travel("IDLE")
+	# 外部アクセス用のダメージ状態のみ初期化
+	damaged_state = DamagedState.new(self)
 
 ## アニメーションシステムの初期化
 func _initialize_animation_system() -> void:
@@ -146,26 +129,7 @@ func update_sprite_direction(input_direction_x: float) -> void:
 	if input_direction_x != 0.0:
 		sprite_2d.flip_h = input_direction_x > 0.0
 
-# ======================== 状態遷移制御 ========================
 
-## AnimationTree状態設定
-func set_animation_tree_state(state_name: String) -> void:
-	if state_machine:
-		state_machine.travel(state_name)
-
-## 現在のAnimationTree状態取得
-func get_current_animation_state() -> String:
-	if state_machine:
-		return state_machine.get_current_node()
-	return ""
-
-# ======================== アニメーションイベント処理 ========================
-
-## アニメーションフレーム変更時のコールバック処理
-func _on_animation_frame_changed(animation_name: String, new_frame: int) -> void:
-	# フレームイベントを現在のStateに転送
-	if current_state != null and current_state.has_method("on_animation_frame_changed"):
-		current_state.on_animation_frame_changed(animation_name, new_frame)
 
 # ======================== プロパティアクセサ ========================
 
@@ -179,13 +143,13 @@ func set_condition(new_condition: PLAYER_CONDITION) -> void:
 	# 無敵エフェクトシステムに変身状態の変更を通知
 	invincibility_effect.update_condition(new_condition)
 
-	# 全ての状態オブジェクトに変身状態の変更を通知
-	for state_name in states:
-		states[state_name].update_condition(new_condition)
+	# ダメージ状態に変身状態の変更を通知
+	if damaged_state:
+		damaged_state.update_condition(new_condition)
 
 ## 現在のダメージ状態インスタンスを取得
 func get_current_damaged() -> DamagedState:
-	return states["damaged"] as DamagedState
+	return damaged_state
 
 ## アニメーションツリーのステートマシンを取得
 func get_animation_state_machine() -> AnimationNodeStateMachinePlayback:
@@ -203,64 +167,79 @@ func get_animation_player() -> AnimationPlayer:
 func get_animation_tree() -> AnimationTree:
 	return animation_tree
 
-# ======================== フレームイベント処理 ========================
+# ======================== フレームイベント処理（AnimationPlayer用） ========================
 
 ## アイドル状態のハートボックスを有効化
 func activate_idle_hurtbox() -> void:
-	if current_state != null and current_state.has_method("handle_frame_event"):
-		current_state.handle_frame_event("activate_idle_hurtbox")
+	_delegate_frame_event("activate_idle_hurtbox")
 
 ## 歩行状態のハートボックスを有効化
 func activate_walk_hurtbox() -> void:
-	if current_state != null and current_state.has_method("handle_frame_event"):
-		current_state.handle_frame_event("activate_walk_hurtbox")
+	_delegate_frame_event("activate_walk_hurtbox")
 
 ## 走行状態のハートボックスを有効化
 func activate_run_hurtbox() -> void:
-	if current_state != null and current_state.has_method("handle_frame_event"):
-		current_state.handle_frame_event("activate_run_hurtbox")
+	_delegate_frame_event("activate_run_hurtbox")
 
 ## ジャンプ状態のハートボックスを有効化
 func activate_jump_hurtbox() -> void:
-	if current_state != null and current_state.has_method("handle_frame_event"):
-		current_state.handle_frame_event("activate_jump_hurtbox")
+	_delegate_frame_event("activate_jump_hurtbox")
 
 ## 落下状態のハートボックスを有効化
 func activate_fall_hurtbox() -> void:
-	if current_state != null and current_state.has_method("handle_frame_event"):
-		current_state.handle_frame_event("activate_fall_hurtbox")
+	_delegate_frame_event("activate_fall_hurtbox")
 
 ## しゃがみ状態のハートボックスを有効化
 func activate_squat_hurtbox() -> void:
-	if current_state != null and current_state.has_method("handle_frame_event"):
-		current_state.handle_frame_event("activate_squat_hurtbox")
+	_delegate_frame_event("activate_squat_hurtbox")
 
 ## 格闘状態のハートボックスを有効化
 func activate_fighting_hurtbox() -> void:
-	if current_state != null and current_state.has_method("handle_frame_event"):
-		current_state.handle_frame_event("activate_fighting_hurtbox")
+	_delegate_frame_event("activate_fighting_hurtbox")
 
 ## 射撃状態のハートボックスを有効化
 func activate_shooting_hurtbox() -> void:
-	if current_state != null and current_state.has_method("handle_frame_event"):
-		current_state.handle_frame_event("activate_shooting_hurtbox")
+	_delegate_frame_event("activate_shooting_hurtbox")
 
 ## 全てのハートボックスを無効化
 func deactivate_all_hurtboxes() -> void:
-	if current_state != null and current_state.has_method("handle_frame_event"):
-		current_state.handle_frame_event("deactivate_all_hurtboxes")
+	_delegate_frame_event("deactivate_all_hurtboxes")
 
 ## 格闘攻撃のヒットボックスを有効化
 func activate_fighting_hitbox() -> void:
-	if current_state != null and current_state.has_method("handle_frame_event"):
-		current_state.handle_frame_event("activate_fighting_hitbox")
+	_delegate_frame_event("activate_fighting_hitbox")
 
 ## 格闘攻撃のヒットボックスを無効化
 func deactivate_fighting_hitbox() -> void:
-	if current_state != null and current_state.has_method("handle_frame_event"):
-		current_state.handle_frame_event("deactivate_fighting_hitbox")
+	_delegate_frame_event("deactivate_fighting_hitbox")
 
 ## 射撃用の弾丸を生成
 func spawn_projectile() -> void:
-	if current_state != null and current_state.has_method("handle_frame_event"):
-		current_state.handle_frame_event("spawn_projectile")
+	_delegate_frame_event("spawn_projectile")
+
+## フレームイベントの転送処理（State Machineアーキテクチャ対応）
+func _delegate_frame_event(event_name: String) -> void:
+	# BaseStateの基本実装を利用してhurtbox制御を実行
+	match event_name:
+		"activate_idle_hurtbox":
+			hurtbox.switch_hurtbox(hurtbox.get_idle_hurtbox())
+		"activate_walk_hurtbox":
+			hurtbox.switch_hurtbox(hurtbox.get_walk_hurtbox())
+		"activate_run_hurtbox":
+			hurtbox.switch_hurtbox(hurtbox.get_run_hurtbox())
+		"activate_jump_hurtbox":
+			hurtbox.switch_hurtbox(hurtbox.get_jump_hurtbox())
+		"activate_fall_hurtbox":
+			hurtbox.switch_hurtbox(hurtbox.get_fall_hurtbox())
+		"activate_squat_hurtbox":
+			hurtbox.switch_hurtbox(hurtbox.get_squat_hurtbox())
+		"activate_fighting_hurtbox":
+			hurtbox.switch_hurtbox(hurtbox.get_fighting_hurtbox())
+		"activate_shooting_hurtbox":
+			hurtbox.switch_hurtbox(hurtbox.get_shooting_hurtbox())
+		"deactivate_all_hurtboxes":
+			hurtbox.deactivate_all_hurtboxes()
+		# hitboxやprojectile関連は将来的に個別Stateで処理
+		_:
+			# 未対応のイベントは無視
+			pass
