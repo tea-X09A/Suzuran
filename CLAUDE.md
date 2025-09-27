@@ -203,3 +203,49 @@ Godotの基本単位であるノードとシーンを効果的に扱うこと。
 
   * **デバッグツールで監視する**
     メモリリークが疑われる場合は、Godotのデバッガーにある「モニター」パネルを活用し、「Object Count」や「Node Count」を監視すること。シーンの出入りを繰り返した際にこれらの数値が増加し続ける場合、メモリリークの可能性が高い。
+
+-----
+
+### 6. ステートパターンの実装 (State Pattern Implementation)
+
+キャラクターの状態管理を効率的に行うため、ステートパターンを導入し、コードの保守性と拡張性を向上させること。
+
+  * **基底クラス `State.gd` の作成**
+    全てのステートが共通して持つインターフェース（`enter`, `exit`, `physics_update`）を定義し、`class_name State` として Godot に認識させること。各メソッドは `pass` のみを記述し、具体的な処理は具象クラスに委ねる。
+
+    ```gdscript
+    class_name State
+    var player: CharacterBody2D
+
+    func enter() -> void:
+        pass
+
+    func exit() -> void:
+        pass
+
+    func physics_update(delta: float) -> void:
+        pass
+    ```
+
+  * **メインコントローラーでのステート管理**
+    `Player.gd` では `states` 辞書で全ステートを管理し、`current_state` で現在の状態を保持すること。状態遷移は `change_state()` メソッドで一元管理し、現在のステートの `exit()` を呼んでから新しいステートの `enter()` を呼び出すこと。
+
+    ```gdscript
+    var states: Dictionary = {}
+    var current_state: State
+
+    func change_state(new_state_name: String) -> void:
+        if current_state:
+            current_state.exit()
+        current_state = states[new_state_name]
+        current_state.enter()
+    ```
+
+  * **具象ステートクラスの作成**
+    各状態（`IdleState`, `JumpState` など）は `State` を継承し、その状態固有のロジックを `physics_update()` に記述すること。状態遷移の条件も各ステート内で判定し、`player.change_state()` を呼び出して遷移を実行すること。
+
+  * **共通処理のヘルパー関数化**
+    重力適用や水平移動など、複数のステートで共通する処理は `Player.gd` にヘルパー関数として定義し、各ステートから呼び出して使用すること。これにより、コードの重複を避け、修正時の一貫性を保つ。
+
+  * **ディレクトリ構成の整理**
+    ステート関連のファイルは `player/states/` フォルダに整理し、`Player.gd` は `player/` フォルダに配置すること。ファイル構成を統一することで、プロジェクトの保守性を向上させる。
