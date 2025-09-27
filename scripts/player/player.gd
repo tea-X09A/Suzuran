@@ -62,13 +62,6 @@ var ignore_jump_horizontal_velocity: bool = false
 # 接地状態フラグ
 var is_grounded: bool = false
 
-# ======================== アクション状態記録変数 ========================
-
-# アクション開始時の走行状態を記録
-var running_state_when_action_started: bool = false
-# 空中時の走行状態を記録
-var running_state_when_airborne: bool = false
-
 # ======================== 物理制御変数 ========================
 
 # 重力加速度（プロジェクト設定から取得）
@@ -113,8 +106,9 @@ func _initialize_states() -> void:
 		"shooting": ShootingState.new(self),
 		"damaged": DamagedState.new(self)
 	}
-	# 待機状態から開始
-	change_state("idle")
+	# 初期状態をAnimationTreeに設定
+	if state_machine:
+		state_machine.travel("IDLE")
 
 ## アニメーションシステムの初期化
 func _initialize_animation_system() -> void:
@@ -123,21 +117,7 @@ func _initialize_animation_system() -> void:
 	# ステートマシンの参照を取得
 	state_machine = animation_tree.get("parameters/playback") as AnimationNodeStateMachinePlayback
 
-	# AnimationTreeの状態変更シグナルを接続
-	if animation_tree.has_signal("animation_tree_changed"):
-		animation_tree.animation_tree_changed.connect(_on_animation_tree_state_changed)
-
-## 状態変更（AnimationTreeベースアーキテクチャ用）
-func change_state(new_state_name: String) -> void:
-	# AnimationTree状態を設定
-	set_animation_tree_state(new_state_name.to_upper())
-
-	# 対応するStateオブジェクトが存在すれば初期化
-	var state_key = new_state_name.to_lower()
-	if states.has(state_key):
-		var state_instance: BaseState = states[state_key]
-		state_instance.initialize_state()
-
+	# State Machineが状態遷移を管理するため、手動接続は不要
 
 # ======================== メイン処理ループ ========================
 
@@ -152,106 +132,8 @@ func _physics_process(delta: float) -> void:
 	player_input.update_ground_state()
 	player_input.update_timers(delta)
 
-	# 統合された物理処理実行
-	process_unified_physics(delta)
-
-
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
-
-# ======================== 統合物理処理 ========================
-
-## 統合された物理処理
-func process_unified_physics(delta: float) -> void:
-	# 入力取得
-	direction_x = Input.get_axis("left", "right")
-
-	# 現在の状態に応じた処理
-	var current_animation_state: String = get_current_animation_state()
-
-	match current_animation_state:
-		"DAMAGED":
-			process_damaged_physics(delta)
-		"FIGHTING":
-			process_fighting_physics(delta)
-		"SHOOTING":
-			process_shooting_physics(delta)
-		"JUMP":
-			process_jump_physics(delta)
-		"FALL":
-			process_fall_physics(delta)
-		_:
-			process_ground_physics(delta)
-
-## 地上物理処理（IDLE/WALK/RUN/SQUAT）
-func process_ground_physics(delta: float) -> void:
-	# 重力適用
-	apply_gravity(delta)
-
-	# 地上移動処理
-	# 各Stateが物理制御を管理するため、ここでの制御判定は不要
-
-	if direction_x != 0.0:
-		var move_speed: float
-		if is_running:
-			move_speed = PlayerParameters.get_parameter(condition, "move_run_speed")
-		else:
-			move_speed = PlayerParameters.get_parameter(condition, "move_walk_speed")
-
-		velocity.x = direction_x * move_speed
-		update_sprite_direction(direction_x)
-	else:
-		velocity.x = 0.0
-
-## ダメージ状態物理処理
-func process_damaged_physics(delta: float) -> void:
-	# 重力適用
-	apply_gravity(delta)
-
-	var damaged_state: DamagedState = states["damaged"] as DamagedState
-	if damaged_state.update_damage_state(delta):
-		damaged_state.handle_damaged_movement(delta)
-
-## 戦闘状態物理処理
-func process_fighting_physics(delta: float) -> void:
-	# 重力適用
-	apply_gravity(delta)
-
-	var fighting_state: FightingState = states["fighting"] as FightingState
-	if not fighting_state.update_fighting_timer(delta):
-		# 戦闘終了
-		pass
-
-## 射撃状態物理処理
-func process_shooting_physics(delta: float) -> void:
-	# 重力適用
-	apply_gravity(delta)
-
-	var shooting_state: ShootingState = states["shooting"] as ShootingState
-	shooting_state.try_back_jump_shooting()
-	if not shooting_state.update_shooting_state(delta):
-		# 射撃終了
-		pass
-
-## ジャンプ状態物理処理
-func process_jump_physics(delta: float) -> void:
-	# 重力適用
-	apply_gravity(delta)
-
-	# ジャンプ処理
-	var jump_state: JumpState = states["jump"] as JumpState
-	jump_state.update_jump_state(delta)
-
-	# 空中移動処理
-	handle_air_movement()
-
-## 落下状態物理処理
-func process_fall_physics(delta: float) -> void:
-	# 重力適用
-	apply_gravity(delta)
-
-	# 空中移動処理
-	handle_air_movement()
 
 ## 重力適用
 func apply_gravity(delta: float) -> void:
@@ -263,32 +145,6 @@ func apply_gravity(delta: float) -> void:
 func update_sprite_direction(input_direction_x: float) -> void:
 	if input_direction_x != 0.0:
 		sprite_2d.flip_h = input_direction_x > 0.0
-
-## 空中移動処理
-func handle_air_movement() -> void:
-	# 各Stateが物理制御を管理するため、ここでの制御判定は不要
-
-	# スプライト方向更新
-	update_sprite_direction(direction_x)
-
-	# 空中制御パラメータ
-	var air_control_strength: float = PlayerParameters.get_parameter(condition, "air_control_strength")
-	var air_friction: float = PlayerParameters.get_parameter(condition, "air_friction")
-
-	# 有効な走行状態判定
-	var effective_running: bool = running_state_when_airborne
-	if state == PLAYER_STATE.FIGHTING or state == PLAYER_STATE.SHOOTING:
-		effective_running = running_state_when_action_started
-
-	var target_speed: float = PlayerParameters.get_parameter(condition, "move_run_speed") if effective_running else PlayerParameters.get_parameter(condition, "move_walk_speed")
-
-	# 水平移動制御
-	if direction_x != 0.0:
-		var target_velocity: float = direction_x * target_speed
-		velocity.x = lerp(velocity.x, target_velocity, air_control_strength)
-	else:
-		# 空気抵抗適用
-		velocity.x *= air_friction
 
 # ======================== 状態遷移制御 ========================
 
@@ -302,13 +158,6 @@ func get_current_animation_state() -> String:
 	if state_machine:
 		return state_machine.get_current_node()
 	return ""
-
-## AnimationTree状態変更時のコールバック
-func _on_animation_tree_state_changed(state_name: String) -> void:
-	# 新しい状態の初期化
-	if states.has(state_name.to_lower()):
-		var state_instance: BaseState = states[state_name.to_lower()]
-		state_instance.initialize_state()
 
 # ======================== アニメーションイベント処理 ========================
 
