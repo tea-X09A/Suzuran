@@ -1,169 +1,184 @@
-# プレイヤーシステム リファクタリング進捗レポート
+### **Godotキャラクター制御におけるステートパターン実装指示書**
 
-**作業開始日**: 2025-09-24
-**現在の状況**: 主要作業完了、最終調整段階
-**達成率**: **85%** (目標: 簡潔で効率的なプレイヤーシステム構築)
+**1. 目的**
 
----
+本指示書は、キャラクターの状態（待機、歩行、ジャンプ、攻撃など）が増加した際に、コードの見通しを良くし、機能追加や修正を容易にすることを目的とする。`Player.gd`が全てのロジックを抱え込むことを防ぎ、各状態の専門スクリプトに処理を分散させる「ステートパターン」を導入する。
 
-## 🎯 **リファクタリング目標と成果**
+**2. アーキテクチャ概要**
 
-### **設計目標**
-- sow.mdの設計思想に完全準拠したState Machineパターン実装
-- コード行数の大幅削減（目標: 64%削減）
-- 過剰な処理、未使用処理、移譲すべき処理の排除
-- ジャンプなどのアクション処理の各stateへの集約
+以下の3種類のスクリプトで役割を分担し、システムを構築する。
 
-### **達成成果**
-| 項目 | 削減前 | 削減後 | 削減率 | 状況 |
-|------|--------|--------|--------|------|
-| **Player.gd** | 245行 | **181行** | **-26%** | ✅完了 |
-| **PlayerManager.gd** | 319行 | **削除** | **-100%** | ✅完了 |
-| **BaseState.gd** | 268行 | **69行** | **-74%** | ✅完了 |
-| **PlayerInput.gd** | 0行 | **181行** | +181行 | ✅新規作成 |
-| **総削減効果** | **832行** | **431行** | **-48%** | 🎯達成 |
+  * **`Player.gd`（司令塔）**
 
----
+      * 役割：現在の状態を管理し、状態を切り替える命令を出す。物理演算に必要なプロパティ（`velocity`など）やノード参照を保持する。
+      * 処理：各フレームで、現在の状態に応じた担当者（具象ステート）に処理を依頼する。
 
-## ✅ **完了した主要作業**
+  * **`State.gd`（設計図）**
 
-### **1. Player.gd 簡潔化**
-- **245行 → 181行** (64行削減)
-- 過剰なコメントセクション削除
-- 冗長な条件分岐を型チェック(`is`)に変更
-- State Machine司令塔としての役割に集中
+      * 役割：全ての「状態」が持つべき機能（`enter`, `exit`など）を定義したテンプレート。
+      * 処理：このスクリプト自体に具体的な処理は記述しない。
 
-### **2. PlayerManager.gd 削除と機能分散**
-- **319行のPlayerManagerを完全削除**
-- 入力処理 → **PlayerInput.gd**（181行）に統合
-- タイマー管理 → **PlayerInput.gd**に統合
-- アニメーション制御 → 各**State.gd**に分散
+  * **`[状態名]State.gd`（担当者）**
 
-### **3. BaseState.gd 抽象化**
-- **268行 → 69行** (199行削除、-74%)
-- 具体的な物理処理を各Stateに移譲
-- 純粋な基底クラス機能のみに集中
-- 共通ユーティリティメソッドの最適化
+      * 役割：`IdleState`, `JumpState`など、各状態における専門家。
+      * 処理：担当する状態における具体的な挙動（物理演算、アニメーション指示、次の状態への遷移条件のチェック）を全て記述する。
 
-### **4. 各State でのアクション処理特化**
-- **JumpState**: 全ジャンプ処理を完全集約
-- **FightingState**: 戦闘処理の専門化
-- **ShootingState**: 射撃処理の専門化
-- 各Stateが単一責任で動作特化
+**3. 実装手順**
 
-### **5. 技術的負債の解決**
-- マジック数値の定数化完了
-- 型注釈の統一完了
-- 循環参照の排除完了
-- 重複処理の統合完了
+#### **Step 1: ディレクトリ構成の準備**
 
----
+プロジェクトのメンテナンス性を向上させるため、以下のディレクトリ構成を作成してください。
 
-## 🔄 **現在進行中の作業**
-
-### **アニメーション処理の最終統合** (95%完了)
-- **完了**: ShootingState.gdの`animated_sprite.play()`を`play_animation()`に統合
-- **残り**: DamagedState.gd、FightingState.gdの同様修正
-
----
-
-## ❌ **未着手/残作業**
-
-### **1. 最終クリーンアップ** (推定15分)
-```gdscript
-// 以下の修正が必要:
-// DamagedState.gd:93, 147行目
-animated_sprite.play(condition_prefix + "_damaged")
-→ play_animation("damaged")
-
-// FightingState.gd:75行目
-animated_sprite.play(get_animation_name())
-→ play_animation(get_animation_name().replace(prefix, ""))
+```
+- player/
+  - states/
 ```
 
-### **2. デバッグコード削除** (推定10分)
-- 各ファイルの`print()`文削除
-- コメントアウトされた古いコード削除
-- 未使用変数の削除
+`Player.gd`は`player/`に、各ステートスクリプトは`player/states/`に配置します。
 
----
+#### **Step 2: 基底クラス `State.gd` の作成**
 
-## 🏆 **設計思想への準拠度**
+全てのステートの設計図となるスクリプトを作成します。
 
-### **sow.md設計思想: 98%準拠** ✅
-- ✅ **Player.gd**: State Machine司令塔のみ、条件分岐ゼロ
-- ✅ **各State**: 単一責任原則で特定状態のみ担当
-- ✅ **委譲パターン**: 具体処理は全てStateに委譲
-- ✅ **状態遷移管理**: `change_state()`メソッドに集約
+**ファイルパス:** `player/states/State.gd`
 
-### **CLAUDE.md規則: 95%準拠** ✅
-- ✅ **静的型付け**: 全変数・関数に型注釈
-- ✅ **ノードキャッシュ**: `@onready`で初期化時取得
-- ✅ **シグナル疎結合**: 循環参照ゼロ
-- ✅ **パフォーマンス**: 重複処理排除、効率化
+```gdscript
+# このスクリプトを "State" という型としてGodotに認識させる
+class_name State
 
----
+# Playerノードへの参照。各ステートがPlayerのプロパティやメソッドを使えるようにするため。
+var player: CharacterBody2D
 
-## 📋 **次回作業時の優先順位**
+# このステートに入った時に一度だけ呼ばれる関数
+func enter() -> void:
+	pass # 処理は各担当者（具象ステート）が記述する
 
-### **優先度1: アニメーション統合完了** (15分)
-1. **DamagedState.gd** L93,147の修正
-2. **FightingState.gd** L75の修正
-3. 動作テスト実行
+# このステートから出る時に一度だけ呼ばれる関数
+func exit() -> void:
+	pass # 処理は各担当者（具象ステート）が記述する
 
-### **優先度2: 最終クリーンアップ** (10分)
-1. デバッグ`print()`文削除
-2. コメントアウトコード削除
-3. 未使用変数削除
+# _physics_processから毎フレーム呼ばれる関数
+func physics_update(delta: float) -> void:
+	pass # 処理は各担当者（具象ステート）が記述する
+```
 
-### **優先度3: 最終検証** (5分)
-1. 全機能動作確認
-2. 行数カウント最終確認
-3. エラー・警告ゼロ確認
+#### **Step 3: メインコントローラー `Player.gd` の実装**
 
----
+キャラクターノード（`CharacterBody2D`）にアタッチする司令塔スクリプトです。
 
-## 🚀 **リファクタリングの成功ポイント**
+**ファイルパス:** `player/Player.gd`
 
-### **1. 設計思想の忠実な実装**
-- State Machineパターンの純粋実装
-- 「マネージャー/専門担当者」関係の徹底
+```gdscript
+extends CharacterBody2D
 
-### **2. 段階的改善アプローチ**
-- 機能を壊すことなく着実に改善
-- 各段階でテスト可能な状態維持
+# 定数 (各ステートから参照される)
+const SPEED = 300.0
+const JUMP_VELOCITY = -400.0
+@onready var gravity = ProjectSettings.get_setting("physics/2d/default_gravity")
 
-### **3. 技術的負債の体系的解決**
-- 問題の優先度に基づく計画的改善
-- パフォーマンスと保守性の両立
+# ノード参照 (各ステートから参照される)
+@onready var animation_tree: AnimationTree = $AnimationTree
+@onready var state_machine = animation_tree.get("parameters/playback")
 
-### **4. GDScript最適化の完全活用**
-- CLAUDE.md規則の厳格遵守
-- Godot 4.4の機能を最大活用
+# ステートマシン関連の変数
+var states: Dictionary = {}
+var current_state: State
 
----
+func _ready() -> void:
+	# 全ての担当者（ステート）を準備する
+	states = {
+		"Idle": preload("res://player/states/IdleState.gd").new(),
+		"Jump": preload("res://player/states/JumpState.gd").new(),
+	}
 
-## 📊 **期待される最終効果**
+	# 各担当者に、司令塔（このPlayerノード）の情報を渡す
+	for state_name in states:
+		states[state_name].player = self
 
-### **開発効率向上**
-- 新State追加の簡素化
-- 機能変更時の影響範囲最小化
-- デバッグ効率の大幅改善
+	# 初期状態を "Idle" として業務を開始させる
+	change_state("Idle")
 
-### **パフォーマンス向上**
-- 重複処理排除による軽量化
-- 効率的な入力システム実装
-- メモリリーク要因の完全排除
+func _physics_process(delta: float) -> void:
+	# 現在の担当者に毎フレームの業務を完全に任せる
+	if current_state:
+		current_state.physics_update(delta)
 
-### **保守性向上**
-- 明確な責任分離
-- 単一責任原則の徹底
-- 変更に強いアーキテクチャ
+# 担当者を交代させるための関数
+func change_state(new_state_name: String) -> void:
+	if current_state:
+		current_state.exit() # 現担当者に終了処理をさせる
 
----
+	current_state = states[new_state_name] # 新しい担当者をセット
+	current_state.enter() # 新担当者に開始処理をさせる
 
-**総作業時間**: 約4時間
-**残り予定時間**: 30分
-**完了予定**: 本日中
+# --- 共通ヘルパー関数 (各担当者が呼び出して使う便利機能) ---
+func apply_gravity(delta: float) -> void:
+	if not is_on_floor():
+		velocity.y += gravity * delta
 
-**最終ゴール**: sow.mdに完全準拠した、簡潔で効率的かつ拡張可能なプレイヤーシステム
+func handle_horizontal_movement() -> void:
+	var direction = Input.get_axis("ui_left", "ui_right")
+	if direction:
+		velocity.x = direction * SPEED
+	else:
+		velocity.x = move_toward(velocity.x, 0, SPEED)
+```
+
+#### **Step 4: 具体的なステートの作成**
+
+各状態の担当者となるスクリプトを作成します。ここでは`Idle`と`Jump`を作成します。
+
+**ファイルパス:** `player/states/IdleState.gd`
+
+```gdscript
+extends State
+
+func enter() -> void:
+	player.state_machine.travel("Idle") # アニメーションを "Idle" にする
+
+func physics_update(delta: float) -> void:
+	player.apply_gravity(delta)
+	player.handle_horizontal_movement()
+	player.move_and_slide()
+
+	# 遷移条件：ジャンプ入力があれば、司令塔に担当者交代を依頼
+	if Input.is_action_just_pressed("jump"):
+		player.change_state("Jump")
+```
+
+**ファイルパス:** `player/states/JumpState.gd`
+
+```gdscript
+extends State
+
+func enter() -> void:
+	player.velocity.y = player.JUMP_VELOCITY # ジャンプを実行
+	player.state_machine.travel("Jump") # アニメーションを "Jump" にする
+
+func physics_update(delta: float) -> void:
+	player.apply_gravity(delta)
+	player.handle_horizontal_movement()
+	player.move_and_slide()
+
+	# 遷移条件：着地したら、司令塔に担当者交代を依頼
+	if player.is_on_floor():
+		player.change_state("Idle")
+```
+
+**4. 新しい状態の追加手順**
+
+この設計の最大の利点は、新しい状態の追加が容易な点です。例えば「歩行（Walk）」状態を追加する場合は、以下の手順で行います。
+
+1.  `player/states/`フォルダに`WalkState.gd`を作成し、`State`を継承させます。
+2.  `enter()`で`player.state_machine.travel("Walk")`を呼び出し、`physics_update()`に歩行中の処理と、他の状態（IdleやJump）への遷移条件を記述します。
+3.  `Player.gd`の`_ready`関数内にある`states`辞書に、`"Walk": preload("res://player/states/WalkState.gd").new()`の一行を追加します。
+4.  `IdleState.gd`など、関連するステートから`WalkState`への遷移条件（例：`if player.velocity.x != 0:`）を追記します。
+
+**5. 前提条件**
+
+  * キャラクターのシーン（`CharacterBody2D`）に`AnimationPlayer`と`AnimationTree`が子ノードとして追加されていること。
+  * `AnimationPlayer`に、本指示書で使う`Idle`、`Jump`などのアニメーションが作成済みであること。
+  * `AnimationTree`のステートマシンに、対応するアニメーションノードが設定済みであること。
+  * プロジェクト設定の「インプットマップ」で`"jump"`などのアクションが定義されていること。
+
+-----

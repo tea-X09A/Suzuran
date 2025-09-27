@@ -5,11 +5,8 @@ func enter() -> void:
 	player.state = Player.PLAYER_STATE.IDLE
 	player.is_running = false
 
-	# アイドルアニメーション開始
+	# アイドルアニメーション開始（AnimationTree連携、フレームイベントで自動hurtbox制御）
 	play_animation("idle")
-
-	# アイドル状態のハートボックスを設定
-	switch_hurtbox(hurtbox.get_idle_hurtbox())
 
 func process_physics(delta: float) -> void:
 	# 重力適用

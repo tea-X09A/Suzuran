@@ -5,11 +5,8 @@ func enter() -> void:
 	player.state = Player.PLAYER_STATE.WALK
 	player.is_running = false
 
-	# 歩行アニメーション開始
+	# 歩行アニメーション開始（AnimationTree連携、フレームイベントで自動hurtbox制御）
 	play_animation("walk")
-
-	# 歩行状態のハートボックスを設定
-	switch_hurtbox(hurtbox.get_walk_hurtbox())
 
 func process_physics(delta: float) -> void:
 	# 重力適用

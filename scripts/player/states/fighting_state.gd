@@ -63,7 +63,7 @@ func handle_fighting() -> void:
 	if player.direction_x != 0.0:
 		fighting_direction = player.direction_x
 	else:
-		fighting_direction = 1.0 if animated_sprite.flip_h else -1.0
+		fighting_direction = 1.0 if sprite_2d.flip_h else -1.0
 
 	# 地面判定とそれに基づく速度設定
 	fighting_grounded = player.is_on_floor()
@@ -79,7 +79,7 @@ func handle_fighting() -> void:
 	fighting_timer = get_parameter("move_fighting_duration")
 
 	# アニメーション再生
-	play_animation("attack_01")
+	play_animation("fighting")
 
 	# アニメーション完了シグナルの接続（重複接続を防止）
 	connect_animation_signal(_on_fighting_animation_finished)

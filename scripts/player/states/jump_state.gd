@@ -12,7 +12,7 @@ func enter() -> void:
 	player.state = Player.PLAYER_STATE.JUMP
 	player.is_jumping_by_input = true
 
-	# ジャンプアニメーション開始
+	# ジャンプアニメーション開始（AnimationTree連携、フレームイベントで自動hurtbox制御）
 	play_animation("jump")
 
 	# ジャンプ処理を実行
@@ -22,9 +22,6 @@ func enter() -> void:
 
 	# プレイヤーの入力システムのジャンプタイマーをリセット
 	player.player_input.reset_jump_timers()
-
-	# ジャンプ状態のハートボックスを設定
-	switch_hurtbox(hurtbox.get_jump_hurtbox())
 
 func process_physics(delta: float) -> void:
 	# 重力適用

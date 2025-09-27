@@ -99,7 +99,7 @@ func handle_back_jump_shooting() -> void:
 	if not player.is_on_floor():
 		return
 
-	var current_direction: float = 1.0 if animated_sprite.flip_h else -1.0
+	var current_direction: float = 1.0 if sprite_2d.flip_h else -1.0
 	var back_direction: float = -current_direction
 
 	var back_velocity: float = back_direction * get_parameter("move_walk_speed")
@@ -124,13 +124,13 @@ func spawn_kunai() -> void:
 	if player.direction_x != 0.0:
 		shooting_direction = player.direction_x
 	else:
-		shooting_direction = 1.0 if animated_sprite.flip_h else -1.0
+		shooting_direction = 1.0 if sprite_2d.flip_h else -1.0
 
 	var kunai_instance: Area2D = KUNAI_SCENE.instantiate()
 	player.get_tree().current_scene.add_child(kunai_instance)
 
 	var spawn_offset: Vector2 = Vector2(shooting_direction * get_parameter("shooting_offset_x"), 0.0)
-	kunai_instance.global_position = animated_sprite.global_position + spawn_offset
+	kunai_instance.global_position = sprite_2d.global_position + spawn_offset
 
 	if kunai_instance.has_method("initialize"):
 		kunai_instance.initialize(shooting_direction, get_parameter("shooting_kunai_speed"), player)
