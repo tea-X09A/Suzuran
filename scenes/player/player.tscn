@@ -2,13 +2,13 @@
 
 [ext_resource type="Texture2D" uid="uid://cp0ria1m7rv2l" path="res://assets/images/player/normal_fall/frame_fall_001.png" id="1_gmlin"]
 [ext_resource type="Script" uid="uid://cyb2ijm5xuo6s" path="res://scripts/player/player.gd" id="1_lvxji"]
-[ext_resource type="Script" uid="uid://7cgnpnv21g8o" path="res://scripts/player/player_collision_manager.gd" id="1_xqw8k"]
 [ext_resource type="Texture2D" uid="uid://bhjwiki72o5u4" path="res://assets/images/player/normal_idle/frame_000.png" id="2_uf5tr"]
 [ext_resource type="Texture2D" uid="uid://2y7250olx2dl" path="res://assets/images/player/normal_damaged/frame_damaged_001.png" id="3_fm80t"]
 [ext_resource type="Texture2D" uid="uid://cxqn1t7a3qwv3" path="res://assets/images/player/normal_fighting_01_001/frame_fighting_01_001.png" id="3_qek5x"]
 [ext_resource type="Texture2D" uid="uid://jle21g31pxn5" path="res://assets/images/player/normal_squat/frame_squat_001.png" id="6_0owmy"]
 [ext_resource type="Texture2D" uid="uid://ca4aisuntcyvq" path="res://assets/images/player/normal_walk/frame_walk_001.png" id="6_75vfm"]
 [ext_resource type="Texture2D" uid="uid://4howketapm5p" path="res://assets/images/player/normal_shooting_01_001/frame_shooting_01_001.png" id="7_5gtgg"]
+[ext_resource type="Script" uid="uid://dxwqssvx67et5" path="res://scripts/player/player_collision_manager.gd" id="8_collision_mgr"]
 [ext_resource type="Texture2D" uid="uid://c2ce3g4cqtto7" path="res://assets/images/player/normal_idle/frame_001.png" id="13_lgqa7"]
 [ext_resource type="Texture2D" uid="uid://c2r1spfjf4lhs" path="res://assets/images/player/normal_idle/frame_003.png" id="14_8ydkj"]
 [ext_resource type="Texture2D" uid="uid://cmg3txp27otos" path="res://assets/images/player/normal_idle/frame_002.png" id="15_3j4b4"]
@@ -165,6 +165,20 @@ tracks/0/keys = {
 "update": 1,
 "values": [ExtResource("3_fm80t")]
 }
+tracks/1/type = "method"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath(".")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0.4),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"initialize_damaged_collision"
+}]
+}
 
 [sub_resource type="Animation" id="Animation_fall"]
 resource_name = "normal_fall"
@@ -193,6 +207,20 @@ tracks/1/keys = {
 "transitions": PackedFloat32Array(1),
 "update": 1,
 "values": [false]
+}
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.166667),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"initialize_fall_collision"
+}]
 }
 
 [sub_resource type="Animation" id="Animation_fighting"]
@@ -235,6 +263,20 @@ tracks/2/keys = {
 "update": 1,
 "values": [false]
 }
+tracks/3/type = "method"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath(".")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0.633333),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"initialize_fighting_collision"
+}]
+}
 
 [sub_resource type="Animation" id="Animation_fm80t"]
 resource_name = "normal_idle"
@@ -263,6 +305,20 @@ tracks/1/keys = {
 "transitions": PackedFloat32Array(1),
 "update": 1,
 "values": [false]
+}
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.5),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"initialize_idle_collision"
+}]
 }
 
 [sub_resource type="Animation" id="Animation_jump"]
@@ -293,6 +349,20 @@ tracks/1/keys = {
 "update": 1,
 "values": [false]
 }
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.466667),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"initialize_jump_collision"
+}]
+}
 
 [sub_resource type="Animation" id="Animation_ugbui"]
 resource_name = "normal_run"
@@ -321,6 +391,20 @@ tracks/1/keys = {
 "transitions": PackedFloat32Array(1),
 "update": 1,
 "values": [false]
+}
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.733333),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"initialize_run_collision"
+}]
 }
 
 [sub_resource type="Animation" id="Animation_shooting"]
@@ -351,6 +435,20 @@ tracks/1/keys = {
 "update": 1,
 "values": [false]
 }
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.2),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"initialize_shooting_collision"
+}]
+}
 
 [sub_resource type="Animation" id="Animation_squat"]
 resource_name = "normal_squat"
@@ -380,6 +478,20 @@ tracks/1/keys = {
 "update": 1,
 "values": [false]
 }
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.533333),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"initialize_squat_collision"
+}]
+}
 
 [sub_resource type="Animation" id="Animation_walk"]
 resource_name = "normal_walk"
@@ -408,6 +520,20 @@ tracks/1/keys = {
 "transitions": PackedFloat32Array(1),
 "update": 1,
 "values": [false]
+}
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.5),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"initialize_walk_collision"
+}]
 }
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_myrg7"]
@@ -619,7 +745,7 @@ anim_player = NodePath("../AnimationPlayer")
 
 [node name="IdleHurtbox" type="Area2D" parent="."]
 visible = false
-script = ExtResource("1_xqw8k")
+script = ExtResource("8_collision_mgr")
 
 [node name="IdleHurtboxCollision" type="CollisionShape2D" parent="IdleHurtbox"]
 position = Vector2(-1, 12)
@@ -627,7 +753,6 @@ shape = SubResource("RectangleShape2D_walk_hurtbox")
 
 [node name="SquatHurtbox" type="Area2D" parent="."]
 visible = false
-script = ExtResource("1_xqw8k")
 
 [node name="SquatHurtboxCollision" type="CollisionShape2D" parent="SquatHurtbox"]
 position = Vector2(-1, 61)
@@ -635,7 +760,6 @@ shape = SubResource("RectangleShape2D_lgqa7")
 
 [node name="JumpHurtbox" type="Area2D" parent="."]
 visible = false
-script = ExtResource("1_xqw8k")
 
 [node name="JumpHurtboxCollision" type="CollisionShape2D" parent="JumpHurtbox"]
 position = Vector2(-9.5, 3.5)
@@ -643,7 +767,6 @@ shape = SubResource("RectangleShape2D_jump_hurtbox")
 
 [node name="RunHurtbox" type="Area2D" parent="."]
 visible = false
-script = ExtResource("1_xqw8k")
 
 [node name="RunHurtboxCollision" type="CollisionShape2D" parent="RunHurtbox"]
 position = Vector2(-1, 12)
@@ -652,7 +775,6 @@ shape = SubResource("RectangleShape2D_run_hurtbox")
 [node name="FightingHurtbox" type="Area2D" parent="."]
 visible = false
 monitorable = false
-script = ExtResource("1_xqw8k")
 
 [node name="FightingHurtboxCollision" type="CollisionShape2D" parent="FightingHurtbox"]
 position = Vector2(19, 24.5)
@@ -660,7 +782,6 @@ shape = SubResource("RectangleShape2D_hitbox")
 
 [node name="ShootingHurtbox" type="Area2D" parent="."]
 visible = false
-script = ExtResource("1_xqw8k")
 
 [node name="ShootingHurtboxCollision" type="CollisionShape2D" parent="ShootingHurtbox"]
 position = Vector2(-1, 12.5)
@@ -668,7 +789,6 @@ shape = SubResource("RectangleShape2D_shooting_hurtbox")
 
 [node name="DownHurtbox" type="Area2D" parent="."]
 visible = false
-script = ExtResource("1_xqw8k")
 
 [node name="DownHurtboxCollision" type="CollisionShape2D" parent="DownHurtbox"]
 position = Vector2(17.5, 70.5)
@@ -677,7 +797,6 @@ disabled = true
 
 [node name="FallHurtbox" type="Area2D" parent="."]
 visible = false
-script = ExtResource("1_xqw8k")
 
 [node name="FallHurtboxCollision" type="CollisionShape2D" parent="FallHurtbox"]
 position = Vector2(-9.5, 3.5)
@@ -685,7 +804,6 @@ shape = SubResource("RectangleShape2D_jump_hurtbox")
 
 [node name="WalkHurtbox" type="Area2D" parent="."]
 visible = false
-script = ExtResource("1_xqw8k")
 
 [node name="WalkHurtboxCollision" type="CollisionShape2D" parent="WalkHurtbox"]
 position = Vector2(-1, 12)

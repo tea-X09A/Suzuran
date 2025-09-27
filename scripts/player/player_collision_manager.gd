@@ -13,7 +13,7 @@ func _ready() -> void:
 # ======================== 状態管理システム ========================
 
 ## 消し忘れ防止：全てのhurtboxとhitboxを無効化（AnimationPlayerが対応stateを有効化）
-func initialize_state_collision(state_name: String) -> void:
+func initialize_state_collision(_state_name: String) -> void:
 	# 全てのhurtboxとhitboxを無効化（有効化はAnimationPlayerが実行）
 	_disable_all_collisions()
 
@@ -37,7 +37,7 @@ func _disable_all_collisions() -> void:
 
 ## 指定されたノードのコリジョンを無効化
 func _disable_collision(node_name: String) -> void:
-	var collision_node: Area2D = player.get_node_or_null(node_name)
+	var collision_node: Area2D = player.get_node_or_null(node_name) as Area2D
 	if collision_node:
 		for child in collision_node.get_children():
 			if child is CollisionShape2D:
