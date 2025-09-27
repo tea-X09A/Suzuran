@@ -16,8 +16,6 @@ var jump_coyote_time: float = JUMP_COYOTE_TIME
 var jump_buffer_timer: float = 0.0
 var coyote_timer: float = 0.0
 
-# 前フレームの接地状態
-var was_grounded: bool = false
 
 # ======================== 初期化処理 ========================
 func _init(player_instance: CharacterBody2D) -> void:
@@ -63,11 +61,8 @@ func _set_movement_direction(left_key: bool, right_key: bool, shift_pressed: boo
 # ======================== ジャンプバッファ・コヨーテタイム管理 ========================
 ## タイマー更新処理
 func update_timers(delta: float) -> void:
-	_handle_ground_state_changes()
 	_update_jump_timers(delta)
 
-func _handle_ground_state_changes() -> void:
-	pass  # 着地時の処理はState Machineに移譲
 
 func _update_jump_timers(delta: float) -> void:
 	# コヨーテタイマー（地面から離れた後の猶予時間）
@@ -79,10 +74,6 @@ func _update_jump_timers(delta: float) -> void:
 	# ジャンプバッファタイマー（ジャンプ入力の先行受付時間）
 	jump_buffer_timer = max(0.0, jump_buffer_timer - delta)
 
-## 接地状態の更新
-func update_ground_state() -> void:
-	was_grounded = player.is_grounded
-	player.is_grounded = player.is_on_floor()
 
 ## ジャンプバッファ設定
 func set_jump_buffer() -> void:
@@ -93,15 +84,6 @@ func reset_jump_timers() -> void:
 	jump_buffer_timer = 0.0
 	coyote_timer = 0.0
 
-## バッファジャンプ可能判定
+## バッファジャンプ可能判定（State Machine対応）
 func can_buffer_jump() -> bool:
-	return jump_buffer_timer > 0.0 and coyote_timer > 0.0
-
-# ======================== ユーティリティメソッド ========================
-## 着地判定
-func just_landed() -> bool:
-	return not was_grounded and player.is_grounded
-
-## 地面離脱判定
-func just_left_ground() -> bool:
-	return was_grounded and not player.is_grounded
+	return jump_buffer_timer > 0.0

@@ -111,8 +111,7 @@ func _process(delta: float) -> void:
 
 ## 物理演算ステップごとの更新処理（移動・物理系）
 func _physics_process(delta: float) -> void:
-	# 入力システムの状態更新
-	player_input.update_ground_state()
+	# 入力システムのタイマー更新
 	player_input.update_timers(delta)
 
 	# Godot物理エンジンによる移動実行
