@@ -155,9 +155,6 @@ func _physics_process(delta: float) -> void:
 	# 統合された物理処理実行
 	process_unified_physics(delta)
 
-	# 状態遷移とアニメーション制御
-	process_state_transitions()
-
 
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
@@ -214,10 +211,6 @@ func process_damaged_physics(delta: float) -> void:
 	var damaged_state: DamagedState = states["damaged"] as DamagedState
 	if damaged_state.update_damage_state(delta):
 		damaged_state.handle_damaged_movement(delta)
-
-		# 復帰ジャンプチェック
-		if damaged_state.try_recovery_jump():
-			handle_jump()
 
 ## 戦闘状態物理処理
 func process_fighting_physics(delta: float) -> void:
@@ -299,108 +292,6 @@ func handle_air_movement() -> void:
 
 # ======================== 状態遷移制御 ========================
 
-## 状態遷移とアニメーション制御
-func process_state_transitions() -> void:
-	var current_animation_state: String = get_current_animation_state()
-
-	# ダメージ状態から他の状態への遷移
-	if current_animation_state == "DAMAGED":
-		var damaged_state: DamagedState = states["damaged"] as DamagedState
-		if not damaged_state.is_damaged:
-			transition_from_damaged_state()
-		return
-
-	# 戦闘状態から他の状態への遷移
-	if current_animation_state == "FIGHTING":
-		var fighting_state: FightingState = states["fighting"] as FightingState
-		if not fighting_state.is_fighting_active:
-			transition_from_ground_action_state()
-		return
-
-	# 射撃状態から他の状態への遷移
-	if current_animation_state == "SHOOTING":
-		var shooting_state: ShootingState = states["shooting"] as ShootingState
-		if shooting_state.shooting_timer <= 0.0:
-			transition_from_ground_action_state()
-		return
-
-	# ジャンプ/落下状態の遷移
-	if current_animation_state == "JUMP":
-		if velocity.y >= 0:
-			set_animation_tree_state("FALL")
-		return
-
-	if current_animation_state == "FALL":
-		if is_on_floor():
-			transition_to_ground_state()
-		return
-
-	# 地上状態の入力判定
-	process_ground_input_transitions()
-
-## ダメージ状態からの遷移
-func transition_from_damaged_state() -> void:
-	if direction_x == 0.0:
-		set_animation_tree_state("IDLE")
-	elif is_running:
-		set_animation_tree_state("RUN")
-	else:
-		set_animation_tree_state("WALK")
-
-## 地上アクション状態からの遷移
-func transition_from_ground_action_state() -> void:
-	# 射撃開始前の走行状態を復元
-	is_running = running_state_when_action_started
-	transition_to_ground_state()
-
-## 地上状態への遷移
-func transition_to_ground_state() -> void:
-	if direction_x == 0.0:
-		set_animation_tree_state("IDLE")
-	elif Input.is_key_pressed(KEY_SHIFT) and is_running:
-		set_animation_tree_state("RUN")
-	else:
-		set_animation_tree_state("WALK")
-
-## 地上入力による状態遷移
-func process_ground_input_transitions() -> void:
-	# 入力処理（入力システムに委譲）
-	player_input.handle_input()
-
-	# しゃがみ状態
-	if is_squatting:
-		set_animation_tree_state("SQUAT")
-		return
-
-	# ジャンプ入力（バッファ対応）
-	if player_input.can_buffer_jump():
-		handle_jump()
-		set_animation_tree_state("JUMP")
-		return
-
-	# 攻撃入力
-	if Input.is_action_just_pressed("fighting_01"):
-		handle_fighting()
-		set_animation_tree_state("FIGHTING")
-		return
-
-	# 射撃入力
-	if Input.is_action_just_pressed("shooting"):
-		running_state_when_action_started = is_running
-		set_animation_tree_state("SHOOTING")
-		return
-
-	# 移動状態の判定
-	if direction_x != 0.0:
-		if Input.is_key_pressed(KEY_SHIFT):
-			is_running = true
-			set_animation_tree_state("RUN")
-		else:
-			is_running = false
-			set_animation_tree_state("WALK")
-	else:
-		set_animation_tree_state("IDLE")
-
 ## AnimationTree状態設定
 func set_animation_tree_state(state_name: String) -> void:
 	if state_machine:
@@ -418,33 +309,6 @@ func _on_animation_tree_state_changed(state_name: String) -> void:
 	if states.has(state_name.to_lower()):
 		var state_instance: BaseState = states[state_name.to_lower()]
 		state_instance.initialize_state()
-
-# ======================== アクション処理 ========================
-
-## 攻撃アクションの実行
-func handle_fighting() -> void:
-	# 攻撃開始時の走行状態を記録（攻撃終了後の復帰用）
-	running_state_when_action_started = is_running
-
-## ジャンプアクションの実行
-func handle_jump() -> void:
-	# 入力によるジャンプフラグを設定
-	is_jumping_by_input = true
-
-	# ジャンプ力を適用
-	var effective_jump_force: float = PlayerParameters.get_parameter(condition, "jump_force")
-
-	# 走行時のジャンプボーナス
-	if is_running:
-		effective_jump_force += PlayerParameters.get_parameter(condition, "jump_vertical_bonus")
-
-	velocity.y = -effective_jump_force
-
-	# ジャンプの横方向状態を記録（着地時の状態復帰用）
-	running_state_when_airborne = is_running
-
-	# ジャンプ関連タイマーをリセット
-	player_input.reset_jump_timers()
 
 # ======================== アニメーションイベント処理 ========================
 
