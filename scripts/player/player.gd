@@ -16,6 +16,8 @@ enum PLAYER_CONDITION { NORMAL, EXPANSION }
 @onready var animation_tree: AnimationTree = $AnimationTree
 # 当たり判定用コリジョン
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
+# ヒットボックス・ハートボックス管理用ノード（任意の1つを参照として使用）
+@onready var collision_manager: PlayerCollisionManager = $IdleHurtbox
 
 # ======================== エクスポート設定 ========================
 
@@ -143,6 +145,8 @@ func update_animation_state(state_name: String) -> void:
 	var state_machine: AnimationNodeStateMachinePlayback = animation_tree.get("parameters/playback")
 	if state_machine:
 		state_machine.travel(state_name)
+	# 状態変更時にhurtboxとhitboxを初期化
+	initialize_collision_for_state(state_name)
 
 ## 重力適用
 func apply_gravity(delta: float) -> void:
@@ -176,3 +180,46 @@ func get_animation_player() -> AnimationPlayer:
 ## アニメーションツリーを取得
 func get_animation_tree() -> AnimationTree:
 	return animation_tree
+
+# ======================== コリジョン管理 ========================
+
+## 消し忘れ防止：全hurtboxとhitboxを無効化（AnimationPlayerが対応stateを有効化）
+func initialize_collision_for_state(state_name: String) -> void:
+	if collision_manager:
+		collision_manager.initialize_state_collision(state_name)
+
+## IDLE状態のコリジョン無効化（AnimationPlayer用）
+func initialize_idle_collision() -> void:
+	initialize_collision_for_state("IDLE")
+
+## WALK状態のコリジョン無効化（AnimationPlayer用）
+func initialize_walk_collision() -> void:
+	initialize_collision_for_state("WALK")
+
+## RUN状態のコリジョン無効化（AnimationPlayer用）
+func initialize_run_collision() -> void:
+	initialize_collision_for_state("RUN")
+
+## JUMP状態のコリジョン無効化（AnimationPlayer用）
+func initialize_jump_collision() -> void:
+	initialize_collision_for_state("JUMP")
+
+## FALL状態のコリジョン無効化（AnimationPlayer用）
+func initialize_fall_collision() -> void:
+	initialize_collision_for_state("FALL")
+
+## SQUAT状態のコリジョン無効化（AnimationPlayer用）
+func initialize_squat_collision() -> void:
+	initialize_collision_for_state("SQUAT")
+
+## FIGHTING状態のコリジョン無効化（AnimationPlayer用）
+func initialize_fighting_collision() -> void:
+	initialize_collision_for_state("FIGHTING")
+
+## SHOOTING状態のコリジョン無効化（AnimationPlayer用）
+func initialize_shooting_collision() -> void:
+	initialize_collision_for_state("SHOOTING")
+
+## DAMAGED状態のコリジョン無効化（AnimationPlayer用）
+func initialize_damaged_collision() -> void:
+	initialize_collision_for_state("DAMAGED")

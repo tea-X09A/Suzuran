@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://cp0ria1m7rv2l" path="res://assets/images/player/normal_fall/frame_fall_001.png" id="1_gmlin"]
 [ext_resource type="Script" uid="uid://cyb2ijm5xuo6s" path="res://scripts/player/player.gd" id="1_lvxji"]
-[ext_resource type="Script" uid="uid://7cgnpnv21g8o" path="res://scripts/player/player_hurtbox.gd" id="1_xqw8k"]
+[ext_resource type="Script" uid="uid://7cgnpnv21g8o" path="res://scripts/player/player_collision_manager.gd" id="1_xqw8k"]
 [ext_resource type="Texture2D" uid="uid://bhjwiki72o5u4" path="res://assets/images/player/normal_idle/frame_000.png" id="2_uf5tr"]
 [ext_resource type="Texture2D" uid="uid://2y7250olx2dl" path="res://assets/images/player/normal_damaged/frame_damaged_001.png" id="3_fm80t"]
 [ext_resource type="Texture2D" uid="uid://cxqn1t7a3qwv3" path="res://assets/images/player/normal_fighting_01_001/frame_fighting_01_001.png" id="3_qek5x"]
