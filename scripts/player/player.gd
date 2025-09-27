@@ -220,6 +220,6 @@ func initialize_fighting_collision() -> void:
 func initialize_shooting_collision() -> void:
 	initialize_collision_for_state("SHOOTING")
 
-## DAMAGED状態のコリジョン無効化（AnimationPlayer用）
-func initialize_damaged_collision() -> void:
-	initialize_collision_for_state("DAMAGED")
+## DOWN状態のコリジョン無効化（AnimationPlayer用）
+func initialize_down_collision() -> void:
+	initialize_collision_for_state("DOWN")

@@ -1,18 +1,18 @@
-class_name DamagedState
+class_name DownState
 extends BaseState
 
-# ダメージ処理完了時のシグナル
-signal damaged_finished
+# ダウン処理完了時のシグナル
+signal down_finished
 
-# ダメージ状態の各種タイマー
-var damage_timer: float = 0.0
+# ダウン状態の各種タイマー
+var down_duration_timer: float = 0.0
 var invincibility_timer: float = 0.0
 var knockback_timer: float = 0.0
 var down_timer: float = 0.0
 var recovery_invincibility_timer: float = 0.0
 
-# ダメージ状態フラグ
-var is_damaged: bool = false
+# ダウン状態フラグ
+var is_down: bool = false
 var is_invincible: bool = false
 var is_in_down_state: bool = false
 var is_recovery_invincible: bool = false
@@ -27,13 +27,13 @@ func initialize_state() -> void:
 
 ## AnimationTree状態終了時の処理
 func cleanup_state() -> void:
-	is_damaged = false
+	is_down = false
 
 # ======================== ダメージ処理 ========================
 
 func handle_damage(_damage: int, animation_type: String, direction: Vector2, force: float) -> void:
-	is_damaged = true
-	# ダメージ状態は State Machine で管理（is_damaged() メソッドで判定）
+	is_down = true
+	# ダウン状態は State Machine で管理（is_down() メソッドで判定）
 	current_animation_type = animation_type
 
 	# ノックバック中は無敵状態を維持
@@ -42,7 +42,7 @@ func handle_damage(_damage: int, animation_type: String, direction: Vector2, for
 
 
 	# コリジョンは地形との当たり判定のため有効のまま維持
-	damage_timer = get_parameter("damage_duration")
+	down_duration_timer = get_parameter("damage_duration")
 	knockback_timer = get_parameter("knockback_duration")
 	knockback_direction = direction
 	knockback_force_value = force
@@ -54,13 +54,13 @@ func handle_damage(_damage: int, animation_type: String, direction: Vector2, for
 
 	# ダメージアニメーションはAnimationTreeで自動実行
 
-# ======================== ダメージ状態制御（player.gdから呼び出し） ========================
-## ダメージ状態更新（player.gdから呼び出し）
-func update_damage_state(delta: float) -> bool:
-	if not is_damaged:
+# ======================== ダウン状態制御（player.gdから呼び出し） ========================
+## ダウン状態更新（player.gdから呼び出し）
+func update_down_state(delta: float) -> bool:
+	if not is_down:
 		return false
 
-	damage_timer -= delta
+	down_duration_timer -= delta
 	invincibility_timer -= delta
 	knockback_timer -= delta
 
@@ -72,10 +72,10 @@ func update_damage_state(delta: float) -> bool:
 		down_timer -= delta
 
 	update_invincibility_timer(delta)
-	return is_damaged
+	return is_down
 
-## ダメージ中の移動処理（player.gdから呼び出し）
-func handle_damaged_movement(_delta: float) -> void:
+## ダウン中の移動処理（player.gdから呼び出し）
+func handle_down_movement(_delta: float) -> void:
 	# ノックバック着地状態の場合は限定的な移動を許可
 	if is_in_knockback_landing_state():
 		var direction_x: float = Input.get_axis("left", "right")
@@ -87,7 +87,7 @@ func handle_damaged_movement(_delta: float) -> void:
 		else:
 			player.velocity.x = 0.0
 
-## ダメージ状態でのジャンプ入力処理（player.gdから呼び出し）
+## ダウン状態でのジャンプ入力処理（player.gdから呼び出し）
 func try_recovery_jump() -> bool:
 	if Input.is_action_just_pressed("jump"):
 		var can_jump: bool = is_in_knockback_state() or is_in_knockback_landing_state()
@@ -124,11 +124,11 @@ func start_down_state() -> void:
 
 	# AnimationTreeが自動で適切なアニメーションを処理
 
-func finish_damaged() -> void:
-	is_damaged = false
+func finish_down() -> void:
+	is_down = false
 	# ダメージ状態は State Machine で管理（状態遷移で自動解除）
 	is_in_down_state = false
-	damage_timer = 0.0
+	down_duration_timer = 0.0
 	knockback_timer = 0.0
 	down_timer = 0.0
 
@@ -136,11 +136,11 @@ func finish_damaged() -> void:
 	is_recovery_invincible = true
 	recovery_invincibility_timer = get_parameter("recovery_invincibility_duration")
 
-	damaged_finished.emit()
+	down_finished.emit()
 
-func cancel_damaged() -> void:
-	if is_damaged:
-		finish_damaged()
+func cancel_down() -> void:
+	if is_down:
+		finish_down()
 
 # ======================== 無敵状態管理 ========================
 
@@ -159,7 +159,7 @@ func is_in_knockback_landing_state() -> bool:
 	return is_in_down_state
 
 func is_in_knockback_state() -> bool:
-	return is_damaged and not is_in_down_state
+	return is_down and not is_in_down_state
 
 # ======================== 復帰処理 ========================
 
@@ -172,8 +172,8 @@ func handle_recovery_jump() -> void:
 		recovery_invincibility_timer = 0.0
 		# 水平速度をリセットして垂直ジャンプにする
 		player.velocity.x = 0.0
-		finish_damaged()
-	elif is_damaged and not is_in_down_state:
+		finish_down()
+	elif is_down and not is_in_down_state:
 		# ノックバック状態からのジャンプ: モーションキャンセルと無敵時間付与
 		# ノックバック効果をキャンセル
 		knockback_timer = 0.0
@@ -182,7 +182,7 @@ func handle_recovery_jump() -> void:
 		# 水平速度をリセットして垂直ジャンプにする
 		player.velocity.x = 0.0
 		# ダメージ状態を終了し復帰無敵時間を付与
-		finish_damaged()
+		finish_down()
 
 func update_recovery_invincibility_timer(delta: float) -> void:
 	if is_recovery_invincible and recovery_invincibility_timer > 0.0:

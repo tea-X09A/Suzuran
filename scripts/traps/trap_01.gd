@@ -12,7 +12,7 @@ var target_condition: Player.PLAYER_CONDITION = Player.PLAYER_CONDITION.NORMAL
 var trap_parameters: Dictionary = {
 	Player.PLAYER_CONDITION.NORMAL: {
 		"damage": 10,                           # プレイヤーに与えるダメージ量（整数値）
-		"animation_type": "damaged",            # 再生するダメージアニメーションの種類
+		"animation_type": "down",            # 再生するダメージアニメーションの種類
 		"knockback_force": 300.0,               # プレイヤーをノックバックさせる力の強さ（ピクセル/秒）
 		"damage_cooldown": 0.5,                 # ダメージ実行のクールダウン時間（秒）
 		"log_prefix": "",                       # ログ出力のプレフィックス文字列
@@ -20,7 +20,7 @@ var trap_parameters: Dictionary = {
 	},
 	Player.PLAYER_CONDITION.EXPANSION: {
 		"damage": 12,                           # プレイヤーに与えるダメージ量（10 * 1.2）
-		"animation_type": "damaged",            # 再生するダメージアニメーションの種類
+		"animation_type": "down",            # 再生するダメージアニメーションの種類
 		"knockback_force": 360.0,               # プレイヤーをノックバックさせる力の強さ（300.0 * 1.2）
 		"damage_cooldown": 0.6,                 # ダメージ実行のクールダウン時間（0.5 * 1.2）
 		"log_prefix": "Expansion",              # ログ出力のプレフィックス文字列
@@ -66,8 +66,9 @@ func check_player_collision() -> void:
 	for body in overlapping_bodies:
 		if body.is_in_group("player"):
 			# damaged状態ではトラップの検知を無効化
-			if body.state == Player.PLAYER_STATE.DAMAGED:
-				continue
+			# TODO: Player.PLAYER_STATE.DAMAGEDが未定義のため、一時的にコメントアウト
+			# if body.state == Player.PLAYER_STATE.DAMAGED:
+			#	continue
 			apply_damage_to_player(body)
 			last_damage_time = current_time
 			break
@@ -78,22 +79,25 @@ func apply_damage_to_player(player: Node2D) -> void:
 		target_condition = player.get_condition()
 
 	# プレイヤーの無敵状態をチェック
-	var damaged_module: DamagedState = player.get_current_damaged()
-	if damaged_module != null and damaged_module.is_in_invincible_state():
-		return
+	# TODO: get_current_damaged()が未実装のため、一時的にコメントアウト
+	# var damaged_module: DamagedState = player.get_current_damaged()
+	# if damaged_module != null and damaged_module.is_in_invincible_state():
+	#	return
 
 	# ノックバック方向を計算（トラップからプレイヤーへの方向）
 	var knockback_direction: Vector2 = (player.global_position - global_position).normalized()
 
 	# プレイヤーの状態を State Machine 経由で変更
-	player.change_state("damaged")
+	# TODO: change_state()が未実装のため、update_animation_state()を使用
+	player.update_animation_state("DOWN")
 
 	# ダメージ処理を実行
 	var damage_value: int = get_parameter("damage")
 	var animation_type: String = get_parameter("animation_type")
 	var knockback_force: float = get_parameter("knockback_force")
 
-	damaged_module.handle_damage(damage_value, animation_type, knockback_direction, knockback_force)
+	# TODO: damaged_module.handle_damage()が使用不可のため、一時的にコメントアウト
+	# damaged_module.handle_damage(damage_value, animation_type, knockback_direction, knockback_force)
 
 	var log_prefix: String = get_parameter("log_prefix")
 	var prefix_text: String = (log_prefix + "トラップダメージ適用: ") if log_prefix != "" else "トラップダメージ適用: "
