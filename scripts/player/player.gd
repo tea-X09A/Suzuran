@@ -59,14 +59,32 @@ func _initialize_systems() -> void:
 func _initialize_animation_system() -> void:
 	# アニメーションツリーを有効化
 	animation_tree.active = true
-	# State Machineが状態遷移を管理するため、手動接続は不要
+	# State MachineのPlaybackを取得して初期状態をIDLEに設定
+	var state_machine: AnimationNodeStateMachinePlayback = animation_tree.get("parameters/playback")
+	if state_machine:
+		state_machine.start("IDLE")
 
 # ======================== メイン処理ループ ========================
 
 ## 物理演算ステップごとの更新処理（移動・物理系）
 func _physics_process(delta: float) -> void:
+	handle_input(delta)
+	apply_gravity(delta)
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
+
+## 入力処理
+func handle_input(delta: float) -> void:
+	var input_direction_x: float = Input.get_axis("left", "right")
+
+	if input_direction_x != 0.0:
+		var speed: float = PlayerParameters.get_parameter(condition, "move_walk_speed")
+		velocity.x = input_direction_x * speed
+		update_sprite_direction(input_direction_x)
+	else:
+		# 地上での摩擦（固定値）
+		var friction: float = 1000.0
+		velocity.x = move_toward(velocity.x, 0, friction * delta)
 
 ## 重力適用
 func apply_gravity(delta: float) -> void:
