@@ -2,41 +2,21 @@ class_name JumpState
 extends BaseState
 
 # ======================== ジャンプ状態管理変数 ========================
-# ジャンプ長押し処理用の内部変数
 var is_jumping: bool = false
 var jump_hold_timer: float = 0.0
 var jump_hold_max_time: float = 0.4
 
-# ======================== 状態制御メソッド ========================
-func enter() -> void:
-	player.state = Player.PLAYER_STATE.JUMP
-	player.is_jumping_by_input = true
+## AnimationTree状態開始時の処理
+func initialize_state() -> void:
+	# ジャンプ状態のハートボックスを設定
+	switch_hurtbox(hurtbox.get_jump_hurtbox())
 
-	# ジャンプアニメーション開始（AnimationTree連携、フレームイベントで自動hurtbox制御）
-	play_animation("jump")
-
-	# ジャンプ処理を実行
-	handle_jump()
+	# ジャンプ状態初期化
 	is_jumping = true
 	jump_hold_timer = 0.0
 
-	# プレイヤーの入力システムのジャンプタイマーをリセット
-	player.player_input.reset_jump_timers()
-
-func process_physics(delta: float) -> void:
-	# 重力適用
-	apply_gravity(delta)
-
-	# 可変ジャンプ処理
-	apply_variable_jump(delta)
-
-	# 水平移動処理
-	handle_air_movement()
-
-	# 状態遷移チェック
-	check_state_transitions()
-
-func exit() -> void:
+## AnimationTree状態終了時の処理
+func cleanup_state() -> void:
 	# ジャンプ状態をリセット
 	is_jumping = false
 	jump_hold_timer = 0.0
@@ -117,18 +97,7 @@ func handle_air_movement() -> void:
 		# 空気抵抗適用
 		player.velocity.x *= air_friction
 
-# ======================== 状態遷移処理 ========================
-func check_state_transitions() -> void:
-	# 下降開始時は落下状態に遷移
-	if player.velocity.y >= 0:
-		player.change_state("fall")
-		return
-
-	# 空中でのアクション入力チェック
-	if Input.is_action_just_pressed("fighting_01"):
-		player.change_state("fighting")
-		return
-
-	if Input.is_action_just_pressed("shooting"):
-		player.change_state("shooting")
-		return
+# ======================== ジャンプ処理（player.gdから呼び出し） ========================
+## ジャンプ状態更新（player.gdから呼び出し）
+func update_jump_state(delta: float) -> void:
+	apply_variable_jump(delta)

@@ -2,7 +2,6 @@ class_name ShootingState
 extends BaseState
 
 # ======================== 射撃パラメータ定義 ========================
-
 const KUNAI_SCENE = preload("res://scenes/bullets/kunai.tscn")
 
 # 射撃状態管理
@@ -10,65 +9,24 @@ var can_back_jump: bool = false
 var shooting_timer: float = 0.0
 var shooting_grounded: bool = false
 
-# ======================== パラメータ取得 ========================
-
-# 射撃状態では全パラメータ（移動+射撃）を統合システムから取得
-func get_parameters() -> Dictionary:
-	return PlayerParameters.get_all_parameters(condition)
-
-# ======================== State Machine処理 ========================
-
-func enter() -> void:
-	player.state = Player.PLAYER_STATE.SHOOTING
+## AnimationTree状態開始時の処理
+func initialize_state() -> void:
 	# 射撃状態のハートボックスを設定
 	switch_hurtbox(hurtbox.get_shooting_hurtbox())
-	# 射撃処理を直接実行
+
+	# 射撃処理を実行
 	handle_shooting()
 
-func process_physics(delta: float) -> void:
-	# 射撃タイマーの更新
-	update_shooting_timer(delta)
-
-	# 射撃が終了したかチェック
-	if shooting_timer <= 0.0:
-		# 射撃終了後は入力状況によって適切な状態に遷移
-		var direction_x: float = Input.get_axis("left", "right")
-		if direction_x == 0.0:
-			player.change_state("idle")
-		else:
-			var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
-			if shift_pressed:
-				player.change_state("run")
-			else:
-				player.change_state("walk")
-		return
-
-	# 射撃中のバックジャンプ射撃対応
-	if Input.is_action_just_pressed("back_jump_shooting"):
-		handle_back_jump_shooting()
-		return
-
-	# 射撃中でも戦闘アクションへの遷移は可能
-	if Input.is_action_just_pressed("fighting_01"):
-		player.change_state("fighting")
-		return
-
-func exit() -> void:
+## AnimationTree状態終了時の処理
+func cleanup_state() -> void:
 	# アニメーション完了シグナルの切断（メモリリーク防止）
-	disconnect_animation_signal(_on_shooting_animation_finished)
-
-	# 射撃状態は State Machine で管理（状態遷移で自動解除）
-	# 射撃開始前の走行状態を復元
-	player.is_running = player.running_state_when_action_started
+	if animation_player and animation_player.animation_finished.is_connected(_on_shooting_animation_finished):
+		animation_player.animation_finished.disconnect(_on_shooting_animation_finished)
 
 	# 状態のリセット
 	can_back_jump = false
 	shooting_timer = 0.0
 	shooting_grounded = false
-
-func handle_input(_event: InputEvent) -> void:
-	# 射撃中の入力処理
-	pass
 
 # ======================== 射撃処理 ========================
 
@@ -79,15 +37,11 @@ func handle_shooting() -> void:
 
 	spawn_kunai()
 
-	if player.is_on_floor():
-		play_animation(get_grounded_animation_name().replace(get_parameter("animation_prefix") + "_", ""))
-		can_back_jump = true
-	else:
-		play_animation(get_airborne_animation_name().replace(get_parameter("animation_prefix") + "_", ""))
-		can_back_jump = false
+	can_back_jump = shooting_grounded
 
 	# アニメーション完了シグナルの接続（重複接続を防止）
-	connect_animation_signal(_on_shooting_animation_finished)
+	if animation_player and not animation_player.animation_finished.is_connected(_on_shooting_animation_finished):
+		animation_player.animation_finished.connect(_on_shooting_animation_finished)
 
 func handle_back_jump_shooting() -> void:
 	if not can_back_jump:
@@ -135,19 +89,21 @@ func spawn_kunai() -> void:
 	if kunai_instance.has_method("initialize"):
 		kunai_instance.initialize(shooting_direction, get_parameter("shooting_kunai_speed"), player)
 
-# ======================== 状態管理 ========================
-
-## 射撃タイマーの更新
-func update_shooting_timer(delta: float) -> bool:
+# ======================== 射撃状態制御（player.gdから呼び出し） ========================
+## 射撃状態更新（player.gdから呼び出し）
+func update_shooting_state(delta: float) -> bool:
 	if shooting_timer > 0.0:
 		shooting_timer -= delta
 		if shooting_timer <= 0.0:
 			return false
 	return true
 
-## 射撃可能かどうかの判定
-func can_shoot() -> bool:
-	return player.can_shoot()
+## バックジャンプ射撃処理（player.gdから呼び出し）
+func try_back_jump_shooting() -> bool:
+	if can_back_jump and Input.is_action_just_pressed("back_jump_shooting"):
+		handle_back_jump_shooting()
+		return true
+	return false
 
 ## 空中射撃かどうかの判定
 func is_airborne_attack() -> bool:
@@ -157,14 +113,7 @@ func is_airborne_attack() -> bool:
 func is_airborne_action_active() -> bool:
 	return is_airborne_attack() and shooting_timer > 0.0
 
-func get_grounded_animation_name() -> String:
-	var prefix: String = get_parameter("animation_prefix")
-	return prefix + "_shooting_01_001"
-
-func get_airborne_animation_name() -> String:
-	var prefix: String = get_parameter("animation_prefix")
-	return prefix + "_shooting_01_002"
-
+## アニメーション完了時のコールバック
 func _on_shooting_animation_finished() -> void:
 	# 射撃終了をトリガー
 	shooting_timer = 0.0

@@ -1,46 +1,12 @@
 class_name SquatState
 extends BaseState
 
-func enter() -> void:
-	player.state = Player.PLAYER_STATE.SQUAT
-	player.is_squatting = true
-
-	# しゃがみアニメーション開始
-	play_animation("squat")
-
+## AnimationTree状態開始時の処理
+func initialize_state() -> void:
 	# しゃがみ状態のハートボックスを設定
 	switch_hurtbox(hurtbox.get_squat_hurtbox())
 
-func process_physics(delta: float) -> void:
-	# 重力適用
-	apply_gravity(delta)
-
-	# テンプレートで取得した入力方向を再取得して状態遷移判定
-	var direction_x: float = Input.get_axis("left", "right")
-
-	# しゃがみキーが離されたら立ち上がる
-	if not Input.is_action_pressed("squat"):
-		if direction_x == 0:
-			player.change_state("idle")
-		else:
-			var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
-			if shift_pressed:
-				player.change_state("run")
-			else:
-				player.change_state("walk")
-		return
-
-	# しゃがみ中でも戦闘・射撃は可能
-	if Input.is_action_just_pressed("fighting_01"):
-		player.change_state("fighting")
-		return
-
-	if Input.is_action_just_pressed("shooting") and player.can_shoot():
-		player.change_state("shooting")
-		return
-
-# ======================== テンプレートメソッドのフックメソッドオーバーライド ========================
-
-
-func exit() -> void:
-	player.is_squatting = false
+## AnimationTree状態終了時の処理
+func cleanup_state() -> void:
+	# 状態終了時のクリーンアップ（現在は特になし）
+	pass

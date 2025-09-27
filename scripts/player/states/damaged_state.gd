@@ -22,56 +22,14 @@ var knockback_direction: Vector2 = Vector2.ZERO
 var knockback_force_value: float = 0.0
 var current_animation_type: String = ""
 
-func enter() -> void:
-	player.state = Player.PLAYER_STATE.DAMAGED
-	# ダメージ状態は State Machine で管理（is_damaged() メソッドで判定）
+## AnimationTree状態開始時の処理
+func initialize_state() -> void:
+	# ダメージ状態では全hurtboxを無効化
+	deactivate_all_hurtboxes()
 
-# ダメージ状態では全パラメータ（移動+ダメージ）を統合システムから取得
-func get_parameters() -> Dictionary:
-	return PlayerParameters.get_all_parameters(condition)
-
-func process_physics(delta: float) -> void:
-	# タイマー更新処理
-	update_damaged_timer(delta)
-	update_invincibility_timer(delta)
-
-	# ダメージが終了したかチェック
-	if not is_damaged:
-		# ダメージ終了後は入力状況によって適切な状態に遷移
-		var direction_x: float = Input.get_axis("left", "right")
-		if direction_x == 0.0:
-			player.change_state("idle")
-		else:
-			var shift_pressed: bool = Input.is_key_pressed(KEY_SHIFT)
-			if shift_pressed:
-				player.change_state("run")
-			else:
-				player.change_state("walk")
-		return
-
-	# ノックバック着地状態の場合は限定的な移動を許可
-	if is_in_knockback_landing_state():
-		var direction_x: float = Input.get_axis("left", "right")
-		player.direction_x = direction_x
-		# ダメージ中の制限された移動処理
-		if direction_x != 0.0:
-			var walk_speed: float = get_parameter("move_walk_speed") * 0.5  # ダメージ中は速度半分
-			player.velocity.x = direction_x * walk_speed
-			update_sprite_direction(direction_x)
-		else:
-			player.velocity.x = 0.0
-
-func handle_input(event: InputEvent) -> void:
-	# ダメージ状態でのジャンプ入力処理
-	if event.is_action_pressed("jump"):
-		var can_jump: bool = is_in_knockback_state() or is_in_knockback_landing_state()
-		if can_jump:
-			handle_recovery_jump()
-			player.handle_jump()
-
-func exit() -> void:
+## AnimationTree状態終了時の処理
+func cleanup_state() -> void:
 	is_damaged = false
-	# ダメージ状態は State Machine で管理（状態遷移で自動解除）
 
 # ======================== ダメージ処理 ========================
 
@@ -98,14 +56,13 @@ func handle_damage(_damage: int, animation_type: String, direction: Vector2, for
 	player.velocity.y = -get_parameter("knockback_vertical_force")
 
 
-	# 常にdamagedアニメーションを再生
-	play_animation("damaged")
+	# ダメージアニメーションはAnimationTreeで自動実行
 
-# ======================== タイマー更新処理 ========================
-
-func update_damaged_timer(delta: float) -> void:
+# ======================== ダメージ状態制御（player.gdから呼び出し） ========================
+## ダメージ状態更新（player.gdから呼び出し）
+func update_damage_state(delta: float) -> bool:
 	if not is_damaged:
-		return
+		return false
 
 	damage_timer -= delta
 	invincibility_timer -= delta
@@ -117,6 +74,31 @@ func update_damaged_timer(delta: float) -> void:
 	# down状態の処理
 	if is_in_down_state:
 		down_timer -= delta
+
+	update_invincibility_timer(delta)
+	return is_damaged
+
+## ダメージ中の移動処理（player.gdから呼び出し）
+func handle_damaged_movement(delta: float) -> void:
+	# ノックバック着地状態の場合は限定的な移動を許可
+	if is_in_knockback_landing_state():
+		var direction_x: float = Input.get_axis("left", "right")
+		player.direction_x = direction_x
+		# ダメージ中の制限された移動処理
+		if direction_x != 0.0:
+			var walk_speed: float = get_parameter("move_walk_speed") * 0.5  # ダメージ中は速度半分
+			player.velocity.x = direction_x * walk_speed
+		else:
+			player.velocity.x = 0.0
+
+## ダメージ状態でのジャンプ入力処理（player.gdから呼び出し）
+func try_recovery_jump() -> bool:
+	if Input.is_action_just_pressed("jump"):
+		var can_jump: bool = is_in_knockback_state() or is_in_knockback_landing_state()
+		if can_jump:
+			handle_recovery_jump()
+			return true
+	return false
 
 func apply_continuous_knockback() -> void:
 	var knockback_multiplier: float = get_parameter("knockback_multiplier")
