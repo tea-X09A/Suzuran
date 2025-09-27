@@ -84,7 +84,6 @@ func _ready() -> void:
 	GRAVITY = ProjectSettings.get_setting("physics/2d/default_gravity")
 	_initialize_systems()
 	_initialize_states()
-	_connect_signals()
 	# 初期ハートボックス設定
 	hurtbox.initialize_default_hurtbox()
 
@@ -139,16 +138,6 @@ func change_state(new_state_name: String) -> void:
 		var state_instance: BaseState = states[state_key]
 		state_instance.initialize_state()
 
-## 状態間のシグナル接続
-func _connect_signals() -> void:
-	# 攻撃終了シグナルの接続
-	(states["fighting"] as FightingState).fighting_finished.connect(_on_fighting_finished)
-	# ダメージ終了シグナルの接続
-	(states["damaged"] as DamagedState).damaged_finished.connect(_on_damaged_finished)
-	# アニメーションプレイヤーのシグナル接続（フレームイベント用）
-	# 注意: frame_changedシグナルはAnimationPlayerには存在しないため、
-	# フレームイベントはAnimationPlayerのメソッドコールトラックで直接実行される
-	# animation_player.frame_changed.connect(_on_animation_frame_changed)  # このシグナルは存在しない
 
 # ======================== メイン処理ループ ========================
 
@@ -203,8 +192,7 @@ func process_ground_physics(delta: float) -> void:
 	apply_gravity(delta)
 
 	# 地上移動処理
-	if is_physics_control_disabled():
-		return
+	# 各Stateが物理制御を管理するため、ここでの制御判定は不要
 
 	if direction_x != 0.0:
 		var move_speed: float
@@ -285,8 +273,7 @@ func update_sprite_direction(input_direction_x: float) -> void:
 
 ## 空中移動処理
 func handle_air_movement() -> void:
-	if is_physics_control_disabled():
-		return
+	# 各Stateが物理制御を管理するため、ここでの制御判定は不要
 
 	# スプライト方向更新
 	update_sprite_direction(direction_x)
@@ -459,37 +446,13 @@ func handle_jump() -> void:
 	# ジャンプ関連タイマーをリセット
 	player_input.reset_jump_timers()
 
-# ======================== 射撃システム制御 ========================
-
-
-
-## 攻撃終了時のコールバック処理
-func _on_fighting_finished() -> void:
-	# 攻撃開始前の走行状態を復帰
-	is_running = running_state_when_action_started
-
-## ダメージ終了時のコールバック処理
-func _on_damaged_finished() -> void:
-	# ダメージ状態終了の処理
-	pass
+# ======================== アニメーションイベント処理 ========================
 
 ## アニメーションフレーム変更時のコールバック処理
 func _on_animation_frame_changed(animation_name: String, new_frame: int) -> void:
 	# フレームイベントを現在のStateに転送
 	if current_state != null and current_state.has_method("on_animation_frame_changed"):
 		current_state.on_animation_frame_changed(animation_name, new_frame)
-
-# 状態判定メソッドは設計思想違反のため削除
-# 各Stateが自分の責任範囲を持つアーキテクチャに変更
-
-## 物理制御が無効化されているかの判定
-func is_physics_control_disabled() -> bool:
-	# ジャンプ横移動無効フラグまたは空中アクション中は物理制御無効
-	return ignore_jump_horizontal_velocity or (current_state != null and current_state.has_method("is_airborne_action_active") and current_state.is_airborne_action_active())
-
-# ハートボックス制御メソッドは設計思想違反のため削除
-# 各Stateが自分のハートボックス管理責任を持つアーキテクチャに変更
-# ハートボックス管理はPlayerHurtboxManagerとBaseStateで行う
 
 # ======================== プロパティアクセサ ========================
 
