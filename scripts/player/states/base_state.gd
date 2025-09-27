@@ -103,3 +103,24 @@ func deactivate_all_hurtboxes() -> void:
 func set_invincible() -> void:
 	if hurtbox:
 		hurtbox.set_invincible()
+
+# ======================== State Machine連携ユーティリティ ========================
+
+## 現在のstate machine状態を取得
+func get_current_state_name() -> String:
+	if state_machine:
+		return state_machine.get_current_node()
+	return ""
+
+## 走行状態かどうかを判定
+func is_running_state() -> bool:
+	return get_current_state_name() == "RUN"
+
+## 移動入力を取得
+func get_movement_input() -> float:
+	return Input.get_axis("left", "right")
+
+## スプライト方向を更新
+func update_sprite_direction(direction: float) -> void:
+	if direction != 0.0 and sprite_2d:
+		sprite_2d.flip_h = direction > 0.0
