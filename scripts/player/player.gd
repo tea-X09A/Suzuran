@@ -67,16 +67,82 @@ func _physics_process(delta: float) -> void:
 
 ## 入力処理
 func handle_input(delta: float) -> void:
+	# 基本移動入力（歩き）
 	var input_direction_x: float = Input.get_axis("left", "right")
 
+	# ダッシュ入力チェック
+	var is_running: bool = Input.is_action_pressed("run_left") or Input.is_action_pressed("run_right")
+
+	# ジャンプ入力チェック
+	if Input.is_action_just_pressed("jump") and is_on_floor():
+		handle_jump_input()
+
+	# しゃがみ入力チェック
+	if Input.is_action_pressed("squat") and is_on_floor():
+		handle_squat_input()
+
+	# 攻撃入力チェック
+	if Input.is_action_just_pressed("fight") or Input.is_action_just_pressed("fighting_01"):
+		handle_fight_input()
+	elif Input.is_action_just_pressed("fighting_02"):
+		handle_fight_input_02()
+
+	# 射撃入力チェック
+	if Input.is_action_just_pressed("shooting") or Input.is_action_just_pressed("shooting_01"):
+		handle_shooting_input()
+
+	# 移動処理
+	handle_movement_input(input_direction_x, is_running, delta)
+
+## 移動入力処理
+func handle_movement_input(input_direction_x: float, is_running: bool, delta: float) -> void:
 	if input_direction_x != 0.0:
-		var speed: float = PlayerParameters.get_parameter(condition, "move_walk_speed")
+		# 速度決定（歩きかダッシュか）
+		var speed: float
+		if is_running:
+			speed = PlayerParameters.get_parameter(condition, "move_run_speed")
+			update_animation_state("RUN")
+		else:
+			speed = PlayerParameters.get_parameter(condition, "move_walk_speed")
+			update_animation_state("WALK")
+
 		velocity.x = input_direction_x * speed
 		update_sprite_direction(input_direction_x)
 	else:
 		# 地上での摩擦（固定値）
 		var friction: float = 1000.0
 		velocity.x = move_toward(velocity.x, 0, friction * delta)
+		# 移動がない場合はIDLE状態
+		if is_on_floor() and abs(velocity.x) < 10.0:
+			update_animation_state("IDLE")
+
+## ジャンプ入力処理
+func handle_jump_input() -> void:
+	var jump_force: float = PlayerParameters.get_parameter(condition, "jump_force")
+	velocity.y = -jump_force
+	update_animation_state("JUMP")
+
+## しゃがみ入力処理
+func handle_squat_input() -> void:
+	update_animation_state("SQUAT")
+
+## 攻撃入力処理
+func handle_fight_input() -> void:
+	update_animation_state("FIGHTING")
+
+## 攻撃入力処理2
+func handle_fight_input_02() -> void:
+	update_animation_state("FIGHTING")
+
+## 射撃入力処理
+func handle_shooting_input() -> void:
+	update_animation_state("SHOOTING")
+
+## アニメーション状態更新
+func update_animation_state(state_name: String) -> void:
+	var state_machine: AnimationNodeStateMachinePlayback = animation_tree.get("parameters/playback")
+	if state_machine:
+		state_machine.travel(state_name)
 
 ## 重力適用
 func apply_gravity(delta: float) -> void:
