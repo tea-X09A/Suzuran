@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dx7damhth3je1"
-path="res://.godot/imported/frame_005.png-229d86d12e28c31bdc194af54d7b1e6a.ctex"
+uid="uid://bs5s1br3tb12e"
+path="res://.godot/imported/名称未設定のアートワーク.png-0d914fa0b809b11a5eee91494ec3b04a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/images/player/normal_idle/frame_005.png"
-dest_files=["res://.godot/imported/frame_005.png-229d86d12e28c31bdc194af54d7b1e6a.ctex"]
+source_file="res://assets/images/player/normal_run/名称未設定のアートワーク.png"
+dest_files=["res://.godot/imported/名称未設定のアートワーク.png-0d914fa0b809b11a5eee91494ec3b04a.ctex"]
 
 [params]
 
