@@ -39,18 +39,9 @@ func _handle_movement_inputs() -> void:
 	_set_movement_direction(left_key, right_key, shift_pressed)
 
 func _handle_action_inputs() -> void:
-	# しゃがみ入力
-	player.is_squatting = player.is_grounded and Input.is_action_pressed("squat")
-
 	# 戦闘入力
 	if Input.is_action_just_pressed("fighting_01"):
 		player.handle_fighting()
-
-	# 射撃入力
-	if Input.is_action_just_pressed("shooting") and player.can_shoot():
-		# 射撃開始時の走行状態を保存
-		player.running_state_when_action_started = player.is_running
-		player.change_state("shooting")
 
 func _handle_jump_inputs() -> void:
 	if Input.is_action_just_pressed("jump"):
@@ -63,16 +54,10 @@ func _handle_jump_inputs() -> void:
 func _set_movement_direction(left_key: bool, right_key: bool, shift_pressed: bool) -> void:
 	if left_key:
 		player.direction_x = -1.0
-		if player.is_grounded:
-			player.is_running = shift_pressed
 	elif right_key:
 		player.direction_x = 1.0
-		if player.is_grounded:
-			player.is_running = shift_pressed
 	else:
 		player.direction_x = 0.0
-		if player.is_grounded:
-			player.is_running = false
 
 
 # ======================== ジャンプバッファ・コヨーテタイム管理 ========================
@@ -82,10 +67,7 @@ func update_timers(delta: float) -> void:
 	_update_jump_timers(delta)
 
 func _handle_ground_state_changes() -> void:
-	if not was_grounded and player.is_grounded:
-		# 着地時の処理
-		player.is_jumping_by_input = false
-		player.ignore_jump_horizontal_velocity = false
+	pass  # 着地時の処理はState Machineに移譲
 
 func _update_jump_timers(delta: float) -> void:
 	# コヨーテタイマー（地面から離れた後の猶予時間）
