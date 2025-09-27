@@ -81,7 +81,7 @@ func handle_input(delta: float) -> void:
 
 	# しゃがみ入力チェック
 	if Input.is_action_pressed("squat") and is_on_floor():
-		handle_squat_input()
+		update_animation_state("SQUAT")
 
 	# 攻撃入力チェック
 	if Input.is_action_just_pressed("fight") or Input.is_action_just_pressed("fighting_01"):
@@ -114,9 +114,6 @@ func handle_movement_input(input_direction_x: float, is_running: bool, delta: fl
 		# 地上での摩擦（固定値）
 		var friction: float = 1000.0
 		velocity.x = move_toward(velocity.x, 0, friction * delta)
-		# 移動がない場合はIDLE状態
-		if is_on_floor() and abs(velocity.x) < 10.0:
-			update_animation_state("IDLE")
 
 ## ジャンプ入力処理
 func handle_jump_input() -> void:
@@ -124,9 +121,6 @@ func handle_jump_input() -> void:
 	velocity.y = -jump_force
 	update_animation_state("JUMP")
 
-## しゃがみ入力処理
-func handle_squat_input() -> void:
-	update_animation_state("SQUAT")
 
 ## 攻撃入力処理
 func handle_fight_input() -> void:
