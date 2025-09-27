@@ -136,6 +136,18 @@ tracks/8/keys = {
 "update": 1,
 "values": [false]
 }
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("FightingHitbox/FightingHitboxCollision:disabled")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
 
 [sub_resource type="Animation" id="Animation_damaged"]
 resource_name = "normal_damaged"
@@ -206,6 +218,18 @@ tracks/1/path = NodePath("FightingHurtbox/FightingHurtboxCollision:disabled")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("FightingHitbox/FightingHitboxCollision:disabled")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
@@ -576,7 +600,6 @@ size = Vector2(60, 30)
 script = ExtResource("1_lvxji")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-scale = Vector2(0.3, 0.3)
 texture = ExtResource("2_uf5tr")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
@@ -670,8 +693,7 @@ shape = SubResource("RectangleShape2D_walk_hurtbox")
 [node name="FightingHitbox" type="Area2D" parent="."]
 visible = false
 
-[node name="HitboxCollision" type="CollisionShape2D" parent="FightingHitbox"]
+[node name="FightingHitboxCollision" type="CollisionShape2D" parent="FightingHitbox"]
 position = Vector2(-50, 21)
 shape = SubResource("RectangleShape2D_fm80t")
-disabled = true
 debug_color = Color(0.860735, 0.306094, 0.501864, 0.42)
