@@ -3,8 +3,7 @@ extends BaseState
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
-	# ハートボックスを設定
-	switch_hurtbox(hurtbox.get_idle_hurtbox())
+	pass
 
 ## AnimationTree状態終了時の処理
 func cleanup_state() -> void:

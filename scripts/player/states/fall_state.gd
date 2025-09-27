@@ -3,8 +3,7 @@ extends BaseState
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
-	# 落下状態のハートボックスを設定
-	switch_hurtbox(hurtbox.get_fall_hurtbox())
+	pass
 
 ## AnimationTree状態終了時の処理
 func cleanup_state() -> void:

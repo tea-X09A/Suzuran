@@ -11,9 +11,6 @@ var shooting_grounded: bool = false
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
-	# 射撃状態のハートボックスを設定
-	switch_hurtbox(hurtbox.get_shooting_hurtbox())
-
 	# 射撃処理を実行
 	handle_shooting()
 

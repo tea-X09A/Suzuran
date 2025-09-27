@@ -12,9 +12,6 @@ var current_direction: float = 0.0
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
-	# ジャンプ状態のハートボックスを設定
-	switch_hurtbox(hurtbox.get_jump_hurtbox())
-
 	# ジャンプ状態初期化
 	is_jumping = true
 	jump_hold_timer = 0.0

@@ -24,8 +24,6 @@ var current_animation_type: String = ""
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
-	# ダメージ状態では全hurtboxを無効化
-	deactivate_all_hurtboxes()
 
 ## AnimationTree状態終了時の処理
 func cleanup_state() -> void:
@@ -42,8 +40,6 @@ func handle_damage(_damage: int, animation_type: String, direction: Vector2, for
 	is_invincible = true
 	invincibility_timer = get_parameter("invincibility_duration")
 
-	# 無敵状態開始時：全hurtboxを無効化
-	deactivate_all_hurtboxes()
 
 	# コリジョンは地形との当たり判定のため有効のまま維持
 	damage_timer = get_parameter("damage_duration")
@@ -125,8 +121,6 @@ func start_down_state() -> void:
 	is_invincible = false
 	invincibility_timer = 0.0
 
-	# down状態開始時：down_hurtboxを有効化
-	switch_hurtbox(hurtbox.get_down_hurtbox())
 
 	# AnimationTreeが自動で適切なアニメーションを処理
 
@@ -155,8 +149,6 @@ func update_invincibility_timer(delta: float) -> void:
 		invincibility_timer -= delta
 		if invincibility_timer <= 0.0:
 			is_invincible = false
-			# 無敵状態解除時: State遷移でハートボックスが自動設定される
-			# player.reactivate_current_hurtbox() # 新アーキテクチャでは不要
 
 	update_recovery_invincibility_timer(delta)
 
@@ -178,8 +170,6 @@ func handle_recovery_jump() -> void:
 		is_recovery_invincible = false
 		invincibility_timer = 0.0
 		recovery_invincibility_timer = 0.0
-		# 無敵強制解除時: State遷移でハートボックスが自動設定される
-		# player.reactivate_current_hurtbox() # 新アーキテクチャでは不要
 		# 水平速度をリセットして垂直ジャンプにする
 		player.velocity.x = 0.0
 		finish_damaged()
@@ -199,5 +189,3 @@ func update_recovery_invincibility_timer(delta: float) -> void:
 		recovery_invincibility_timer -= delta
 		if recovery_invincibility_timer <= 0.0:
 			is_recovery_invincible = false
-			# 復帰無敵解除時: State遷移でハートボックスが自動設定される
-			# player.reactivate_current_hurtbox() # 新アーキテクチャでは不要

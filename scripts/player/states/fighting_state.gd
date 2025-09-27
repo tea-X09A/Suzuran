@@ -18,9 +18,6 @@ func initialize_state() -> void:
 	is_fighting_active = true
 	fighting_timer = get_parameter("move_fighting_duration")
 
-	# 戦闘状態のハートボックスを設定
-	switch_hurtbox(hurtbox.get_fighting_hurtbox())
-
 	# アニメーション完了シグナルの接続（重複接続を防止）
 	if animation_player and not animation_player.animation_finished.is_connected(_on_fighting_animation_finished):
 		animation_player.animation_finished.connect(_on_fighting_animation_finished)

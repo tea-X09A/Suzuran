@@ -17,9 +17,6 @@ enum PLAYER_CONDITION { NORMAL, EXPANSION }
 # 当たり判定用コリジョン
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
 
-# ハートボックス管理システム（統合版）
-var hurtbox: PlayerHurtbox
-
 # ======================== エクスポート設定 ========================
 
 # インスペクタで設定可能な初期変身状態
@@ -42,16 +39,11 @@ func _ready() -> void:
 	condition = initial_condition
 	GRAVITY = ProjectSettings.get_setting("physics/2d/default_gravity")
 	_initialize_systems()
-	# 初期ハートボックス設定
-	hurtbox.initialize_default_hurtbox()
 
 ## システムコンポーネントの初期化
 func _initialize_systems() -> void:
 	# 無敵エフェクトシステムを生成（現在の変身状態を反映）
 	invincibility_effect = InvincibilityEffect.new(self, condition)
-	# ハートボックス管理システムを初期化（代表ハートボックスを使用）
-	hurtbox = $IdleHurtbox as PlayerHurtbox
-	hurtbox.initialize_manager(self)
 	# アニメーションツリーの初期化
 	_initialize_animation_system()
 
