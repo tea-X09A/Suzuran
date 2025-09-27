@@ -34,8 +34,7 @@ var hurtbox: PlayerHurtbox
 
 # 現在の変身状態（NORMAL/EXPANSION）
 var condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
-# 入力処理システム
-var player_input: PlayerInput
+# 入力処理システム（統合済み）
 # 無敵エフェクト処理システム
 var invincibility_effect: InvincibilityEffect
 # ダメージ状態管理（外部アクセス用）
@@ -78,8 +77,6 @@ func _ready() -> void:
 
 ## システムコンポーネントの初期化
 func _initialize_systems() -> void:
-	# 入力処理システムを生成
-	player_input = PlayerInput.new(self)
 	# 無敵エフェクトシステムを生成（現在の変身状態を反映）
 	invincibility_effect = InvincibilityEffect.new(self, condition)
 	# ハートボックス管理システムを初期化（代表ハートボックスを使用）
@@ -111,9 +108,6 @@ func _process(delta: float) -> void:
 
 ## 物理演算ステップごとの更新処理（移動・物理系）
 func _physics_process(delta: float) -> void:
-	# 入力システムのタイマー更新
-	player_input.update_timers(delta)
-
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
 
@@ -127,6 +121,15 @@ func apply_gravity(delta: float) -> void:
 func update_sprite_direction(input_direction_x: float) -> void:
 	if input_direction_x != 0.0:
 		sprite_2d.flip_h = input_direction_x > 0.0
+
+## 移動入力取得（PlayerInputから統合）
+func get_movement_input() -> Vector2:
+	var direction := Vector2.ZERO
+	if Input.is_action_pressed("left"):
+		direction.x = -1.0
+	elif Input.is_action_pressed("right"):
+		direction.x = 1.0
+	return direction
 
 
 
