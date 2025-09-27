@@ -1,9 +1,8 @@
-[gd_scene load_steps=109 format=3 uid="uid://daofj62a4corn"]
+[gd_scene load_steps=108 format=3 uid="uid://daofj62a4corn"]
 
 [ext_resource type="Texture2D" uid="uid://cp0ria1m7rv2l" path="res://assets/images/player/normal_fall/frame_fall_001.png" id="1_gmlin"]
 [ext_resource type="Script" uid="uid://cyb2ijm5xuo6s" path="res://scripts/player/player.gd" id="1_lvxji"]
 [ext_resource type="Script" uid="uid://7cgnpnv21g8o" path="res://scripts/player/player_hurtbox.gd" id="1_xqw8k"]
-[ext_resource type="Texture2D" path="res://assets/images/player/normal_idle/frame_idle_001.png" id="2_lvxji"]
 [ext_resource type="Texture2D" uid="uid://bhjwiki72o5u4" path="res://assets/images/player/normal_idle/frame_000.png" id="2_uf5tr"]
 [ext_resource type="Texture2D" uid="uid://2y7250olx2dl" path="res://assets/images/player/normal_damaged/frame_damaged_001.png" id="3_fm80t"]
 [ext_resource type="Texture2D" uid="uid://cxqn1t7a3qwv3" path="res://assets/images/player/normal_fighting_01_001/frame_fighting_01_001.png" id="3_qek5x"]
@@ -27,7 +26,6 @@
 [ext_resource type="Texture2D" uid="uid://cy3ca0m2gta8w" path="res://assets/images/player/normal_run/frame_030.png" id="24_tffgl"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_5mf0n"]
-load_path = "res://.godot/imported/frame_run_001.png-0e29e39da25b0d8175e364e7fc6b47cd.ctex"
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_cperm"]
 animations = [{
@@ -65,7 +63,7 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("2_lvxji")
+"texture": null
 }],
 "loop": true,
 "name": &"normal_idle",

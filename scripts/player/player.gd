@@ -68,8 +68,6 @@ var is_grounded: bool = false
 var running_state_when_action_started: bool = false
 # 空中時の走行状態を記録
 var running_state_when_airborne: bool = false
-# 射撃のクールダウンタイマー（秒）
-var shooting_cooldown_timer: float = 0.0
 
 # ======================== 物理制御変数 ========================
 
@@ -171,8 +169,6 @@ func _physics_process(delta: float) -> void:
 	# 状態遷移とアニメーション制御
 	process_state_transitions()
 
-	# 射撃クールダウンタイマー更新
-	update_shooting_cooldown(delta)
 
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
@@ -402,7 +398,7 @@ func process_ground_input_transitions() -> void:
 		return
 
 	# 射撃入力
-	if Input.is_action_just_pressed("shooting") and can_shoot():
+	if Input.is_action_just_pressed("shooting"):
 		running_state_when_action_started = is_running
 		set_animation_tree_state("SHOOTING")
 		return
@@ -465,20 +461,6 @@ func handle_jump() -> void:
 
 # ======================== 射撃システム制御 ========================
 
-## 射撃クールダウンタイマーの更新
-func update_shooting_cooldown(delta: float) -> void:
-	# タイマーを減算（最小値は0.0）
-	shooting_cooldown_timer = max(0.0, shooting_cooldown_timer - delta)
-
-## 射撃クールダウンの設定
-func set_shooting_cooldown(cooldown_time: float) -> void:
-	# 指定した秒数のクールダウンを開始
-	shooting_cooldown_timer = cooldown_time
-
-## 射撃可能状態の判定
-func can_shoot() -> bool:
-	# クールダウン完了時のみ射撃可能
-	return shooting_cooldown_timer <= 0.0
 
 
 ## 攻撃終了時のコールバック処理
