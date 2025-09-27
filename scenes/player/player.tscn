@@ -1,4 +1,4 @@
-[gd_scene load_steps=108 format=3 uid="uid://daofj62a4corn"]
+[gd_scene load_steps=105 format=3 uid="uid://daofj62a4corn"]
 
 [ext_resource type="Texture2D" uid="uid://cp0ria1m7rv2l" path="res://assets/images/player/normal_fall/frame_fall_001.png" id="1_gmlin"]
 [ext_resource type="Script" uid="uid://cyb2ijm5xuo6s" path="res://scripts/player/player.gd" id="1_lvxji"]
@@ -6,7 +6,6 @@
 [ext_resource type="Texture2D" uid="uid://bhjwiki72o5u4" path="res://assets/images/player/normal_idle/frame_000.png" id="2_uf5tr"]
 [ext_resource type="Texture2D" uid="uid://2y7250olx2dl" path="res://assets/images/player/normal_damaged/frame_damaged_001.png" id="3_fm80t"]
 [ext_resource type="Texture2D" uid="uid://cxqn1t7a3qwv3" path="res://assets/images/player/normal_fighting_01_001/frame_fighting_01_001.png" id="3_qek5x"]
-[ext_resource type="Texture2D" uid="uid://pukyogw6s3iu" path="res://assets/images/player/normal_down_01/frame_down_01_001.png" id="4_gx1jg"]
 [ext_resource type="Texture2D" uid="uid://jle21g31pxn5" path="res://assets/images/player/normal_squat/frame_squat_001.png" id="6_0owmy"]
 [ext_resource type="Texture2D" uid="uid://ca4aisuntcyvq" path="res://assets/images/player/normal_walk/frame_walk_001.png" id="6_75vfm"]
 [ext_resource type="Texture2D" uid="uid://4howketapm5p" path="res://assets/images/player/normal_shooting_01_001/frame_shooting_01_001.png" id="7_5gtgg"]
@@ -24,107 +23,6 @@
 [ext_resource type="Texture2D" uid="uid://cy1dwjn1igpay" path="res://assets/images/player/normal_run/frame_012.png" id="22_uniwh"]
 [ext_resource type="Texture2D" uid="uid://doif0rwqrt8g2" path="res://assets/images/player/normal_run/frame_024.png" id="23_iqsei"]
 [ext_resource type="Texture2D" uid="uid://cy3ca0m2gta8w" path="res://assets/images/player/normal_run/frame_030.png" id="24_tffgl"]
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_5mf0n"]
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_cperm"]
-animations = [{
-"frames": [{
-"duration": 3.0,
-"texture": ExtResource("3_qek5x")
-}],
-"loop": false,
-"name": &"normal_attack_01",
-"speed": 6.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": ExtResource("3_fm80t")
-}],
-"loop": true,
-"name": &"normal_damaged",
-"speed": 10.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": ExtResource("4_gx1jg")
-}],
-"loop": true,
-"name": &"normal_down_01",
-"speed": 10.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": ExtResource("1_gmlin")
-}],
-"loop": true,
-"name": &"normal_fall",
-"speed": 10.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": null
-}],
-"loop": true,
-"name": &"normal_idle",
-"speed": 10.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": ExtResource("1_gmlin")
-}],
-"loop": true,
-"name": &"normal_jump",
-"speed": 10.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_5mf0n")
-}],
-"loop": true,
-"name": &"normal_run",
-"speed": 10.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": ExtResource("7_5gtgg")
-}],
-"loop": true,
-"name": &"normal_shooting_01_001",
-"speed": 10.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": ExtResource("8_h17s1")
-}],
-"loop": true,
-"name": &"normal_shooting_01_002",
-"speed": 10.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": ExtResource("6_0owmy")
-}],
-"loop": true,
-"name": &"normal_squat",
-"speed": 10.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": ExtResource("6_75vfm")
-}],
-"loop": true,
-"name": &"normal_walk",
-"speed": 10.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": ExtResource("3_qek5x")
-}],
-"loop": true,
-"name": &"test",
-"speed": 5.0
-}]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ry65h"]
 size = Vector2(68, 167)
@@ -633,11 +531,6 @@ script = ExtResource("1_lvxji")
 [node name="Sprite2D" type="Sprite2D" parent="."]
 scale = Vector2(0.3, 0.3)
 texture = ExtResource("2_uf5tr")
-
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-visible = false
-sprite_frames = SubResource("SpriteFrames_cperm")
-animation = &"normal_idle"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 visible = false

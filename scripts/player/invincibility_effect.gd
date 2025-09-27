@@ -63,5 +63,3 @@ func update_condition(new_condition: Player.PLAYER_CONDITION) -> void:
 func _update_sprite_visibility() -> void:
 	if player.sprite_2d:
 		player.sprite_2d.visible = is_visible
-	if player.animated_sprite_2d:
-		player.animated_sprite_2d.visible = is_visible

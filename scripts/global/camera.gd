@@ -17,7 +17,7 @@ func _process(delta: float) -> void:
 	if not target:
 		return
 
-	var sprite_position: Vector2 = target.animated_sprite_2d.global_position
+	var sprite_position: Vector2 = target.sprite_2d.global_position
 	var target_x: float = sprite_position.x + follow_offset.x
 
 	target_x = clamp(target_x, min_position.x, max_position.x)
