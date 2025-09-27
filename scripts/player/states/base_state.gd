@@ -64,4 +64,3 @@ func get_movement_input() -> float:
 func update_sprite_direction(direction: float) -> void:
 	if direction != 0.0 and sprite_2d:
 		sprite_2d.flip_h = direction > 0.0
-c

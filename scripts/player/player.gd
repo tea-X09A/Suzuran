@@ -32,8 +32,6 @@ var condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
 var invincibility_effect: InvincibilityEffect
 # 重力加速度（プロジェクト設定から取得）
 var GRAVITY: float
-# デバッグ用：前回のアニメーション状態を記録
-var previous_animation_state: String = ""
 
 # ======================== 初期化処理 ========================
 
@@ -146,19 +144,7 @@ func handle_shooting_input() -> void:
 func update_animation_state(state_name: String) -> void:
 	var state_machine: AnimationNodeStateMachinePlayback = animation_tree.get("parameters/playback")
 	if state_machine:
-		var current_state = state_machine.get_current_node()
-		# 実際に状態が変わる場合のみデバッグ出力
-		if current_state != state_name:
-			print("[STATE DEBUG] 状態切り替え要求: [", current_state, "] → [", state_name, "]")
-			print("[STATE DEBUG] プレイヤー状況: 地面接触=", is_on_floor(), " 速度=", velocity)
-			state_machine.travel(state_name)
-			# 次のフレームで新しい状態を確認
-			call_deferred("_debug_state_after_travel", state_name, current_state)
-		else:
-			# 同じ状態への切り替えは無視（travelはしない）
-			state_machine.travel(state_name)
-	else:
-		print("[STATE DEBUG] エラー: state_machineが取得できませんでした")
+		state_machine.travel(state_name)
 	# 状態変更時にhurtboxとhitboxを初期化
 	initialize_collision_for_state(state_name)
 
@@ -173,15 +159,6 @@ func update_sprite_direction(input_direction_x: float) -> void:
 	if input_direction_x != 0.0:
 		sprite_2d.flip_h = input_direction_x > 0.0
 
-## 状態切り替え後のデバッグ確認（遅延実行）
-func _debug_state_after_travel(requested_state: String, previous_state: String) -> void:
-	var state_machine: AnimationNodeStateMachinePlayback = animation_tree.get("parameters/playback")
-	if state_machine:
-		var actual_state = state_machine.get_current_node()
-		if actual_state == requested_state:
-			print("[STATE DEBUG] ✓ 状態切り替え成功: [", previous_state, "] → [", actual_state, "]")
-		else:
-			print("[STATE DEBUG] ✗ 状態切り替え失敗: [", previous_state, "] →要求[", requested_state, "] 実際[", actual_state, "]")
 
 # ======================== プロパティアクセサ ========================
 
