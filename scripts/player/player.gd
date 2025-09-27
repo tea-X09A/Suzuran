@@ -130,6 +130,17 @@ func _initialize_animation_system() -> void:
 	if animation_tree.has_signal("animation_tree_changed"):
 		animation_tree.animation_tree_changed.connect(_on_animation_tree_state_changed)
 
+## 状態変更（AnimationTreeベースアーキテクチャ用）
+func change_state(new_state_name: String) -> void:
+	# AnimationTree状態を設定
+	set_animation_tree_state(new_state_name.to_upper())
+
+	# 対応するStateオブジェクトが存在すれば初期化
+	var state_key = new_state_name.to_lower()
+	if states.has(state_key):
+		var state_instance: BaseState = states[state_key]
+		state_instance.initialize_state()
+
 ## 状態間のシグナル接続
 func _connect_signals() -> void:
 	# 攻撃終了シグナルの接続
@@ -272,9 +283,9 @@ func apply_gravity(delta: float) -> void:
 		velocity.y = min(velocity.y + effective_gravity * delta, PlayerParameters.get_parameter(condition, "jump_max_fall_speed"))
 
 ## スプライト方向制御
-func update_sprite_direction(direction_x: float) -> void:
-	if direction_x != 0.0:
-		sprite_2d.flip_h = direction_x > 0.0
+func update_sprite_direction(input_direction_x: float) -> void:
+	if input_direction_x != 0.0:
+		sprite_2d.flip_h = input_direction_x > 0.0
 
 ## 空中移動処理
 func handle_air_movement() -> void:

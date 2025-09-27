@@ -79,7 +79,7 @@ func update_damage_state(delta: float) -> bool:
 	return is_damaged
 
 ## ダメージ中の移動処理（player.gdから呼び出し）
-func handle_damaged_movement(delta: float) -> void:
+func handle_damaged_movement(_delta: float) -> void:
 	# ノックバック着地状態の場合は限定的な移動を許可
 	if is_in_knockback_landing_state():
 		var direction_x: float = Input.get_axis("left", "right")
@@ -128,8 +128,7 @@ func start_down_state() -> void:
 	# down状態開始時：down_hurtboxを有効化
 	switch_hurtbox(hurtbox.get_down_hurtbox())
 
-
-	play_animation("down_01")
+	# AnimationTreeが自動で適切なアニメーションを処理
 
 func finish_damaged() -> void:
 	is_damaged = false

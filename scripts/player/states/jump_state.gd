@@ -76,7 +76,7 @@ func handle_air_movement() -> void:
 	player.direction_x = direction_x
 
 	# スプライト方向更新
-	update_sprite_direction(direction_x)
+	player.update_sprite_direction(direction_x)
 
 	# 空中制御パラメータ
 	var air_control_strength: float = get_parameter("air_control_strength")

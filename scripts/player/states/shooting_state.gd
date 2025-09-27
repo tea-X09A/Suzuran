@@ -69,7 +69,7 @@ func handle_back_jump_shooting() -> void:
 	shooting_timer = get_parameter("shooting_animation_duration")
 
 	spawn_kunai()
-	play_animation(get_airborne_animation_name().replace(get_parameter("animation_prefix") + "_", ""))
+	# AnimationTreeが自動で適切なアニメーションを処理
 
 	shooting_grounded = false
 
