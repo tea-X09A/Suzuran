@@ -22,10 +22,6 @@ var knockback_direction: Vector2 = Vector2.ZERO
 var knockback_force_value: float = 0.0
 var current_animation_type: String = ""
 
-## AnimationTree状態開始時の処理
-func initialize_state() -> void:
-	pass
-
 ## AnimationTree状態終了時の処理
 func cleanup_state() -> void:
 	is_down = false

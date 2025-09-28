@@ -109,14 +109,11 @@ func _physics_process(delta: float) -> void:
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
 
-
 ## アニメーション状態更新
 func update_animation_state(state_name: String) -> void:
 	var state_machine: AnimationNodeStateMachinePlayback = animation_tree.get("parameters/playback")
 	if state_machine:
 		state_machine.travel(state_name)
-	# 状態変更時にhurtboxとhitboxを初期化
-	initialize_collision_for_state(state_name)
 	# 現在のステートインスタンスを更新
 	_update_current_state(state_name)
 
@@ -131,21 +128,19 @@ func _update_current_state(state_name: String) -> void:
 		current_state = new_state
 		current_state.initialize_state()
 
-
 ## スプライト方向制御
 func update_sprite_direction(input_direction_x: float) -> void:
 	if input_direction_x != 0.0:
 		sprite_2d.flip_h = input_direction_x > 0.0
 		direction_x = input_direction_x
 
-
 # ======================== プロパティアクセサ ========================
 
-## 現在の変身状態を取得
+## 現在の状態を取得
 func get_condition() -> PLAYER_CONDITION:
 	return condition
 
-## 変身状態の変更
+## 状態の変更
 func set_condition(new_condition: PLAYER_CONDITION) -> void:
 	condition = new_condition
 
@@ -160,51 +155,3 @@ func get_animation_player() -> AnimationPlayer:
 ## アニメーションツリーを取得
 func get_animation_tree() -> AnimationTree:
 	return animation_tree
-
-
-# ======================== コリジョン管理 ========================
-
-## 消し忘れ防止：全hurtboxとhitboxを無効化（AnimationPlayerが対応stateを有効化）
-func initialize_collision_for_state(state_name: String) -> void:
-	if collision_manager:
-		collision_manager.initialize_state_collision(state_name)
-
-# ======================== AnimationPlayer専用コールバック関数 ========================
-# 注意: 以下の関数群はAnimationPlayerからの引数なしコールバック用です。
-# 直接呼び出さず、代わりにinitialize_collision_for_state()を使用してください。
-
-## IDLE状態のコリジョン初期化（AnimationPlayer専用コールバック）
-func initialize_idle_collision() -> void:
-	initialize_collision_for_state("IDLE")
-
-## WALK状態のコリジョン初期化（AnimationPlayer専用コールバック）
-func initialize_walk_collision() -> void:
-	initialize_collision_for_state("WALK")
-
-## RUN状態のコリジョン初期化（AnimationPlayer専用コールバック）
-func initialize_run_collision() -> void:
-	initialize_collision_for_state("RUN")
-
-## JUMP状態のコリジョン初期化（AnimationPlayer専用コールバック）
-func initialize_jump_collision() -> void:
-	initialize_collision_for_state("JUMP")
-
-## FALL状態のコリジョン初期化（AnimationPlayer専用コールバック）
-func initialize_fall_collision() -> void:
-	initialize_collision_for_state("FALL")
-
-## SQUAT状態のコリジョン初期化（AnimationPlayer専用コールバック）
-func initialize_squat_collision() -> void:
-	initialize_collision_for_state("SQUAT")
-
-## FIGHTING状態のコリジョン初期化（AnimationPlayer専用コールバック）
-func initialize_fighting_collision() -> void:
-	initialize_collision_for_state("FIGHTING")
-
-## SHOOTING状態のコリジョン初期化（AnimationPlayer専用コールバック）
-func initialize_shooting_collision() -> void:
-	initialize_collision_for_state("SHOOTING")
-
-## DOWN状態のコリジョン初期化（AnimationPlayer専用コールバック）
-func initialize_down_collision() -> void:
-	initialize_collision_for_state("DOWN")

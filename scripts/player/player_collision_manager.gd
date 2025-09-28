@@ -12,11 +12,6 @@ func _ready() -> void:
 
 # ======================== 状態管理システム ========================
 
-## 消し忘れ防止：全てのhurtboxとhitboxを無効化（AnimationPlayerが対応stateを有効化）
-func initialize_state_collision(_state_name: String) -> void:
-	# 全てのhurtboxとhitboxを無効化（有効化はAnimationPlayerが実行）
-	_disable_all_collisions()
-
 ## 全てのhurtboxとhitboxのコリジョンを無効化
 func _disable_all_collisions() -> void:
 	var collision_nodes: Array[String] = [
