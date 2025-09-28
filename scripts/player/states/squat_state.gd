@@ -5,6 +5,9 @@ extends BaseState
 func initialize_state() -> void:
 	# SQUAT状態に入った時の初期化処理
 	set_animation_state("SQUAT")
+	# しゃがみ状態では速度を0にする
+	if player:
+		player.velocity.x = 0.0
 
 ## AnimationTree状態終了時の処理
 func cleanup_state() -> void:
