@@ -41,8 +41,19 @@ func handle_input(delta: float) -> void:
 func physics_update(delta: float) -> void:
 	# 射撃タイマー更新
 	if not update_shooting_state(delta):
-		# 射撃終了時は状態遷移
-		transition_to_appropriate_state()
+		# 射撃終了時の状態遷移
+		if not player.is_on_floor():
+			player.update_animation_state("FALL")
+		else:
+			# 地上での状態判定（移動入力に応じて遷移）
+			var movement_input: float = get_movement_input()
+			if movement_input != 0.0:
+				if is_dash_input():
+					player.update_animation_state("RUN")
+				else:
+					player.update_animation_state("WALK")
+			else:
+				player.update_animation_state("IDLE")
 
 	# 重力適用（空中射撃の場合）
 	if not player.is_on_floor():

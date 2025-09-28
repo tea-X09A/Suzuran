@@ -99,79 +99,16 @@ func _physics_process(delta: float) -> void:
 		current_state.handle_input(delta)
 		current_state.physics_update(delta)
 	else:
-		# フォールバック: ステートが存在しない場合の旧来の処理
-		handle_input(delta)
-		apply_gravity(delta)
+		# フォールバック: ステートが存在しない場合の基本処理
+		# 注意: 通常はここは実行されません。ステートシステムの初期化に失敗した場合のみ
+		push_error("Player state system not initialized properly")
+		# 最低限の重力処理のみ適用
+		if not is_on_floor():
+			velocity.y += GRAVITY * delta
 
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
 
-## 入力処理（フォールバック用）
-func handle_input(delta: float) -> void:
-	# 注意: このメソッドは新しいステート管理システムが動作しない場合のフォールバック用
-	# 通常は各ステートのhandle_input()が使用される
-
-	# 基本移動入力（歩き）
-	var input_direction_x: float = Input.get_axis("left", "right")
-
-	# ダッシュ入力チェック
-	var is_running: bool = Input.is_action_pressed("run_left") or Input.is_action_pressed("run_right")
-
-	# ジャンプ入力チェック
-	if Input.is_action_just_pressed("jump") and is_on_floor():
-		handle_jump_input()
-
-	# しゃがみ入力チェック
-	if Input.is_action_pressed("squat") and is_on_floor():
-		update_animation_state("SQUAT")
-
-	# 攻撃入力チェック
-	if Input.is_action_just_pressed("fight") or Input.is_action_just_pressed("fighting_01"):
-		handle_fight_input()
-
-	# 射撃入力チェック
-	if Input.is_action_just_pressed("shooting") or Input.is_action_just_pressed("shooting_01"):
-		handle_shooting_input()
-
-	# 移動処理（deltaは摩擦計算などで使用される）
-	handle_movement_input(input_direction_x, is_running, delta)
-
-## 移動入力処理
-func handle_movement_input(input_direction_x: float, is_running: bool, delta: float) -> void:
-	if input_direction_x != 0.0:
-		# 速度決定（歩きかダッシュか）
-		var speed: float
-		if is_running:
-			speed = PlayerParameters.get_parameter(condition, "move_run_speed")
-			update_animation_state("RUN")
-		else:
-			speed = PlayerParameters.get_parameter(condition, "move_walk_speed")
-			update_animation_state("WALK")
-
-		velocity.x = input_direction_x * speed
-		update_sprite_direction(input_direction_x)
-	else:
-		# 地上での摩擦（固定値）
-		var friction: float = 1000.0
-		velocity.x = move_toward(velocity.x, 0, friction * delta)
-
-## ジャンプ入力処理（フォールバック用）
-func handle_jump_input() -> void:
-	# 注意: 通常は各ステートのperform_jump()が使用される
-	var jump_force: float = PlayerParameters.get_parameter(condition, "jump_force")
-	velocity.y = -jump_force
-	update_animation_state("JUMP")
-
-## 攻撃入力処理（フォールバック用）
-func handle_fight_input() -> void:
-	# 注意: 通常は各ステートで攻撃入力をチェックして遷移する
-	update_animation_state("FIGHTING")
-
-
-## 射撃入力処理（フォールバック用）
-func handle_shooting_input() -> void:
-	# 注意: 通常は各ステートで射撃入力をチェックして遷移する
-	update_animation_state("SHOOTING")
 
 ## アニメーション状態更新
 func update_animation_state(state_name: String) -> void:
@@ -194,11 +131,6 @@ func _update_current_state(state_name: String) -> void:
 		current_state = new_state
 		current_state.initialize_state()
 
-## 重力適用
-func apply_gravity(delta: float) -> void:
-	if not is_on_floor():
-		var effective_gravity: float = GRAVITY * PlayerParameters.get_parameter(condition, "jump_gravity_scale")
-		velocity.y = min(velocity.y + effective_gravity * delta, PlayerParameters.get_parameter(condition, "jump_max_fall_speed"))
 
 ## スプライト方向制御
 func update_sprite_direction(input_direction_x: float) -> void:
@@ -237,38 +169,42 @@ func initialize_collision_for_state(state_name: String) -> void:
 	if collision_manager:
 		collision_manager.initialize_state_collision(state_name)
 
-## IDLE状態のコリジョン無効化（AnimationPlayer用）
+# ======================== AnimationPlayer専用コールバック関数 ========================
+# 注意: 以下の関数群はAnimationPlayerからの引数なしコールバック用です。
+# 直接呼び出さず、代わりにinitialize_collision_for_state()を使用してください。
+
+## IDLE状態のコリジョン初期化（AnimationPlayer専用コールバック）
 func initialize_idle_collision() -> void:
 	initialize_collision_for_state("IDLE")
 
-## WALK状態のコリジョン無効化（AnimationPlayer用）
+## WALK状態のコリジョン初期化（AnimationPlayer専用コールバック）
 func initialize_walk_collision() -> void:
 	initialize_collision_for_state("WALK")
 
-## RUN状態のコリジョン無効化（AnimationPlayer用）
+## RUN状態のコリジョン初期化（AnimationPlayer専用コールバック）
 func initialize_run_collision() -> void:
 	initialize_collision_for_state("RUN")
 
-## JUMP状態のコリジョン無効化（AnimationPlayer用）
+## JUMP状態のコリジョン初期化（AnimationPlayer専用コールバック）
 func initialize_jump_collision() -> void:
 	initialize_collision_for_state("JUMP")
 
-## FALL状態のコリジョン無効化（AnimationPlayer用）
+## FALL状態のコリジョン初期化（AnimationPlayer専用コールバック）
 func initialize_fall_collision() -> void:
 	initialize_collision_for_state("FALL")
 
-## SQUAT状態のコリジョン無効化（AnimationPlayer用）
+## SQUAT状態のコリジョン初期化（AnimationPlayer専用コールバック）
 func initialize_squat_collision() -> void:
 	initialize_collision_for_state("SQUAT")
 
-## FIGHTING状態のコリジョン無効化（AnimationPlayer用）
+## FIGHTING状態のコリジョン初期化（AnimationPlayer専用コールバック）
 func initialize_fighting_collision() -> void:
 	initialize_collision_for_state("FIGHTING")
 
-## SHOOTING状態のコリジョン無効化（AnimationPlayer用）
+## SHOOTING状態のコリジョン初期化（AnimationPlayer専用コールバック）
 func initialize_shooting_collision() -> void:
 	initialize_collision_for_state("SHOOTING")
 
-## DOWN状態のコリジョン無効化（AnimationPlayer用）
+## DOWN状態のコリジョン初期化（AnimationPlayer専用コールバック）
 func initialize_down_collision() -> void:
 	initialize_collision_for_state("DOWN")

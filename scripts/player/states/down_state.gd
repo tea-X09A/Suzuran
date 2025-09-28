@@ -44,8 +44,19 @@ func handle_input(delta: float) -> void:
 func physics_update(delta: float) -> void:
 	# ダウン状態更新
 	if not update_down_state(delta):
-		# ダウン終了時は状態遷移
-		transition_to_appropriate_state()
+		# ダウン終了時の状態遷移
+		if not player.is_on_floor():
+			player.update_animation_state("FALL")
+		else:
+			# 地上での状態判定（移動入力に応じて遷移）
+			var movement_input: float = get_movement_input()
+			if movement_input != 0.0:
+				if is_dash_input():
+					player.update_animation_state("RUN")
+				else:
+					player.update_animation_state("WALK")
+			else:
+				player.update_animation_state("IDLE")
 
 	# 重力適用
 	if not player.is_on_floor():

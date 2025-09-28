@@ -122,26 +122,3 @@ func perform_jump() -> void:
 		player.velocity.y = -jump_force
 		player.update_animation_state("JUMP")
 
-## 現在の状況に基づいて適切な状態に遷移
-func transition_to_appropriate_state() -> void:
-	if not player:
-		return
-
-	# 空中にいる場合はFALL状態に遷移
-	if not player.is_on_floor():
-		player.update_animation_state("FALL")
-		return
-
-	# 地上にいる場合の状態判定
-	var movement_input: float = get_movement_input()
-	var is_running: bool = is_dash_input()
-
-	# 移動入力がある場合
-	if movement_input != 0.0:
-		if is_running:
-			player.update_animation_state("RUN")
-		else:
-			player.update_animation_state("WALK")
-	else:
-		# 移動入力がない場合はIDLE状態
-		player.update_animation_state("IDLE")
