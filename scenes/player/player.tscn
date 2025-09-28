@@ -27,7 +27,7 @@ tracks/0/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [false]
+"values": [true]
 }
 tracks/1/type = "value"
 tracks/1/imported = false
@@ -39,7 +39,7 @@ tracks/1/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [false]
+"values": [true]
 }
 tracks/2/type = "value"
 tracks/2/imported = false
@@ -51,7 +51,7 @@ tracks/2/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [false]
+"values": [true]
 }
 tracks/3/type = "value"
 tracks/3/imported = false
@@ -63,7 +63,7 @@ tracks/3/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [false]
+"values": [true]
 }
 tracks/4/type = "value"
 tracks/4/imported = false
@@ -75,7 +75,7 @@ tracks/4/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [false]
+"values": [true]
 }
 tracks/5/type = "value"
 tracks/5/imported = false
@@ -87,7 +87,7 @@ tracks/5/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [false]
+"values": [true]
 }
 tracks/6/type = "value"
 tracks/6/imported = false
@@ -99,7 +99,7 @@ tracks/6/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [false]
+"values": [true]
 }
 tracks/7/type = "value"
 tracks/7/imported = false
@@ -111,7 +111,7 @@ tracks/7/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [false]
+"values": [true]
 }
 tracks/8/type = "value"
 tracks/8/imported = false
@@ -123,7 +123,7 @@ tracks/8/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [false]
+"values": [true]
 }
 tracks/9/type = "value"
 tracks/9/imported = false
@@ -147,7 +147,7 @@ tracks/10/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [false]
+"values": [true]
 }
 tracks/11/type = "value"
 tracks/11/imported = false
@@ -171,7 +171,7 @@ tracks/12/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [true]
+"values": [false]
 }
 tracks/13/type = "value"
 tracks/13/imported = false
@@ -183,7 +183,7 @@ tracks/13/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [true]
+"values": [false]
 }
 tracks/14/type = "value"
 tracks/14/imported = false
@@ -207,7 +207,7 @@ tracks/15/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [true]
+"values": [false]
 }
 tracks/16/type = "value"
 tracks/16/imported = false
@@ -231,7 +231,7 @@ tracks/17/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [true]
+"values": [false]
 }
 tracks/18/type = "value"
 tracks/18/imported = false
@@ -243,7 +243,7 @@ tracks/18/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [true]
+"values": [false]
 }
 tracks/19/type = "value"
 tracks/19/imported = false
@@ -255,7 +255,7 @@ tracks/19/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [true]
+"values": [false]
 }
 tracks/20/type = "value"
 tracks/20/imported = false
@@ -267,7 +267,7 @@ tracks/20/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [true]
+"values": [false]
 }
 tracks/21/type = "value"
 tracks/21/imported = false
@@ -279,7 +279,7 @@ tracks/21/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [true]
+"values": [false]
 }
 tracks/22/type = "value"
 tracks/22/imported = false
@@ -291,7 +291,7 @@ tracks/22/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [true]
+"values": [false]
 }
 
 [sub_resource type="Animation" id="Animation_down"]
@@ -1181,26 +1181,34 @@ anim_player = NodePath("../AnimationPlayer")
 script = ExtResource("8_collision_mgr")
 
 [node name="IdleHurtboxCollision" type="CollisionShape2D" parent="IdleHurtbox"]
+visible = false
 position = Vector2(-1, 12)
 shape = SubResource("RectangleShape2D_walk_hurtbox")
+disabled = true
 
 [node name="SquatHurtbox" type="Area2D" parent="."]
 
 [node name="SquatHurtboxCollision" type="CollisionShape2D" parent="SquatHurtbox"]
+visible = false
 position = Vector2(-1, 61)
 shape = SubResource("RectangleShape2D_lgqa7")
+disabled = true
 
 [node name="JumpHurtbox" type="Area2D" parent="."]
 
 [node name="JumpHurtboxCollision" type="CollisionShape2D" parent="JumpHurtbox"]
+visible = false
 position = Vector2(-9.5, 3.5)
 shape = SubResource("RectangleShape2D_jump_hurtbox")
+disabled = true
 
 [node name="RunHurtbox" type="Area2D" parent="."]
 
 [node name="RunHurtboxCollision" type="CollisionShape2D" parent="RunHurtbox"]
+visible = false
 position = Vector2(-1, 12)
 shape = SubResource("RectangleShape2D_run_hurtbox")
+disabled = true
 
 [node name="FightingHurtbox" type="Area2D" parent="."]
 monitorable = false
@@ -1209,16 +1217,20 @@ monitorable = false
 visible = false
 position = Vector2(19, 24.5)
 shape = SubResource("RectangleShape2D_hitbox")
+disabled = true
 
 [node name="ShootingHurtbox" type="Area2D" parent="."]
 
 [node name="ShootingHurtboxCollision" type="CollisionShape2D" parent="ShootingHurtbox"]
+visible = false
 position = Vector2(-1, 12.5)
 shape = SubResource("RectangleShape2D_shooting_hurtbox")
+disabled = true
 
 [node name="KnockBackHurtbox" type="Area2D" parent="."]
 
 [node name="KnockBackHurtboxCollision" type="CollisionShape2D" parent="KnockBackHurtbox"]
+visible = false
 position = Vector2(-8, 9.5)
 shape = SubResource("RectangleShape2D_0owmy")
 disabled = true
@@ -1229,22 +1241,29 @@ disabled = true
 visible = false
 position = Vector2(12, 64)
 shape = SubResource("RectangleShape2D_down_hurtbox")
+disabled = true
 
 [node name="FallHurtbox" type="Area2D" parent="."]
 
 [node name="FallHurtboxCollision" type="CollisionShape2D" parent="FallHurtbox"]
+visible = false
 position = Vector2(-9.5, 3.5)
 shape = SubResource("RectangleShape2D_jump_hurtbox")
+disabled = true
 
 [node name="WalkHurtbox" type="Area2D" parent="."]
 
 [node name="WalkHurtboxCollision" type="CollisionShape2D" parent="WalkHurtbox"]
+visible = false
 position = Vector2(-1, 12)
 shape = SubResource("RectangleShape2D_walk_hurtbox")
+disabled = true
 
 [node name="FightingHitbox" type="Area2D" parent="."]
 
 [node name="FightingHitboxCollision" type="CollisionShape2D" parent="FightingHitbox"]
+visible = false
 position = Vector2(-50, 21)
 shape = SubResource("RectangleShape2D_fm80t")
+disabled = true
 debug_color = Color(0.860735, 0.306094, 0.501864, 0.42)
