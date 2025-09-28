@@ -1,10 +1,6 @@
 class_name FallState
 extends BaseState
 
-## AnimationTree状態終了時の処理
-func cleanup_state() -> void:
-	# 状態終了時のクリーンアップ（現在は特になし）
-	pass
 
 ## 入力処理（FALL状態固有）
 func handle_input(delta: float) -> void:

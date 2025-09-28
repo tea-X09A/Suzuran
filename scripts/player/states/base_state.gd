@@ -122,3 +122,53 @@ func perform_jump() -> void:
 		player.velocity.y = -jump_force
 		player.update_animation_state("JUMP")
 
+# ======================== 重複処理統合メソッド ========================
+
+## 地面チェック処理（idle, walk, run状態で共通）
+func handle_ground_physics(delta: float) -> bool:
+	# 地面にいない場合はFALL状態に遷移
+	if not player.is_on_floor():
+		apply_gravity(delta)
+		player.update_animation_state("FALL")
+		return true
+	return false
+
+## 共通入力処理（idle, walk, run状態で共通）
+func handle_common_inputs() -> bool:
+	# ジャンプ入力チェック
+	if can_jump():
+		perform_jump()
+		return true
+
+	# しゃがみ入力チェック
+	if is_squat_input() and player.is_on_floor():
+		player.update_animation_state("SQUAT")
+		return true
+
+	# 攻撃入力チェック
+	if is_fight_input():
+		player.update_animation_state("FIGHTING")
+		return true
+
+	# 射撃入力チェック
+	if is_shooting_input():
+		player.update_animation_state("SHOOTING")
+		return true
+
+	return false
+
+## アクション終了時の状態遷移処理（fighting, shooting状態で共通）
+func handle_action_end_transition() -> void:
+	if not player.is_on_floor():
+		player.update_animation_state("FALL")
+	else:
+		# 地上での状態判定（移動入力に応じて遷移）
+		var movement_input: float = get_movement_input()
+		if movement_input != 0.0:
+			if is_dash_input():
+				player.update_animation_state("RUN")
+			else:
+				player.update_animation_state("WALK")
+		else:
+			player.update_animation_state("IDLE")
+

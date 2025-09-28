@@ -16,8 +16,6 @@ enum PLAYER_CONDITION { NORMAL, EXPANSION }
 @onready var animation_tree: AnimationTree = $AnimationTree
 # 当たり判定用コリジョン
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
-# ヒットボックス・ハートボックス管理用ノード
-@onready var collision_manager: PlayerCollisionManager = $IdleHurtbox
 
 # ======================== エクスポート設定 ========================
 

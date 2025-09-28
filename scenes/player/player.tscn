@@ -1,4 +1,4 @@
-[gd_scene load_steps=101 format=3 uid="uid://daofj62a4corn"]
+[gd_scene load_steps=100 format=3 uid="uid://daofj62a4corn"]
 
 [ext_resource type="Script" uid="uid://cyb2ijm5xuo6s" path="res://scripts/player/player.gd" id="1_lvxji"]
 [ext_resource type="Texture2D" uid="uid://ba2j33331esgm" path="res://assets/images/player/normal_idle/名称未設定のアートワーク (4).png" id="2_gmlin"]
@@ -9,7 +9,6 @@
 [ext_resource type="Texture2D" uid="uid://bs5s1br3tb12e" path="res://assets/images/player/normal_run/名称未設定のアートワーク.png" id="4_75vfm"]
 [ext_resource type="Texture2D" uid="uid://jle21g31pxn5" path="res://assets/images/player/normal_squat/frame_squat_001.png" id="6_0owmy"]
 [ext_resource type="Texture2D" uid="uid://4howketapm5p" path="res://assets/images/player/normal_shooting_01_001/frame_shooting_01_001.png" id="7_5gtgg"]
-[ext_resource type="Script" uid="uid://dxwqssvx67et5" path="res://scripts/player/player_collision_manager.gd" id="8_collision_mgr"]
 [ext_resource type="Texture2D" uid="uid://danti7qvsclca" path="res://assets/images/player/normal_shooting_01_002/frame_shooting_01_002.png" id="10_je7p5"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ry65h"]
@@ -1030,7 +1029,6 @@ tree_root = SubResource("AnimationNodeStateMachine_j4nxn")
 anim_player = NodePath("../AnimationPlayer")
 
 [node name="IdleHurtbox" type="Area2D" parent="."]
-script = ExtResource("8_collision_mgr")
 
 [node name="IdleHurtboxCollision" type="CollisionShape2D" parent="IdleHurtbox"]
 visible = false

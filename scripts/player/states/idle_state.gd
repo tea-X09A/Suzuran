@@ -1,33 +1,11 @@
 class_name IdleState
 extends BaseState
 
-## AnimationTree状態終了時の処理
-func cleanup_state() -> void:
-	# 状態終了時のクリーンアップ（現在は特になし）
-	pass
 
 ## 入力処理（IDLE状態固有）
 func handle_input(delta: float) -> void:
-	# IDLE状態ではすべての入力を受け付ける
-
-	# ジャンプ入力チェック
-	if can_jump():
-		perform_jump()
-		return
-
-	# しゃがみ入力チェック
-	if is_squat_input() and player.is_on_floor():
-		player.update_animation_state("SQUAT")
-		return
-
-	# 攻撃入力チェック
-	if is_fight_input():
-		player.update_animation_state("FIGHTING")
-		return
-
-	# 射撃入力チェック
-	if is_shooting_input():
-		player.update_animation_state("SHOOTING")
+	# 共通入力処理（ジャンプ、しゃがみ、攻撃、射撃）
+	if handle_common_inputs():
 		return
 
 	# 移動入力処理
@@ -54,7 +32,5 @@ func handle_movement_input(delta: float) -> void:
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:
-	# 地面にいない場合はFALL状態に遷移
-	if not player.is_on_floor():
-		apply_gravity(delta)
-		player.update_animation_state("FALL")
+	# 地面チェック処理（共通メソッド使用）
+	handle_ground_physics(delta)
