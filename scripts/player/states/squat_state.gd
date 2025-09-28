@@ -11,6 +11,19 @@ func cleanup_state() -> void:
 	# 状態終了時のクリーンアップ（現在は特になし）
 	pass
 
+## 入力処理（SQUAT状態固有）
+func handle_input(delta: float) -> void:
+	# しゃがみ状態では移動入力のみ受け付ける（方向転換のため）
+	var movement_input: float = get_movement_input()
+	if movement_input != 0.0:
+		update_sprite_direction(movement_input)
+
+	# ジャンプ入力は無視（しゃがみ状態からはジャンプできない）
+	# 攻撃・射撃入力も現在は無視（必要に応じて後で実装）
+
+	# しゃがみボタンが離された場合の状態遷移はphysics_updateで処理
+
+
 ## SQUAT状態での物理更新処理
 func physics_update(delta: float) -> void:
 	# 地面にいない場合はFALL状態に遷移（制約に従い、これは遷移できない）

@@ -26,6 +26,27 @@ func initialize_state() -> void:
 func cleanup_state() -> void:
 	end_fighting()
 
+## 入力処理（FIGHTING状態固有）
+func handle_input(delta: float) -> void:
+	# 攻撃中は移動入力のみ受け付ける（方向転換のため）
+	var movement_input: float = get_movement_input()
+	if movement_input != 0.0:
+		update_sprite_direction(movement_input)
+
+	# 他の入力は攻撃中は無視
+
+## 物理演算処理
+func physics_update(delta: float) -> void:
+	# 攻撃タイマー更新
+	if not update_fighting_timer(delta):
+		# 攻撃終了時は状態遷移
+		transition_to_appropriate_state()
+
+	# 重力適用（空中攻撃の場合）
+	if not player.is_on_floor():
+		apply_gravity(delta)
+
+
 # ======================== 戦闘状態制御メソッド ========================
 ## 戦闘タイマー更新（player.gdから呼び出し）
 func update_fighting_timer(delta: float) -> bool:

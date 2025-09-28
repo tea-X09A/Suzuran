@@ -30,6 +30,38 @@ func cleanup_state() -> void:
 	# 各Stateで実装: AnimationTree状態終了時の処理
 	pass
 
+## 物理演算ステップでの更新処理
+func physics_update(delta: float) -> void:
+	# 各Stateで実装: 状態固有の物理演算処理
+	pass
+
+# ======================== 入力処理メソッド ========================
+
+## 入力処理のメイン関数（各ステートで実装）
+func handle_input(delta: float) -> void:
+	# 各Stateで実装: 状態固有の入力処理
+	pass
+
+## ジャンプ入力チェック（基本実装、各ステートでオーバーライド可能）
+func can_jump() -> bool:
+	return player.is_on_floor() and Input.is_action_just_pressed("jump")
+
+## しゃがみ入力チェック
+func is_squat_input() -> bool:
+	return Input.is_action_pressed("squat")
+
+## 攻撃入力チェック
+func is_fight_input() -> bool:
+	return Input.is_action_just_pressed("fight") or Input.is_action_just_pressed("fighting_01")
+
+## 射撃入力チェック
+func is_shooting_input() -> bool:
+	return Input.is_action_just_pressed("shooting") or Input.is_action_just_pressed("shooting_01")
+
+## ダッシュ入力チェック
+func is_dash_input() -> bool:
+	return Input.is_action_pressed("run_left") or Input.is_action_pressed("run_right")
+
 # ======================== 共通ユーティリティメソッド ========================
 ## パラメータ取得
 func get_parameter(key: String) -> Variant:
@@ -64,3 +96,52 @@ func get_movement_input() -> float:
 func update_sprite_direction(direction: float) -> void:
 	if direction != 0.0 and sprite_2d:
 		sprite_2d.flip_h = direction > 0.0
+
+## 重力の適用
+func apply_gravity(delta: float) -> void:
+	if player and not player.is_on_floor():
+		var effective_gravity: float = player.GRAVITY * get_parameter("jump_gravity_scale")
+		player.velocity.y = min(player.velocity.y + effective_gravity * delta, get_parameter("jump_max_fall_speed"))
+
+## 摩擦の適用
+func apply_friction(delta: float) -> void:
+	if player:
+		var friction: float = 1000.0
+		player.velocity.x = move_toward(player.velocity.x, 0, friction * delta)
+
+## 移動処理
+func apply_movement(direction: float, speed: float) -> void:
+	if player:
+		player.velocity.x = direction * speed
+		update_sprite_direction(direction)
+
+## ジャンプ処理
+func perform_jump() -> void:
+	if player:
+		var jump_force: float = get_parameter("jump_force")
+		player.velocity.y = -jump_force
+		player.update_animation_state("JUMP")
+
+## 現在の状況に基づいて適切な状態に遷移
+func transition_to_appropriate_state() -> void:
+	if not player:
+		return
+
+	# 空中にいる場合はFALL状態に遷移
+	if not player.is_on_floor():
+		player.update_animation_state("FALL")
+		return
+
+	# 地上にいる場合の状態判定
+	var movement_input: float = get_movement_input()
+	var is_running: bool = is_dash_input()
+
+	# 移動入力がある場合
+	if movement_input != 0.0:
+		if is_running:
+			player.update_animation_state("RUN")
+		else:
+			player.update_animation_state("WALK")
+	else:
+		# 移動入力がない場合はIDLE状態
+		player.update_animation_state("IDLE")

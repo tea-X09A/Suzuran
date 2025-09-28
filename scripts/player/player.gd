@@ -33,6 +33,20 @@ var invincibility_effect: InvincibilityEffect
 # 重力加速度（プロジェクト設定から取得）
 var GRAVITY: float
 
+# ======================== プレイヤー状態変数 ========================
+
+# 現在の向き（1.0: 右、-1.0: 左）
+var direction_x: float = 1.0
+# ジャンプ時の水平速度を無視するフラグ
+var ignore_jump_horizontal_velocity: bool = false
+
+# ======================== ステート管理システム ========================
+
+# ステートインスタンス辞書
+var state_instances: Dictionary = {}
+# 現在のアクティブステート
+var current_state: BaseState
+
 # ======================== 初期化処理 ========================
 
 ## プレイヤーの初期化（ノード準備完了時）
@@ -48,6 +62,8 @@ func _initialize_systems() -> void:
 	invincibility_effect = InvincibilityEffect.new(self, condition)
 	# アニメーションツリーの初期化
 	_initialize_animation_system()
+	# ステート管理システムの初期化
+	_initialize_state_system()
 
 ## アニメーションシステムの初期化
 func _initialize_animation_system() -> void:
@@ -58,17 +74,43 @@ func _initialize_animation_system() -> void:
 	if state_machine:
 		state_machine.start("IDLE")
 
+## ステート管理システムの初期化
+func _initialize_state_system() -> void:
+	# 全ステートインスタンスを作成
+	state_instances["IDLE"] = IdleState.new(self)
+	state_instances["WALK"] = WalkState.new(self)
+	state_instances["RUN"] = RunState.new(self)
+	state_instances["JUMP"] = JumpState.new(self)
+	state_instances["FALL"] = FallState.new(self)
+	state_instances["SQUAT"] = SquatState.new(self)
+	state_instances["FIGHTING"] = FightingState.new(self)
+	state_instances["SHOOTING"] = ShootingState.new(self)
+	state_instances["DOWN"] = DownState.new(self)
+
+	# 初期状態をIDLEに設定
+	current_state = state_instances["IDLE"]
+
 # ======================== メイン処理ループ ========================
 
 ## 物理演算ステップごとの更新処理（移動・物理系）
 func _physics_process(delta: float) -> void:
-	handle_input(delta)
-	apply_gravity(delta)
+	# 現在のステートに入力処理を移譲
+	if current_state:
+		current_state.handle_input(delta)
+		current_state.physics_update(delta)
+	else:
+		# フォールバック: ステートが存在しない場合の旧来の処理
+		handle_input(delta)
+		apply_gravity(delta)
+
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
 
-## 入力処理
+## 入力処理（フォールバック用）
 func handle_input(delta: float) -> void:
+	# 注意: このメソッドは新しいステート管理システムが動作しない場合のフォールバック用
+	# 通常は各ステートのhandle_input()が使用される
+
 	# 基本移動入力（歩き）
 	var input_direction_x: float = Input.get_axis("left", "right")
 
@@ -86,14 +128,12 @@ func handle_input(delta: float) -> void:
 	# 攻撃入力チェック
 	if Input.is_action_just_pressed("fight") or Input.is_action_just_pressed("fighting_01"):
 		handle_fight_input()
-	elif Input.is_action_just_pressed("fighting_02"):
-		handle_fight_input_02()
 
 	# 射撃入力チェック
 	if Input.is_action_just_pressed("shooting") or Input.is_action_just_pressed("shooting_01"):
 		handle_shooting_input()
 
-	# 移動処理
+	# 移動処理（deltaは摩擦計算などで使用される）
 	handle_movement_input(input_direction_x, is_running, delta)
 
 ## 移動入力処理
@@ -115,23 +155,22 @@ func handle_movement_input(input_direction_x: float, is_running: bool, delta: fl
 		var friction: float = 1000.0
 		velocity.x = move_toward(velocity.x, 0, friction * delta)
 
-## ジャンプ入力処理
+## ジャンプ入力処理（フォールバック用）
 func handle_jump_input() -> void:
+	# 注意: 通常は各ステートのperform_jump()が使用される
 	var jump_force: float = PlayerParameters.get_parameter(condition, "jump_force")
 	velocity.y = -jump_force
 	update_animation_state("JUMP")
 
-
-## 攻撃入力処理
+## 攻撃入力処理（フォールバック用）
 func handle_fight_input() -> void:
+	# 注意: 通常は各ステートで攻撃入力をチェックして遷移する
 	update_animation_state("FIGHTING")
 
-## 攻撃入力処理2
-func handle_fight_input_02() -> void:
-	update_animation_state("FIGHTING")
 
-## 射撃入力処理
+## 射撃入力処理（フォールバック用）
 func handle_shooting_input() -> void:
+	# 注意: 通常は各ステートで射撃入力をチェックして遷移する
 	update_animation_state("SHOOTING")
 
 ## アニメーション状態更新
@@ -141,6 +180,19 @@ func update_animation_state(state_name: String) -> void:
 		state_machine.travel(state_name)
 	# 状態変更時にhurtboxとhitboxを初期化
 	initialize_collision_for_state(state_name)
+	# 現在のステートインスタンスを更新
+	_update_current_state(state_name)
+
+## 現在のステートインスタンスを更新
+func _update_current_state(state_name: String) -> void:
+	if state_instances.has(state_name):
+		var new_state: BaseState = state_instances[state_name]
+		# 前のステートのクリーンアップ
+		if current_state:
+			current_state.cleanup_state()
+		# 新しいステートに変更
+		current_state = new_state
+		current_state.initialize_state()
 
 ## 重力適用
 func apply_gravity(delta: float) -> void:
@@ -152,6 +204,7 @@ func apply_gravity(delta: float) -> void:
 func update_sprite_direction(input_direction_x: float) -> void:
 	if input_direction_x != 0.0:
 		sprite_2d.flip_h = input_direction_x > 0.0
+		direction_x = input_direction_x
 
 
 # ======================== プロパティアクセサ ========================
@@ -175,6 +228,7 @@ func get_animation_player() -> AnimationPlayer:
 ## アニメーションツリーを取得
 func get_animation_tree() -> AnimationTree:
 	return animation_tree
+
 
 # ======================== コリジョン管理 ========================
 

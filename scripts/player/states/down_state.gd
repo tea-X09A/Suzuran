@@ -24,10 +24,37 @@ var current_animation_type: String = ""
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
+	pass
 
 ## AnimationTree状態終了時の処理
 func cleanup_state() -> void:
 	is_down = false
+
+## 入力処理（DOWN状態固有）
+func handle_input(delta: float) -> void:
+	# ダウン状態では復帰ジャンプのみ受け付ける
+	try_recovery_jump()
+
+	# ダウン中の移動処理
+	handle_down_movement(delta)
+
+	# 他の入力は無視
+
+## 物理演算処理
+func physics_update(delta: float) -> void:
+	# ダウン状態更新
+	if not update_down_state(delta):
+		# ダウン終了時は状態遷移
+		transition_to_appropriate_state()
+
+	# 重力適用
+	if not player.is_on_floor():
+		apply_gravity(delta)
+
+
+## ジャンプ入力チェック（DOWN状態では復帰ジャンプのみ）
+func can_jump() -> bool:
+	return is_in_knockback_state() or is_in_knockback_landing_state()
 
 # ======================== ダメージ処理 ========================
 

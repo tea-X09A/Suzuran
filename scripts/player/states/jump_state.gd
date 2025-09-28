@@ -25,6 +25,33 @@ func cleanup_state() -> void:
 	is_jumping = false
 	jump_hold_timer = 0.0
 
+## 入力処理（JUMP状態固有）
+func handle_input(delta: float) -> void:
+	# 空中での移動入力
+	handle_air_movement()
+
+	# 攻撃・射撃入力は空中でも受け付ける
+	if is_fight_input():
+		player.update_animation_state("FIGHTING")
+		return
+
+	if is_shooting_input():
+		player.update_animation_state("SHOOTING")
+		return
+
+## 物理演算処理
+func physics_update(delta: float) -> void:
+	# ジャンプ長押し処理
+	apply_variable_jump(delta)
+
+	# 重力適用
+	apply_gravity(delta)
+
+	# 落下状態チェック
+	if player.velocity.y > 0:
+		player.update_animation_state("FALL")
+
+
 # ======================== ジャンプ処理メソッド ========================
 ## 基本ジャンプ処理
 func handle_jump() -> void:

@@ -29,7 +29,6 @@ static var PARAMETERS: Dictionary = {
 
 		# ======================== 射撃パラメータ ========================
 		"shooting_kunai_speed": 500.0,      # クナイの飛行速度（ピクセル/秒）
-		"shooting_cooldown": 0.3,           # 射撃のクールダウン時間（秒）
 		"shooting_animation_duration": 0.5, # 射撃アニメーションの持続時間（秒）
 		"shooting_offset_x": 40.0,          # 射撃位置のX方向オフセット（ピクセル）
 
@@ -72,7 +71,6 @@ static var PARAMETERS: Dictionary = {
 
 		# ======================== 射撃パラメータ（強化版） ========================
 		"shooting_kunai_speed": 650.0,      # クナイの飛行速度（500.0 * 1.3）（ピクセル/秒）
-		"shooting_cooldown": 0.21,          # 射撃のクールダウン時間（0.3 * 0.7）（秒）
 		"shooting_animation_duration": 0.5, # 射撃アニメーションの持続時間（変更なし）（秒）
 		"shooting_offset_x": 40.0,          # 射撃位置のX方向オフセット（変更なし）（ピクセル）
 
@@ -147,7 +145,6 @@ static func get_shooting_parameters(condition: Player.PLAYER_CONDITION) -> Dicti
 	# 射撃に関連するパラメータのみを抽出
 	var shooting_keys: Array[String] = [
 		"shooting_kunai_speed",
-		"shooting_cooldown",
 		"shooting_animation_duration",
 		"shooting_offset_x"
 	]

@@ -25,10 +25,33 @@ func cleanup_state() -> void:
 	shooting_timer = 0.0
 	shooting_grounded = false
 
+## 入力処理（SHOOTING状態固有）
+func handle_input(delta: float) -> void:
+	# 射撃中は移動入力のみ受け付ける（方向転換のため）
+	var movement_input: float = get_movement_input()
+	if movement_input != 0.0:
+		update_sprite_direction(movement_input)
+
+	# バックジャンプ射撃のチェック
+	try_back_jump_shooting()
+
+	# 他の入力は射撃中は無視
+
+## 物理演算処理
+func physics_update(delta: float) -> void:
+	# 射撃タイマー更新
+	if not update_shooting_state(delta):
+		# 射撃終了時は状態遷移
+		transition_to_appropriate_state()
+
+	# 重力適用（空中射撃の場合）
+	if not player.is_on_floor():
+		apply_gravity(delta)
+
+
 # ======================== 射撃処理 ========================
 
 func handle_shooting() -> void:
-	player.set_shooting_cooldown(get_parameter("shooting_cooldown"))
 	shooting_timer = get_parameter("shooting_animation_duration")
 	shooting_grounded = player.is_on_floor()
 
@@ -59,10 +82,7 @@ func handle_back_jump_shooting() -> void:
 	player.velocity.y = -get_parameter("jump_force")
 	player.velocity.x = back_velocity
 
-	# バックジャンプの水平速度を保護（着地時に自動的にfalseになる）
-	player.ignore_jump_horizontal_velocity = true
 
-	player.set_shooting_cooldown(get_parameter("shooting_cooldown"))
 	shooting_timer = get_parameter("shooting_animation_duration")
 
 	spawn_kunai()
