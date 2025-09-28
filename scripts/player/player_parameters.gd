@@ -16,8 +16,8 @@ static var PARAMETERS: Dictionary = {
 		"move_run_speed": 350.0,            # 走行速度（ピクセル/秒）
 
 		# ======================== ジャンプパラメータ ========================
-		"jump_force": 380.0,                # ジャンプ初期力（ピクセル/秒）
-		"jump_vertical_bonus": 80.0,        # 走行時のジャンプ力ボーナス（ピクセル/秒）
+		"jump_force": 500.0,                # ジャンプ初期力（ピクセル/秒）
+		"jump_vertical_bonus": 120.0,        # 走行時のジャンプ力ボーナス（ピクセル/秒）
 		"jump_max_fall_speed": 500.0,       # 最大落下速度（ピクセル/秒）
 		"jump_gravity_scale": 1.5,          # 重力スケール倍率
 		"jump_hold_vertical_bonus": 1000.0, # ジャンプ長押し時の上昇力（ピクセル/秒²）
