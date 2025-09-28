@@ -4,6 +4,11 @@ extends BaseState
 
 ## 入力処理（WALK状態固有）
 func handle_input(delta: float) -> void:
+	# 最優先でダッシュ入力をチェック（早期リターンパターン）
+	if _check_priority_dash_input():
+		player.update_animation_state("RUN")
+		return
+
 	# 共通入力処理（ジャンプ、しゃがみ、攻撃、射撃）
 	if handle_common_inputs():
 		return
@@ -28,6 +33,11 @@ func handle_movement_input(delta: float) -> void:
 		# 移動入力がない場合はIDLEに遷移
 		apply_friction(delta)
 		player.update_animation_state("IDLE")
+
+## 優先ダッシュ入力チェック（タイムラグ解消用）
+func _check_priority_dash_input() -> bool:
+	# 移動入力があり、かつダッシュ入力がある場合のみtrue
+	return get_movement_input() != 0.0 and is_dash_input()
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:

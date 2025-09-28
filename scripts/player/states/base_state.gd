@@ -58,9 +58,22 @@ func is_fight_input() -> bool:
 func is_shooting_input() -> bool:
 	return Input.is_action_just_pressed("shooting") or Input.is_action_just_pressed("shooting_01")
 
-## ダッシュ入力チェック
+## ダッシュ入力チェック（物理キー検出版：確実な動作）
 func is_dash_input() -> bool:
-	return Input.is_action_pressed("run_left") or Input.is_action_pressed("run_right")
+	# 物理キーレベルでShiftキーを検出
+	var shift_pressed: bool = Input.is_physical_key_pressed(KEY_SHIFT)
+
+	# 方向キーの状態を検出
+	var d_pressed: bool = Input.is_physical_key_pressed(KEY_D)
+	var a_pressed: bool = Input.is_physical_key_pressed(KEY_A)
+	var right_arrow_pressed: bool = Input.is_physical_key_pressed(KEY_RIGHT)
+	var left_arrow_pressed: bool = Input.is_physical_key_pressed(KEY_LEFT)
+
+	# ダッシュ入力の組み合わせ判定
+	var run_right: bool = shift_pressed and (d_pressed or right_arrow_pressed)
+	var run_left: bool = shift_pressed and (a_pressed or left_arrow_pressed)
+
+	return run_left or run_right
 
 # ======================== 共通ユーティリティメソッド ========================
 ## パラメータ取得
@@ -88,9 +101,28 @@ func get_current_state_name() -> String:
 func is_running_state() -> bool:
 	return get_current_state_name() == "RUN"
 
-## 移動入力を取得
+## 移動入力を取得（物理キー検出版）
 func get_movement_input() -> float:
-	return Input.get_axis("left", "right")
+	# 物理キーレベルで方向キーを検出
+	var d_pressed: bool = Input.is_physical_key_pressed(KEY_D)
+	var a_pressed: bool = Input.is_physical_key_pressed(KEY_A)
+	var right_arrow_pressed: bool = Input.is_physical_key_pressed(KEY_RIGHT)
+	var left_arrow_pressed: bool = Input.is_physical_key_pressed(KEY_LEFT)
+
+	# アクションベースの検出も併用（フォールバック）
+	var left_action: bool = Input.is_action_pressed("left")
+	var right_action: bool = Input.is_action_pressed("right")
+
+	# 移動方向の判定（物理キー優先、アクション補完）
+	var left_input: bool = a_pressed or left_arrow_pressed or left_action
+	var right_input: bool = d_pressed or right_arrow_pressed or right_action
+
+	if right_input and not left_input:
+		return 1.0
+	elif left_input and not right_input:
+		return -1.0
+	else:
+		return 0.0
 
 ## スプライト方向を更新
 func update_sprite_direction(direction: float) -> void:
