@@ -1,7 +1,6 @@
 class_name IdleState
 extends BaseState
 
-
 ## 入力処理（IDLE状態固有）
 func handle_input(delta: float) -> void:
 	# 共通入力処理（ジャンプ、しゃがみ、攻撃、射撃）

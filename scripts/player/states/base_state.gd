@@ -204,3 +204,34 @@ func handle_action_end_transition() -> void:
 		else:
 			player.update_animation_state("IDLE")
 
+## 共通移動入力処理（walk, run状態で共通）
+func handle_movement_input_common(current_state: String, delta: float) -> void:
+	var movement_input: float = get_movement_input()
+	if movement_input != 0.0:
+		var is_running: bool = is_dash_input()
+		var speed_key: String = "move_walk_speed" if current_state == "WALK" else "move_run_speed"
+		var speed: float = get_parameter(speed_key)
+
+		# 状態遷移判定
+		if current_state == "WALK" and is_running:
+			player.update_animation_state("RUN")
+			return
+		elif current_state == "RUN" and not is_running:
+			player.update_animation_state("WALK")
+			return
+
+		apply_movement(movement_input, speed)
+	else:
+		# 移動入力がない場合はIDLEに遷移
+		apply_friction(delta)
+		player.update_animation_state("IDLE")
+
+## 共通入力処理（walk, run状態で共通）
+func handle_movement_state_input(current_state: String, delta: float) -> void:
+	# 共通入力処理（ジャンプ、しゃがみ、攻撃、射撃）
+	if handle_common_inputs():
+		return
+
+	# 移動入力処理
+	handle_movement_input_common(current_state, delta)
+
