@@ -150,8 +150,9 @@ func apply_movement(direction: float, speed: float) -> void:
 ## ジャンプ処理
 func perform_jump() -> void:
 	if player:
-		# 初速300で上昇開始
-		player.velocity.y = -300.0
+		# パラメータから初速を取得し、垂直方向の速度のみを設定
+		# 水平方向の速度（velocity.x）は保持されるため、走行中のジャンプに慣性が乗る
+		player.velocity.y = get_parameter("jump_initial_velocity")
 		player.update_animation_state("JUMP")
 
 # ======================== 重複処理統合メソッド ========================
