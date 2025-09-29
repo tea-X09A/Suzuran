@@ -15,17 +15,6 @@ static var PARAMETERS: Dictionary = {
 		"move_walk_speed": 150.0,           # 歩行速度（ピクセル/秒）
 		"move_run_speed": 350.0,            # 走行速度（ピクセル/秒）
 
-		# ======================== ジャンプパラメータ ========================
-		"jump_force": 500.0,                # ジャンプ初期力（ピクセル/秒）
-		"jump_vertical_bonus": 120.0,        # 走行時のジャンプ力ボーナス（ピクセル/秒）
-		"jump_max_fall_speed": 500.0,       # 最大落下速度（ピクセル/秒）
-		"jump_gravity_scale": 1.5,          # 重力スケール倍率
-		"jump_hold_vertical_bonus": 1000.0, # ジャンプ長押し時の上昇力（ピクセル/秒²）
-		"jump_hold_horizontal_bonus": 100.0,# ジャンプ長押し時の水平追加力（ピクセル/秒²）
-
-		# ======================== 空中制御パラメータ ========================
-		"air_control_strength": 0.3,        # 空中での方向転換強度（0.0-1.0）
-		"air_friction": 0.98,               # 空中での摩擦係数（0.0-1.0）
 
 		# ======================== 射撃パラメータ ========================
 		"shooting_kunai_speed": 500.0,      # クナイの飛行速度（ピクセル/秒）
@@ -57,17 +46,6 @@ static var PARAMETERS: Dictionary = {
 		"move_walk_speed": 180.0,           # 歩行速度（150.0 * 1.2）（ピクセル/秒）
 		"move_run_speed": 455.0,            # 走行速度（350.0 * 1.3）（ピクセル/秒）
 
-		# ======================== ジャンプパラメータ（強化版） ========================
-		"jump_force": 437.0,                # ジャンプ初期力（380.0 * 1.15）（ピクセル/秒）
-		"jump_vertical_bonus": 92.0,        # 走行時のジャンプ力ボーナス（80.0 * 1.15）（ピクセル/秒）
-		"jump_max_fall_speed": 400.0,       # 最大落下速度（500.0 * 0.8）（ピクセル/秒）
-		"jump_gravity_scale": 1.2,          # 重力スケール倍率（1.5 * 0.8）
-		"jump_hold_vertical_bonus": 800.0,  # ジャンプ長押し時の上昇力（1000.0 * 0.8）（ピクセル/秒²）
-		"jump_hold_horizontal_bonus": 100.0,# ジャンプ長押し時の水平追加力（変更なし）（ピクセル/秒²）
-
-		# ======================== 空中制御パラメータ（強化版） ========================
-		"air_control_strength": 0.35,       # 空中での方向転換強度（0.3 * 1.17）（0.0-1.0）
-		"air_friction": 0.98,               # 空中での摩擦係数（変更なし）（0.0-1.0）
 
 		# ======================== 射撃パラメータ（強化版） ========================
 		"shooting_kunai_speed": 650.0,      # クナイの飛行速度（500.0 * 1.3）（ピクセル/秒）
@@ -120,14 +98,6 @@ static func get_movement_parameters(condition: Player.PLAYER_CONDITION) -> Dicti
 	var movement_keys: Array[String] = [
 		"move_walk_speed",
 		"move_run_speed",
-		"jump_force",
-		"jump_vertical_bonus",
-		"jump_max_fall_speed",
-		"jump_gravity_scale",
-		"jump_hold_vertical_bonus",
-		"jump_hold_horizontal_bonus",
-		"air_control_strength",
-		"air_friction",
 		"animation_prefix"
 	]
 
