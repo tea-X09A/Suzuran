@@ -22,6 +22,8 @@ static var PARAMETERS: Dictionary = {
 		"jump_hold_acceleration": -1000.0,  # 長押し時の加速度（ピクセル/秒²）
 		"jump_gravity_scale": 1.3,          # ジャンプ時の重力スケール
 		"jump_max_fall_speed": 800.0,       # 最大落下速度（ピクセル/秒）
+		"landing_speed_retention": 0.3,     # 着地時の速度保持率（0.3 = 30%保持、70%減衰）
+		"landing_speed_threshold": 200.0,   # 着地時の速度減衰を適用する最小速度（ピクセル/秒）
 
 		# ======================== 射撃パラメータ ========================
 		"shooting_kunai_speed": 500.0,      # クナイの飛行速度（ピクセル/秒）
@@ -60,6 +62,8 @@ static var PARAMETERS: Dictionary = {
 		"jump_hold_acceleration": -1200.0,  # 長押し時の加速度（-1000.0 * 1.2）（ピクセル/秒²）
 		"jump_gravity_scale": 0.9,          # ジャンプ時の重力スケール（1.0 * 0.9）
 		"jump_max_fall_speed": 900.0,       # 最大落下速度（800.0 * 1.125）（ピクセル/秒）
+		"landing_speed_retention": 0.3,     # 着地時の速度保持率（0.3 = 30%保持、70%減衰）
+		"landing_speed_threshold": 200.0,   # 着地時の速度減衰を適用する最小速度（ピクセル/秒）
 
 		# ======================== 射撃パラメータ（強化版） ========================
 		"shooting_kunai_speed": 650.0,      # クナイの飛行速度（500.0 * 1.3）（ピクセル/秒）

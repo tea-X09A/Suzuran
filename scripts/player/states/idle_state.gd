@@ -1,6 +1,14 @@
 class_name IdleState
 extends BaseState
 
+## AnimationTree状態開始時の処理
+func initialize_state() -> void:
+	# 着地時の慣性を抑制（高速移動からの着地時のみ）
+	var threshold: float = get_parameter("landing_speed_threshold")
+	if abs(player.velocity.x) > threshold:
+		var retention: float = get_parameter("landing_speed_retention")
+		player.velocity.x *= retention
+
 ## 入力処理（IDLE状態固有）
 func handle_input(delta: float) -> void:
 	# 共通入力処理（ジャンプ、しゃがみ、攻撃、射撃）

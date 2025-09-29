@@ -8,7 +8,6 @@ var initial_horizontal_speed: float = 0.0
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
-	# ジャンプ開始時刻を記録
 	jump_start_time = Time.get_ticks_msec() / 1000.0
 	# ジャンプ開始時の水平速度を記憶（run/walkの速度を維持）
 	initial_horizontal_speed = abs(player.velocity.x)
