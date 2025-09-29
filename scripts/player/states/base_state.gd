@@ -147,11 +147,11 @@ func apply_movement(direction: float, speed: float) -> void:
 		player.velocity.x = direction * speed
 		update_sprite_direction(direction)
 
-## ジャンプ処理
+## ジャンプ処理（初速300で開始）
 func perform_jump() -> void:
 	if player:
-		var jump_force: float = get_parameter("jump_force")
-		player.velocity.y = -jump_force
+		# 初速300で上昇開始
+		player.velocity.y = -300.0
 		player.update_animation_state("JUMP")
 
 # ======================== 重複処理統合メソッド ========================
@@ -234,4 +234,3 @@ func handle_movement_state_input(current_state: String, delta: float) -> void:
 
 	# 移動入力処理
 	handle_movement_input_common(current_state, delta)
-
