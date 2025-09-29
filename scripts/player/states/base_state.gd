@@ -147,7 +147,7 @@ func apply_movement(direction: float, speed: float) -> void:
 		player.velocity.x = direction * speed
 		update_sprite_direction(direction)
 
-## ジャンプ処理（初速300で開始）
+## ジャンプ処理
 func perform_jump() -> void:
 	if player:
 		# 初速300で上昇開始
