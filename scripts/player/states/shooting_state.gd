@@ -41,6 +41,10 @@ func handle_input(_delta: float) -> void:
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:
+	# 地上shooting_01の場合は慣性を止める（その場で足を止めて攻撃）
+	if player.is_on_floor() and not is_shooting_02:
+		player.velocity.x = 0.0
+
 	# 重力適用
 	if not player.is_on_floor():
 		apply_gravity(delta)
