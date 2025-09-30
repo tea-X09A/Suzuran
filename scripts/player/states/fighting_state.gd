@@ -20,6 +20,15 @@ func initialize_state() -> void:
 	fighting_timer = get_parameter("move_fighting_duration")
 	started_airborne = not player.is_on_floor()  # 開始時の空中状態を記録
 
+	# 前進速度の設定（idle/walk時は同じ速度、run時はボーナス付き）
+	if not started_airborne:  # 地上でのfighting時のみ前進
+		var forward_speed: float = get_parameter("move_fighting_initial_speed")
+		# 前の状態がRUNだった場合はボーナス速度を追加
+		if is_running_state():
+			forward_speed += get_parameter("move_fighting_run_bonus")
+		# 現在の向きに応じて前進
+		player.velocity.x = player.direction_x * forward_speed
+
 	# アニメーション完了シグナルの接続（重複接続を防止）
 	if animation_player and not animation_player.animation_finished.is_connected(_on_fighting_animation_finished):
 		animation_player.animation_finished.connect(_on_fighting_animation_finished)
@@ -52,6 +61,12 @@ func physics_update(delta: float) -> void:
 		_transition_on_landing()
 		return
 
+	# 地上fighting時に壁に衝突した場合、アニメーションをキャンセル
+	if not started_airborne and player.is_on_floor() and player.is_on_wall():
+		end_fighting()
+		handle_action_end_transition()
+		return
+
 	# 通常の攻撃終了処理
 	if not update_fighting_timer(delta):
 		handle_action_end_transition()
@@ -77,7 +92,7 @@ func _transition_on_landing() -> void:
 
 ## 戦闘タイマー更新
 func update_fighting_timer(delta: float) -> bool:
-	if not get_parameter("fighting_enabled") or not is_fighting_active:
+	if not is_fighting_active:
 		return false
 
 	if fighting_timer > 0.0:
@@ -102,8 +117,4 @@ func end_fighting() -> void:
 
 ## アニメーション完了時のコールバック
 func _on_fighting_animation_finished() -> void:
-	# 攻撃が有効でない場合は何もしない
-	if not get_parameter("fighting_enabled"):
-		return
-
 	end_fighting()
