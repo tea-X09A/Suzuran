@@ -5,28 +5,11 @@ extends StaticBody2D
 @onready var hitbox: Area2D = $Hitbox
 # 視覚化制御への参照
 @onready var visibility_enabler: VisibleOnScreenEnabler2D = $VisibleOnScreenEnabler2D
-# プレイヤーの状態（プレイヤーの現在状態に基づいてパラメータを調整）
-var target_condition: Player.PLAYER_CONDITION = Player.PLAYER_CONDITION.NORMAL
 
-# パラメータの定義 - target_conditionに応じて選択される
-var trap_parameters: Dictionary = {
-	Player.PLAYER_CONDITION.NORMAL: {
-		"damage": 10,                           # プレイヤーに与えるダメージ量（整数値）
-		"animation_type": "down",            # 再生するダメージアニメーションの種類
-		"knockback_force": 300.0,               # プレイヤーをノックバックさせる力の強さ（ピクセル/秒）
-		"damage_cooldown": 0.5,                 # ダメージ実行のクールダウン時間（秒）
-		"log_prefix": "",                       # ログ出力のプレフィックス文字列
-		"effect_multiplier": 1.0                # 効果の倍率
-	},
-	Player.PLAYER_CONDITION.EXPANSION: {
-		"damage": 12,                           # プレイヤーに与えるダメージ量（10 * 1.2）
-		"animation_type": "down",            # 再生するダメージアニメーションの種類
-		"knockback_force": 360.0,               # プレイヤーをノックバックさせる力の強さ（300.0 * 1.2）
-		"damage_cooldown": 0.6,                 # ダメージ実行のクールダウン時間（0.5 * 1.2）
-		"log_prefix": "Expansion",              # ログ出力のプレフィックス文字列
-		"effect_multiplier": 1.2                # 効果の倍率
-	}
-}
+# トラップパラメータ
+var damage: int = 10
+var knockback_force: float = 300.0
+var damage_cooldown: float = 0.5
 
 # 処理が有効かどうかのフラグ
 var processing_enabled: bool = false
@@ -42,9 +25,6 @@ func _ready() -> void:
 		visibility_enabler.screen_entered.connect(_on_screen_entered)
 		visibility_enabler.screen_exited.connect(_on_screen_exited)
 
-func get_parameter(key: String) -> Variant:
-	return trap_parameters[target_condition][key]
-
 func _physics_process(_delta: float) -> void:
 	if not processing_enabled:
 		return
@@ -57,7 +37,7 @@ func check_player_collision() -> void:
 
 	# クールダウン中は処理しない
 	var current_time: float = Time.get_unix_time_from_system()
-	if current_time - last_damage_time < get_parameter("damage_cooldown"):
+	if current_time - last_damage_time < damage_cooldown:
 		return
 
 	# プレイヤーとの重なりをチェック
@@ -65,56 +45,33 @@ func check_player_collision() -> void:
 
 	for body in overlapping_bodies:
 		if body.is_in_group("player"):
-			# damaged状態ではトラップの検知を無効化
-			# TODO: Player.PLAYER_STATE.DAMAGEDが未定義のため、一時的にコメントアウト
-			# if body.state == Player.PLAYER_STATE.DAMAGED:
-			#	continue
 			apply_damage_to_player(body)
 			last_damage_time = current_time
 			break
 
 func apply_damage_to_player(player: Node2D) -> void:
-	# プレイヤーの現在状態を取得してパラメータを調整
-	if player.has_method("get_condition"):
-		target_condition = player.get_condition()
+	# プレイヤーにdownアニメーションを実行
+	if player.has_method("update_animation_state"):
+		player.update_animation_state("DOWN")
 
-	# プレイヤーの無敵状態をチェック
-	# TODO: get_current_damaged()が未実装のため、一時的にコメントアウト
-	# var damaged_module: DamagedState = player.get_current_damaged()
-	# if damaged_module != null and damaged_module.is_in_invincible_state():
-	#	return
-
-	# ノックバック方向を計算（トラップからプレイヤーへの方向）
-	var knockback_direction: Vector2 = (player.global_position - global_position).normalized()
-
-	# プレイヤーの状態を State Machine 経由で変更
-	# TODO: change_state()が未実装のため、update_animation_state()を使用
-	player.update_animation_state("DOWN")
-
-	# ダメージ処理を実行
-	var damage_value: int = get_parameter("damage")
-	var animation_type: String = get_parameter("animation_type")
-	var knockback_force: float = get_parameter("knockback_force")
-
-	# TODO: damaged_module.handle_damage()が使用不可のため、一時的にコメントアウト
-	# damaged_module.handle_damage(damage_value, animation_type, knockback_direction, knockback_force)
-
-	var log_prefix: String = get_parameter("log_prefix")
-	var prefix_text: String = (log_prefix + "トラップダメージ適用: ") if log_prefix != "" else "トラップダメージ適用: "
-	print(prefix_text, "ダメージ=", damage_value, " 力=", knockback_force)
+	print("トラップダメージ適用: ダメージ=", damage, " 力=", knockback_force)
 
 # VisibleOnScreenEnabler2Dのシグナルハンドラ
 func _on_screen_entered() -> void:
 	processing_enabled = true
+	hitbox.monitoring = true
+	print("トラップ有効化: ヒットボックス監視開始")
 
 func _on_screen_exited() -> void:
 	processing_enabled = false
+	hitbox.monitoring = false
+	print("トラップ無効化: ヒットボックス監視停止")
 
 func get_damage() -> int:
-	return get_parameter("damage")
+	return damage
 
 func get_knockback_force() -> float:
-	return get_parameter("knockback_force")
+	return knockback_force
 
 func get_effect_type() -> String:
 	return "damage"
