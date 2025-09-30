@@ -194,6 +194,9 @@ func finish_down() -> void:
 	is_recovery_invincible = true
 	recovery_invincibility_timer = get_parameter("recovery_invincibility_duration")
 
+	# 無敵エフェクトを開始
+	player.invincibility_effect.set_invincible(recovery_invincibility_timer)
+
 	down_finished.emit()
 
 func cancel_down() -> void:
@@ -245,3 +248,5 @@ func update_recovery_invincibility_timer(delta: float) -> void:
 		recovery_invincibility_timer -= delta
 		if recovery_invincibility_timer <= 0.0:
 			is_recovery_invincible = false
+			# 無敵エフェクトをクリア
+			player.invincibility_effect.clear_invincible()

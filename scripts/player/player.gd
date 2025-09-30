@@ -74,8 +74,8 @@ func _ready() -> void:
 
 ## システムコンポーネントの初期化
 func _initialize_systems() -> void:
-	# 無敵エフェクトシステムを生成（現在の変身状態を反映）
-	invincibility_effect = InvincibilityEffect.new(self, condition)
+	# 無敵エフェクトシステムを生成
+	invincibility_effect = InvincibilityEffect.new(self)
 	# アニメーションツリーの初期化
 	_initialize_animation_system()
 	# ステート管理システムの初期化
@@ -137,6 +137,9 @@ func _physics_process(delta: float) -> void:
 	var down_state: DownState = state_instances.get("DOWN") as DownState
 	if down_state:
 		down_state.update_recovery_invincibility_timer(delta)
+
+	# 無敵エフェクトを更新
+	invincibility_effect.update_invincibility_effect(delta)
 
 	# 現在のステートに入力処理を移譲
 	current_state.handle_input(delta)

@@ -4,7 +4,6 @@ extends RefCounted
 # ======================== プレイヤー参照 ========================
 
 var player: CharacterBody2D
-var condition: Player.PLAYER_CONDITION
 
 # ======================== 無敵エフェクト管理変数 ========================
 
@@ -16,9 +15,8 @@ var is_visible: bool = true
 
 # ======================== 初期化 ========================
 
-func _init(player_instance: CharacterBody2D, initial_condition: Player.PLAYER_CONDITION) -> void:
+func _init(player_instance: CharacterBody2D) -> void:
 	player = player_instance
-	condition = initial_condition
 
 # ======================== 無敵エフェクト制御 ========================
 
@@ -34,7 +32,7 @@ func clear_invincible() -> void:
 	invincibility_timer = 0.0
 	blink_timer = 0.0
 	is_visible = true
-	_update_sprite_visibility()
+	_restore_sprite_visibility()
 
 ## 無敵エフェクトの更新
 func update_invincibility_effect(delta: float) -> void:
@@ -54,12 +52,15 @@ func update_invincibility_effect(delta: float) -> void:
 		is_visible = not is_visible
 		_update_sprite_visibility()
 
-## 変身状態の更新
-func update_condition(new_condition: Player.PLAYER_CONDITION) -> void:
-	condition = new_condition
-
 # ======================== プライベートメソッド ========================
 
+## スプライトの可視性を更新（点滅エフェクト用）
 func _update_sprite_visibility() -> void:
 	if player.sprite_2d:
-		player.sprite_2d.visible = is_visible
+		# 半透明にすることで点滅効果を実現
+		player.sprite_2d.modulate.a = 0.3 if not is_visible else 1.0
+
+## スプライトの可視性を完全に復元
+func _restore_sprite_visibility() -> void:
+	if player.sprite_2d:
+		player.sprite_2d.modulate.a = 1.0
