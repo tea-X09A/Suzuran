@@ -133,16 +133,8 @@ func _physics_process(delta: float) -> void:
 	_update_squat_cancel_flag()
 
 	# 現在のステートに入力処理を移譲
-	if current_state:
-		current_state.handle_input(delta)
-		current_state.physics_update(delta)
-	else:
-		# フォールバック: ステートが存在しない場合の基本処理
-		# 注意: 通常はここは実行されません。ステートシステムの初期化に失敗した場合のみ
-		push_error("Player state system not initialized properly")
-		# 最低限の重力処理のみ適用
-		if not is_on_floor():
-			velocity.y += GRAVITY * delta
+	current_state.handle_input(delta)
+	current_state.physics_update(delta)
 
 	# Godot物理エンジンによる移動実行
 	move_and_slide()

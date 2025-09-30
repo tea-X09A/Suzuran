@@ -30,11 +30,11 @@ static var PARAMETERS: Dictionary = {
 		"shooting_animation_duration": 0.5, # 射撃アニメーションの持続時間（秒）
 		"shooting_offset_x": 40.0,          # 射撃位置のX方向オフセット（ピクセル）
 
-		# ======================== 戦闘パラメータ ========================
-		"move_fighting_initial_speed": 250.0,  # 戦闘時の初期移動速度（ピクセル/秒）
-		"move_fighting_run_bonus": 150.0,      # 戦闘時の走行ボーナス速度（ピクセル/秒）
-		"move_fighting_duration": 0.5,         # 戦闘アクションの持続時間（秒）
-		"fighting_enabled": true,              # 戦闘アクションの有効性
+		# ======================== 格闘パラメータ ========================
+		"move_fighting_initial_speed": 250.0,  # 格闘の初期移動速度（ピクセル/秒）
+		"move_fighting_run_bonus": 150.0,      # 格闘の走行ボーナス速度（ピクセル/秒）
+		"move_fighting_duration": 0.5,         # 格闘アクションの持続時間（秒）
+		"fighting_enabled": true,              # 格闘アクションの有効性
 
 		# ======================== ダメージパラメータ ========================
 		"damage_duration": 0.6,                    # ダメージアニメーションの継続時間（秒）
@@ -107,90 +107,6 @@ static func get_all_parameters(condition: Player.PLAYER_CONDITION) -> Dictionary
 	push_warning("PlayerParameters: 条件が見つかりません - condition: %s" % condition)
 	return {}
 
-## 基本移動パラメータのみを取得
-static func get_movement_parameters(condition: Player.PLAYER_CONDITION) -> Dictionary:
-	var all_params: Dictionary = get_all_parameters(condition)
-	var movement_params: Dictionary = {}
-
-	# 基本移動に関連するパラメータのみを抽出
-	var movement_keys: Array[String] = [
-		"move_walk_speed",
-		"move_run_speed",
-		"animation_prefix"
-	]
-
-	for key: String in movement_keys:
-		if all_params.has(key):
-			movement_params[key] = all_params[key]
-
-	return movement_params
-
-## 射撃パラメータのみを取得
-static func get_shooting_parameters(condition: Player.PLAYER_CONDITION) -> Dictionary:
-	var all_params: Dictionary = get_all_parameters(condition)
-	var shooting_params: Dictionary = {}
-
-	# 射撃に関連するパラメータのみを抽出
-	var shooting_keys: Array[String] = [
-		"shooting_kunai_speed",
-		"shooting_animation_duration",
-		"shooting_offset_x"
-	]
-
-	for key: String in shooting_keys:
-		if all_params.has(key):
-			shooting_params[key] = all_params[key]
-
-	return shooting_params
-
-## 戦闘パラメータのみを取得
-static func get_fighting_parameters(condition: Player.PLAYER_CONDITION) -> Dictionary:
-	var all_params: Dictionary = get_all_parameters(condition)
-	var fighting_params: Dictionary = {}
-
-	# 戦闘に関連するパラメータのみを抽出
-	var fighting_keys: Array[String] = [
-		"move_fighting_initial_speed",
-		"move_fighting_run_bonus",
-		"move_fighting_duration",
-		"fighting_enabled"
-	]
-
-	for key: String in fighting_keys:
-		if all_params.has(key):
-			fighting_params[key] = all_params[key]
-
-	return fighting_params
-
-## ダメージパラメータのみを取得
-static func get_damage_parameters(condition: Player.PLAYER_CONDITION) -> Dictionary:
-	var all_params: Dictionary = get_all_parameters(condition)
-	var damage_params: Dictionary = {}
-
-	# ダメージに関連するパラメータのみを抽出
-	var damage_keys: Array[String] = [
-		"damage_duration",
-		"knockback_vertical_force",
-		"invincibility_duration",
-		"knockback_duration",
-		"down_duration",
-		"recovery_invincibility_duration",
-		"log_prefix",
-		"knockback_multiplier"
-	]
-
-	for key: String in damage_keys:
-		if all_params.has(key):
-			damage_params[key] = all_params[key]
-
-	return damage_params
-
 ## パラメータの存在確認
 static func has_parameter(condition: Player.PLAYER_CONDITION, key: String) -> bool:
 	return PARAMETERS.has(condition) and PARAMETERS[condition].has(key)
-
-## デバッグ用：全パラメータを出力
-static func debug_print_all_parameters() -> void:
-	for condition in PARAMETERS.keys():
-		for key in PARAMETERS[condition].keys():
-			pass
