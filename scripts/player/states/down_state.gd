@@ -29,14 +29,9 @@ func cleanup_state() -> void:
 	is_down = false
 
 ## 入力処理（DOWN状態固有）
-func handle_input(delta: float) -> void:
+func handle_input(_delta: float) -> void:
 	# ダウン状態では復帰ジャンプのみ受け付ける
 	try_recovery_jump()
-
-	# ダウン中の移動処理
-	handle_down_movement(delta)
-
-	# 他の入力は無視
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:
@@ -75,42 +70,34 @@ func can_jump() -> bool:
 
 func handle_damage(_damage: int, animation_type: String, direction: Vector2, force: float) -> void:
 	is_down = true
-	# ダウン状態は State Machine で管理（is_down() メソッドで判定）
 	current_animation_type = animation_type
 	effect_type = animation_type
-	was_in_air = false  # 空中判定フラグをリセット
+	was_in_air = false
 
-	# コリジョンは地形との当たり判定のため有効のまま維持
 	down_duration_timer = get_parameter("damage_duration")
 	knockback_timer = get_parameter("knockback_duration")
 	knockback_direction = direction
 	knockback_force_value = force
 
 	# 効果タイプに応じた処理
-	if effect_type == "knockback":
-		# knockback: 緩やかなノックバック + 無敵状態付与
-		var gentle_multiplier: float = 0.5  # downの半分の力
-		player.velocity.x = direction.x * force * gentle_multiplier
-		player.velocity.y = -get_parameter("knockback_vertical_force") * 0.7  # 垂直方向も緩やか
+	var knockback_multiplier: float = get_parameter("knockback_multiplier")
+	player.velocity.x = direction.x * force * knockback_multiplier
+	player.velocity.y = -get_parameter("knockback_vertical_force")
 
-		# 無敵状態を付与
+	if effect_type == "knockback":
+		# knockback: 無敵状態付与
 		is_invincible = true
 		invincibility_timer = get_parameter("damage_duration")
 	else:
-		# down: 強いノックバック + 無敵なし
-		var knockback_multiplier: float = get_parameter("knockback_multiplier")
-		player.velocity.x = direction.x * force * knockback_multiplier
-		player.velocity.y = -get_parameter("knockback_vertical_force")
-
-		# ダウン時は無敵を付与しない
+		# down: 無敵なし
 		is_invincible = false
 		invincibility_timer = 0.0
 
 	# KNOCKBACKステートへ遷移
 	player.update_animation_state("KNOCKBACK")
 
-# ======================== ダウン状態制御（player.gdから呼び出し） ========================
-## ダウン状態更新（player.gdから呼び出し）
+# ======================== ダウン状態制御 ========================
+## ダウン状態更新
 func update_down_state(delta: float) -> bool:
 	if not is_down:
 		return false
@@ -134,12 +121,7 @@ func update_down_state(delta: float) -> bool:
 
 	return is_down
 
-## ダウン中の移動処理（player.gdから呼び出し）
-func handle_down_movement(_delta: float) -> void:
-	# ダウン中は左右入力を無効化
-	pass
-
-## ダウン状態でのジャンプ入力処理（player.gdから呼び出し）
+## ダウン状態でのジャンプ入力処理
 func try_recovery_jump() -> bool:
 	if Input.is_action_just_pressed("jump"):
 		var can_jump: bool = is_in_knockback_state() or is_in_knockback_landing_state()
@@ -161,8 +143,8 @@ func start_down_state() -> void:
 
 	# 効果タイプに応じた処理
 	if effect_type == "knockback":
-		# knockback: idle状態へ遷移
-		finish_down()
+		# knockback: 無敵時間なしでidle状態へ遷移
+		finish_down(false)
 		player.update_animation_state("IDLE")
 	else:
 		# down: down状態へ遷移
@@ -180,9 +162,8 @@ func start_down_state() -> void:
 		# DOWNステートへ遷移
 		player.update_animation_state("DOWN")
 
-func finish_down() -> void:
+func finish_down(apply_invincibility: bool = true) -> void:
 	is_down = false
-	# ダメージ状態は State Machine で管理（状態遷移で自動解除）
 	is_in_down_state = false
 	down_duration_timer = 0.0
 	knockback_timer = 0.0
@@ -190,12 +171,14 @@ func finish_down() -> void:
 	effect_type = ""  # 効果タイプをクリア
 	was_in_air = false  # 空中判定フラグをリセット
 
-	# down状態からの移行時に無敵時間を付与
-	is_recovery_invincible = true
-	recovery_invincibility_timer = get_parameter("recovery_invincibility_duration")
+	# 無敵時間を付与するかどうか
+	if apply_invincibility:
+		# down状態からの移行時に無敵時間を付与
+		is_recovery_invincible = true
+		recovery_invincibility_timer = get_parameter("recovery_invincibility_duration")
 
-	# 無敵エフェクトを開始
-	player.invincibility_effect.set_invincible(recovery_invincibility_timer)
+		# 無敵エフェクトを開始
+		player.invincibility_effect.set_invincible(recovery_invincibility_timer)
 
 	down_finished.emit()
 
@@ -234,6 +217,9 @@ func handle_recovery_jump() -> void:
 		knockback_timer = 0.0
 		knockback_direction = Vector2.ZERO
 		knockback_force_value = 0.0
+		# knockback時の無敵状態をクリア
+		is_invincible = false
+		invincibility_timer = 0.0
 		# 水平速度をリセットして垂直ジャンプにする
 		player.velocity.x = 0.0
 		# 垂直方向にジャンプ初速を設定

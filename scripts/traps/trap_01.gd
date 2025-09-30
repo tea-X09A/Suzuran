@@ -46,11 +46,16 @@ func check_player_collision() -> void:
 
 	for body in overlapping_bodies:
 		if body.is_in_group("player"):
-			apply_damage_to_player(body)
-			last_damage_time = current_time
+			# 実際にダメージを与えた場合のみタイマーを更新
+			if apply_damage_to_player(body):
+				last_damage_time = current_time
 			break
 
-func apply_damage_to_player(player: Node2D) -> void:
+func apply_damage_to_player(player: Node2D) -> bool:
+	# プレイヤーが無敵状態の場合はダメージを与えない
+	if player.has_method("is_invincible") and player.is_invincible():
+		return false
+
 	# プレイヤーにダメージを適用
 	if player.has_method("handle_trap_damage"):
 		# トラップの向きからノックバック方向を計算（プレイヤーがトラップより右にいれば右へ押す）
@@ -60,6 +65,7 @@ func apply_damage_to_player(player: Node2D) -> void:
 		player.handle_trap_damage(effect_type, direction, knockback_force)
 
 	print("トラップダメージ適用: タイプ=", effect_type, " ダメージ=", damage, " 力=", knockback_force)
+	return true
 
 # VisibleOnScreenEnabler2Dのシグナルハンドラ
 func _on_screen_entered() -> void:

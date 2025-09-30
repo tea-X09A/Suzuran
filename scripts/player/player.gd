@@ -222,10 +222,16 @@ func get_animation_tree() -> AnimationTree:
 
 # ======================== ダメージ処理 ========================
 
+## 無敵状態の確認（trapから呼び出される）
+func is_invincible() -> bool:
+	var down_state: DownState = state_instances.get("DOWN") as DownState
+	if down_state:
+		return down_state.is_in_invincible_state()
+	return false
+
 ## トラップからのダメージ処理
 func handle_trap_damage(effect_type: String, direction: Vector2, force: float) -> void:
-	# ダウン状態が無敵状態でないことを確認
 	var down_state: DownState = state_instances.get("DOWN") as DownState
-	if down_state and not down_state.is_in_invincible_state():
+	if down_state:
 		# ダメージ適用（ダメージ量は現在使用していないため0）
 		down_state.handle_damage(0, effect_type, direction, force)
