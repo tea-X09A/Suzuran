@@ -30,7 +30,12 @@ func physics_update(delta: float) -> void:
 	# 重力を適用
 	apply_gravity(delta)
 
-	# 地面に着地したらIDLE状態に遷移
+	# 地面に着地した場合の状態遷移
 	if player.is_on_floor():
-		player.update_animation_state("IDLE")
+		# squatボタンが押されていればsquat状態へ遷移
+		if is_squat_input():
+			player.squat_was_cancelled = false  # フラグをクリア
+			player.update_animation_state("SQUAT")
+		else:
+			player.update_animation_state("IDLE")
 

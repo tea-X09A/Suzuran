@@ -28,12 +28,22 @@ func cleanup_state() -> void:
 
 ## 入力処理（FIGHTING状態固有）
 func handle_input(delta: float) -> void:
-	# 攻撃中は移動入力のみ受け付ける（方向転換のため）
+	# ジャンプ入力チェック
+	if can_jump():
+		perform_jump()
+		return
+
+	# しゃがみ入力チェック（遷移用）
+	if can_transition_to_squat():
+		player.update_animation_state("SQUAT")
+		return
+
+	# 攻撃入力と射撃入力は無視（キャンセル不可）
+
+	# 移動入力のみ受け付ける（方向転換のため）
 	var movement_input: float = get_movement_input()
 	if movement_input != 0.0:
 		update_sprite_direction(movement_input)
-
-	# 他の入力は攻撃中は無視
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:

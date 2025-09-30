@@ -37,6 +37,8 @@ var GRAVITY: float
 var direction_x: float = 1.0
 # ジャンプ時の水平速度を無視するフラグ
 var ignore_jump_horizontal_velocity: bool = false
+# squat状態からキャンセルされたフラグ（squat遷移制限用）
+var squat_was_cancelled: bool = false
 
 # ======================== ステート管理システム ========================
 
@@ -92,6 +94,9 @@ func _initialize_state_system() -> void:
 
 ## 物理演算ステップごとの更新処理（移動・物理系）
 func _physics_process(delta: float) -> void:
+	# squat状態キャンセルフラグの管理
+	_update_squat_cancel_flag()
+
 	# 現在のステートに入力処理を移譲
 	if current_state:
 		current_state.handle_input(delta)
@@ -106,6 +111,12 @@ func _physics_process(delta: float) -> void:
 
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
+
+## squat状態キャンセルフラグの更新
+func _update_squat_cancel_flag() -> void:
+	# squatボタンが離されたらフラグをクリア
+	if squat_was_cancelled and not Input.is_action_pressed("squat"):
+		squat_was_cancelled = false
 
 ## アニメーション状態更新
 func update_animation_state(state_name: String) -> void:

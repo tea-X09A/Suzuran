@@ -46,9 +46,25 @@ func handle_input(_delta: float) -> void:
 func can_jump() -> bool:
 	return player.is_on_floor() and Input.is_action_just_pressed("jump")
 
-## しゃがみ入力チェック
+## しゃがみ入力チェック（継続用）
 func is_squat_input() -> bool:
 	return Input.is_action_pressed("squat")
+
+## しゃがみ入力チェック（遷移用：押された瞬間のみ）
+func is_squat_just_pressed() -> bool:
+	return Input.is_action_just_pressed("squat")
+
+## squat状態への遷移可否チェック（キャンセルフラグを考慮）
+func can_transition_to_squat() -> bool:
+	if not player.is_on_floor():
+		return false
+
+	# squat状態からキャンセルされていない場合、通常通りjust_pressedで遷移
+	if not player.squat_was_cancelled:
+		return is_squat_just_pressed()
+
+	# squat状態からキャンセルされた場合、just_pressedのみ受け付ける
+	return is_squat_just_pressed()
 
 ## 攻撃入力チェック
 func is_fight_input() -> bool:
@@ -158,8 +174,8 @@ func handle_common_inputs() -> bool:
 		perform_jump()
 		return true
 
-	# しゃがみ入力チェック
-	if is_squat_input() and player.is_on_floor():
+	# しゃがみ入力チェック（遷移用）
+	if can_transition_to_squat():
 		player.update_animation_state("SQUAT")
 		return true
 
@@ -180,6 +196,12 @@ func handle_action_end_transition() -> void:
 	if not player.is_on_floor():
 		player.update_animation_state("FALL")
 	else:
+		# アニメーション終了時、squatボタンが押されていればsquat状態へ遷移
+		if is_squat_input():
+			player.squat_was_cancelled = false  # フラグをクリア
+			player.update_animation_state("SQUAT")
+			return
+
 		# 地上での状態判定（移動入力に応じて遷移）
 		var movement_input: float = get_movement_input()
 		if movement_input != 0.0:
