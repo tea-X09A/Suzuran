@@ -31,14 +31,14 @@ func cleanup_state() -> void:
 	pass
 
 ## 物理演算ステップでの更新処理
-func physics_update(delta: float) -> void:
+func physics_update(_delta: float) -> void:
 	# 各Stateで実装: 状態固有の物理演算処理
 	pass
 
 # ======================== 入力処理メソッド ========================
 
 ## 入力処理のメイン関数（各ステートで実装）
-func handle_input(delta: float) -> void:
+func handle_input(_delta: float) -> void:
 	# 各Stateで実装: 状態固有の入力処理
 	pass
 
@@ -58,24 +58,20 @@ func is_fight_input() -> bool:
 func is_shooting_input() -> bool:
 	return Input.is_action_just_pressed("shooting") or Input.is_action_just_pressed("shooting_01")
 
+# ======================== 共通ユーティリティメソッド ========================
+
+## 物理キーから方向キー入力を取得（内部ヘルパー）
+func _get_direction_keys() -> Dictionary:
+	return {
+		"right": Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT),
+		"left": Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT)
+	}
+
 ## ダッシュ入力チェック（物理キー検出版：確実な動作）
 func is_dash_input() -> bool:
-	# 物理キーレベルでShiftキーを検出
 	var shift_pressed: bool = Input.is_physical_key_pressed(KEY_SHIFT)
-
-	# 方向キーの状態を検出
-	var d_pressed: bool = Input.is_physical_key_pressed(KEY_D)
-	var a_pressed: bool = Input.is_physical_key_pressed(KEY_A)
-	var right_arrow_pressed: bool = Input.is_physical_key_pressed(KEY_RIGHT)
-	var left_arrow_pressed: bool = Input.is_physical_key_pressed(KEY_LEFT)
-
-	# ダッシュ入力の組み合わせ判定
-	var run_right: bool = shift_pressed and (d_pressed or right_arrow_pressed)
-	var run_left: bool = shift_pressed and (a_pressed or left_arrow_pressed)
-
-	return run_left or run_right
-
-# ======================== 共通ユーティリティメソッド ========================
+	var keys: Dictionary = _get_direction_keys()
+	return shift_pressed and (keys.right or keys.left)
 ## パラメータ取得
 func get_parameter(key: String) -> Variant:
 	return PlayerParameters.get_parameter(condition, key)
@@ -101,21 +97,13 @@ func get_current_state_name() -> String:
 func is_running_state() -> bool:
 	return get_current_state_name() == "RUN"
 
-## 移動入力を取得（物理キー検出版）
+## 移動入力を取得（物理キー検出版、アクションフォールバック付き）
 func get_movement_input() -> float:
-	# 物理キーレベルで方向キーを検出
-	var d_pressed: bool = Input.is_physical_key_pressed(KEY_D)
-	var a_pressed: bool = Input.is_physical_key_pressed(KEY_A)
-	var right_arrow_pressed: bool = Input.is_physical_key_pressed(KEY_RIGHT)
-	var left_arrow_pressed: bool = Input.is_physical_key_pressed(KEY_LEFT)
+	var keys: Dictionary = _get_direction_keys()
 
-	# アクションベースの検出も併用（フォールバック）
-	var left_action: bool = Input.is_action_pressed("left")
-	var right_action: bool = Input.is_action_pressed("right")
-
-	# 移動方向の判定（物理キー優先、アクション補完）
-	var left_input: bool = a_pressed or left_arrow_pressed or left_action
-	var right_input: bool = d_pressed or right_arrow_pressed or right_action
+	# 物理キーで検出できなかった場合のみアクションをフォールバック
+	var right_input: bool = keys.right or Input.is_action_pressed("right")
+	var left_input: bool = keys.left or Input.is_action_pressed("left")
 
 	if right_input and not left_input:
 		return 1.0
@@ -131,29 +119,26 @@ func update_sprite_direction(direction: float) -> void:
 
 ## 重力の適用
 func apply_gravity(delta: float) -> void:
-	if player and not player.is_on_floor():
+	if not player.is_on_floor():
 		var effective_gravity: float = player.GRAVITY * get_parameter("jump_gravity_scale")
 		player.velocity.y = min(player.velocity.y + effective_gravity * delta, get_parameter("jump_max_fall_speed"))
 
 ## 摩擦の適用
 func apply_friction(delta: float) -> void:
-	if player:
-		var friction: float = 1000.0
-		player.velocity.x = move_toward(player.velocity.x, 0, friction * delta)
+	var friction: float = 1000.0
+	player.velocity.x = move_toward(player.velocity.x, 0, friction * delta)
 
 ## 移動処理
 func apply_movement(direction: float, speed: float) -> void:
-	if player:
-		player.velocity.x = direction * speed
-		update_sprite_direction(direction)
+	player.velocity.x = direction * speed
+	update_sprite_direction(direction)
 
 ## ジャンプ処理
 func perform_jump() -> void:
-	if player:
-		# パラメータから初速を取得し、垂直方向の速度のみを設定
-		# 水平方向の速度（velocity.x）は保持されるため、走行中のジャンプに慣性が乗る
-		player.velocity.y = get_parameter("jump_initial_velocity")
-		player.update_animation_state("JUMP")
+	# パラメータから初速を取得し、垂直方向の速度のみを設定
+	# 水平方向の速度（velocity.x）は保持されるため、走行中のジャンプに慣性が乗る
+	player.velocity.y = get_parameter("jump_initial_velocity")
+	player.update_animation_state("JUMP")
 
 # ======================== 重複処理統合メソッド ========================
 
