@@ -7,14 +7,6 @@ func initialize_state() -> void:
 	if player:
 		player.velocity.x = 0.0
 
-## AnimationTree状態終了時の処理
-func cleanup_state() -> void:
-	pass
-
-## 入力処理は物理更新で統合するため空にする
-func handle_input(delta: float) -> void:
-	pass
-
 ## SQUAT状態での物理更新処理
 func physics_update(delta: float) -> void:
 	if not player:
