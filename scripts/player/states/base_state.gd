@@ -130,8 +130,7 @@ func get_movement_input() -> float:
 
 ## スプライト方向を更新
 func update_sprite_direction(direction: float) -> void:
-	if direction != 0.0 and sprite_2d:
-		sprite_2d.flip_h = direction > 0.0
+	player.update_sprite_direction(direction)
 
 ## 重力の適用
 func apply_gravity(delta: float) -> void:

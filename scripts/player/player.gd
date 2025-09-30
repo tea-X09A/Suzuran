@@ -17,6 +17,20 @@ enum PLAYER_CONDITION { NORMAL, EXPANSION }
 # 当たり判定用コリジョン
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
 
+# ======================== Hurtbox/Hitboxノード参照 ========================
+
+@onready var idle_hurtbox_collision: CollisionShape2D = $IdleHurtbox/IdleHurtboxCollision
+@onready var squat_hurtbox_collision: CollisionShape2D = $SquatHurtbox/SquatHurtboxCollision
+@onready var jump_hurtbox_collision: CollisionShape2D = $JumpHurtbox/JumpHurtboxCollision
+@onready var run_hurtbox_collision: CollisionShape2D = $RunHurtbox/RunHurtboxCollision
+@onready var fighting_hurtbox_collision: CollisionShape2D = $FightingHurtbox/FightingHurtboxCollision
+@onready var shooting_hurtbox_collision: CollisionShape2D = $ShootingHurtbox/ShootingHurtboxCollision
+@onready var knockback_hurtbox_collision: CollisionShape2D = $KnockBackHurtbox/KnockBackHurtboxCollision
+@onready var down_hurtbox_collision: CollisionShape2D = $DownHurtbox/DownHurtboxCollision
+@onready var fall_hurtbox_collision: CollisionShape2D = $FallHurtbox/FallHurtboxCollision
+@onready var walk_hurtbox_collision: CollisionShape2D = $WalkHurtbox/WalkHurtboxCollision
+@onready var fighting_hitbox_collision: CollisionShape2D = $FightingHitbox/FightingHitboxCollision
+
 # ======================== エクスポート設定 ========================
 
 # インスペクタで設定可能な初期変身状態
@@ -39,6 +53,8 @@ var direction_x: float = 1.0
 var ignore_jump_horizontal_velocity: bool = false
 # squat状態からキャンセルされたフラグ（squat遷移制限用）
 var squat_was_cancelled: bool = false
+# Hurtbox/Hitboxの初期X位置を保存（反転処理用）
+var original_box_positions: Dictionary = {}
 
 # ======================== ステート管理システム ========================
 
@@ -64,6 +80,8 @@ func _initialize_systems() -> void:
 	_initialize_animation_system()
 	# ステート管理システムの初期化
 	_initialize_state_system()
+	# Hurtbox/Hitboxの初期位置を保存
+	_initialize_box_positions()
 
 ## アニメーションシステムの初期化
 func _initialize_animation_system() -> void:
@@ -89,6 +107,23 @@ func _initialize_state_system() -> void:
 
 	# 初期状態をIDLEに設定
 	current_state = state_instances["IDLE"]
+
+## Hurtbox/Hitboxの初期X位置を保存
+func _initialize_box_positions() -> void:
+	original_box_positions["idle"] = idle_hurtbox_collision.position.x
+	original_box_positions["squat"] = squat_hurtbox_collision.position.x
+	original_box_positions["jump"] = jump_hurtbox_collision.position.x
+	original_box_positions["run"] = run_hurtbox_collision.position.x
+	original_box_positions["fighting_hurt"] = fighting_hurtbox_collision.position.x
+	original_box_positions["shooting"] = shooting_hurtbox_collision.position.x
+	original_box_positions["knockback"] = knockback_hurtbox_collision.position.x
+	original_box_positions["down"] = down_hurtbox_collision.position.x
+	original_box_positions["fall"] = fall_hurtbox_collision.position.x
+	original_box_positions["walk"] = walk_hurtbox_collision.position.x
+	original_box_positions["fighting_hit"] = fighting_hitbox_collision.position.x
+
+	# 初期のsprite向きに基づいて位置を更新
+	_update_box_positions(sprite_2d.flip_h)
 
 # ======================== メイン処理ループ ========================
 
@@ -142,6 +177,25 @@ func update_sprite_direction(input_direction_x: float) -> void:
 	if input_direction_x != 0.0:
 		sprite_2d.flip_h = input_direction_x > 0.0
 		direction_x = input_direction_x
+		# Hurtbox/Hitboxの位置を反転
+		_update_box_positions(sprite_2d.flip_h)
+
+## Hurtbox/Hitboxの位置をspriteの向きに合わせて更新
+func _update_box_positions(is_facing_right: bool) -> void:
+	# 右向き（flip_h=true）の場合はX位置を反転、左向き（flip_h=false）の場合は元の位置
+	var flip_multiplier: float = -1.0 if is_facing_right else 1.0
+
+	idle_hurtbox_collision.position.x = original_box_positions["idle"] * flip_multiplier
+	squat_hurtbox_collision.position.x = original_box_positions["squat"] * flip_multiplier
+	jump_hurtbox_collision.position.x = original_box_positions["jump"] * flip_multiplier
+	run_hurtbox_collision.position.x = original_box_positions["run"] * flip_multiplier
+	fighting_hurtbox_collision.position.x = original_box_positions["fighting_hurt"] * flip_multiplier
+	shooting_hurtbox_collision.position.x = original_box_positions["shooting"] * flip_multiplier
+	knockback_hurtbox_collision.position.x = original_box_positions["knockback"] * flip_multiplier
+	down_hurtbox_collision.position.x = original_box_positions["down"] * flip_multiplier
+	fall_hurtbox_collision.position.x = original_box_positions["fall"] * flip_multiplier
+	walk_hurtbox_collision.position.x = original_box_positions["walk"] * flip_multiplier
+	fighting_hitbox_collision.position.x = original_box_positions["fighting_hit"] * flip_multiplier
 
 # ======================== プロパティアクセサ ========================
 
