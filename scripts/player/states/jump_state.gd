@@ -19,6 +19,16 @@ func cleanup_state() -> void:
 
 ## 入力処理
 func handle_input(_delta: float) -> void:
+	# 攻撃入力チェック（空中攻撃）
+	if is_fight_input():
+		player.update_animation_state("FIGHTING")
+		return
+
+	# 射撃入力チェック（空中射撃）
+	if is_shooting_input():
+		player.update_animation_state("SHOOTING")
+		return
+
 	# 水平移動入力を処理
 	var movement_input: float = get_movement_input()
 	if movement_input != 0.0:

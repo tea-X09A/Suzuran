@@ -8,9 +8,12 @@ const KUNAI_SCENE = preload("res://scenes/bullets/kunai.tscn")
 var can_back_jump: bool = false
 var shooting_timer: float = 0.0
 var shooting_grounded: bool = false
+var started_airborne: bool = false  # 状態開始時に空中にいたかのフラグ
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
+	# 開始時の空中状態を記録
+	started_airborne = not player.is_on_floor()
 	# 射撃処理を実行
 	handle_shooting()
 
@@ -24,44 +27,60 @@ func cleanup_state() -> void:
 	can_back_jump = false
 	shooting_timer = 0.0
 	shooting_grounded = false
+	started_airborne = false
 
-## 入力処理（SHOOTING状態固有）
-func handle_input(delta: float) -> void:
-	# バックジャンプ射撃のチェック
+## 入力処理
+func handle_input(_delta: float) -> void:
+	# バックジャンプ射撃
 	if try_back_jump_shooting():
 		return
 
-	# ジャンプ入力チェック
+	# 地上のみジャンプとしゃがみを受け付ける
 	if can_jump():
 		perform_jump()
 		return
 
-	# しゃがみ入力チェック（遷移用）
 	if can_transition_to_squat():
 		player.update_animation_state("SQUAT")
 		return
 
-	# 攻撃入力と射撃入力は無視（キャンセル不可）
-
-	# 移動入力のみ受け付ける（方向転換のため）
-	var movement_input: float = get_movement_input()
-	if movement_input != 0.0:
-		update_sprite_direction(movement_input)
-
 ## 物理演算処理
 func physics_update(delta: float) -> void:
-	# 射撃タイマー更新
-	if not update_shooting_state(delta):
-		# 射撃終了時の状態遷移（共通メソッド使用）
-		handle_action_end_transition()
-
-	# 重力適用（空中射撃の場合）
+	# 重力適用
 	if not player.is_on_floor():
 		apply_gravity(delta)
+
+	# 空中射撃中に着地した場合、キャンセルして遷移
+	if started_airborne and player.is_on_floor():
+		shooting_timer = 0.0
+		can_back_jump = false
+		_transition_on_landing()
+		return
+
+	# 通常の射撃終了処理
+	if not update_shooting_state(delta):
+		handle_action_end_transition()
+
+## 着地時の状態遷移処理
+func _transition_on_landing() -> void:
+	if is_squat_input():
+		player.squat_was_cancelled = false
+		player.update_animation_state("SQUAT")
+		return
+
+	var movement_input: float = get_movement_input()
+	if movement_input != 0.0:
+		if is_dash_input():
+			player.update_animation_state("RUN")
+		else:
+			player.update_animation_state("WALK")
+	else:
+		player.update_animation_state("IDLE")
 
 
 # ======================== 射撃処理 ========================
 
+## 射撃初期化処理
 func handle_shooting() -> void:
 	shooting_timer = get_parameter("shooting_animation_duration")
 	shooting_grounded = player.is_on_floor()
@@ -74,33 +93,26 @@ func handle_shooting() -> void:
 	if animation_player and not animation_player.animation_finished.is_connected(_on_shooting_animation_finished):
 		animation_player.animation_finished.connect(_on_shooting_animation_finished)
 
+## バックジャンプ射撃処理
 func handle_back_jump_shooting() -> void:
-	if not can_back_jump:
+	if not can_back_jump or not player.is_on_floor():
 		return
 
 	can_back_jump = false
 
-	# バックジャンプ射撃は地上でのみ実行可能（空中での軌道干渉を防止）
-	if not player.is_on_floor():
-		return
-
+	# バックジャンプの速度を設定
 	var current_direction: float = 1.0 if sprite_2d.flip_h else -1.0
 	var back_direction: float = -current_direction
-
-	var back_velocity: float = back_direction * get_parameter("move_walk_speed")
-
-	# 物理演算への影響は地上でのみ適用（空中軌道保護）
 	player.velocity.y = -get_parameter("jump_force")
-	player.velocity.x = back_velocity
+	player.velocity.x = back_direction * get_parameter("move_walk_speed")
 
-
+	# 射撃タイマーをリセット
 	shooting_timer = get_parameter("shooting_animation_duration")
-
-	spawn_kunai()
-	# AnimationTreeが自動で適切なアニメーションを処理
-
 	shooting_grounded = false
 
+	spawn_kunai()
+
+## 苦無生成処理
 func spawn_kunai() -> void:
 	var shooting_direction: float
 	if player.direction_x != 0.0:
@@ -117,8 +129,9 @@ func spawn_kunai() -> void:
 	if kunai_instance.has_method("initialize"):
 		kunai_instance.initialize(shooting_direction, get_parameter("shooting_kunai_speed"), player)
 
-# ======================== 射撃状態制御（player.gdから呼び出し） ========================
-## 射撃状態更新（player.gdから呼び出し）
+# ======================== 射撃状態制御 ========================
+
+## 射撃タイマー更新
 func update_shooting_state(delta: float) -> bool:
 	if shooting_timer > 0.0:
 		shooting_timer -= delta
@@ -126,22 +139,13 @@ func update_shooting_state(delta: float) -> bool:
 			return false
 	return true
 
-## バックジャンプ射撃処理（player.gdから呼び出し）
+## バックジャンプ射撃入力チェック
 func try_back_jump_shooting() -> bool:
 	if can_back_jump and Input.is_action_just_pressed("back_jump_shooting"):
 		handle_back_jump_shooting()
 		return true
 	return false
 
-## 空中射撃かどうかの判定
-func is_airborne_attack() -> bool:
-	return not shooting_grounded
-
-## 空中でのアクション実行中かどうかの判定（物理分離用）
-func is_airborne_action_active() -> bool:
-	return is_airborne_attack() and shooting_timer > 0.0
-
-## アニメーション完了時のコールバック
+## アニメーション完了コールバック
 func _on_shooting_animation_finished() -> void:
-	# 射撃終了をトリガー
 	shooting_timer = 0.0

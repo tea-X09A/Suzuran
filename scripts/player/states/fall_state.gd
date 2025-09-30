@@ -15,6 +15,16 @@ func cleanup_state() -> void:
 
 ## 入力処理
 func handle_input(_delta: float) -> void:
+	# 攻撃入力チェック（空中攻撃）
+	if is_fight_input():
+		player.update_animation_state("FIGHTING")
+		return
+
+	# 射撃入力チェック（空中射撃）
+	if is_shooting_input():
+		player.update_animation_state("SHOOTING")
+		return
+
 	# 水平移動入力を処理
 	var movement_input: float = get_movement_input()
 	if movement_input != 0.0:
@@ -36,6 +46,17 @@ func physics_update(delta: float) -> void:
 		if is_squat_input():
 			player.squat_was_cancelled = false  # フラグをクリア
 			player.update_animation_state("SQUAT")
+			return
+
+		# 移動入力チェック
+		var movement_input: float = get_movement_input()
+		if movement_input != 0.0:
+			# 移動入力がある場合、walk/runに直接遷移（idleをスキップ）
+			if is_dash_input():
+				player.update_animation_state("RUN")
+			else:
+				player.update_animation_state("WALK")
 		else:
+			# 移動入力がない場合はidleに遷移
 			player.update_animation_state("IDLE")
 
