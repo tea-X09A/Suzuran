@@ -7,9 +7,10 @@ extends StaticBody2D
 @onready var visibility_enabler: VisibleOnScreenEnabler2D = $VisibleOnScreenEnabler2D
 
 # トラップパラメータ
-var damage: int = 10
-var knockback_force: float = 300.0
-var damage_cooldown: float = 0.5
+@export var damage: int = 10
+@export var knockback_force: float = 300.0
+@export var damage_cooldown: float = 0.5
+@export_enum("down", "knockback") var effect_type: String = "down"
 
 # 処理が有効かどうかのフラグ
 var processing_enabled: bool = false
@@ -50,11 +51,15 @@ func check_player_collision() -> void:
 			break
 
 func apply_damage_to_player(player: Node2D) -> void:
-	# プレイヤーにdownアニメーションを実行
-	if player.has_method("update_animation_state"):
-		player.update_animation_state("DOWN")
+	# プレイヤーにダメージを適用
+	if player.has_method("handle_trap_damage"):
+		# トラップの向きからノックバック方向を計算（プレイヤーがトラップより右にいれば右へ押す）
+		var direction: Vector2 = Vector2(sign(player.global_position.x - global_position.x), 0.0)
+		if direction.x == 0.0:
+			direction.x = 1.0  # デフォルトは右向き
+		player.handle_trap_damage(effect_type, direction, knockback_force)
 
-	print("トラップダメージ適用: ダメージ=", damage, " 力=", knockback_force)
+	print("トラップダメージ適用: タイプ=", effect_type, " ダメージ=", damage, " 力=", knockback_force)
 
 # VisibleOnScreenEnabler2Dのシグナルハンドラ
 func _on_screen_entered() -> void:
@@ -74,4 +79,4 @@ func get_knockback_force() -> float:
 	return knockback_force
 
 func get_effect_type() -> String:
-	return "damage"
+	return effect_type

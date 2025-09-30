@@ -211,3 +211,13 @@ func get_animation_player() -> AnimationPlayer:
 ## アニメーションツリーを取得
 func get_animation_tree() -> AnimationTree:
 	return animation_tree
+
+# ======================== ダメージ処理 ========================
+
+## トラップからのダメージ処理
+func handle_trap_damage(effect_type: String, direction: Vector2, force: float) -> void:
+	# ダウン状態が無敵状態でないことを確認
+	var down_state: DownState = state_instances.get("DOWN") as DownState
+	if down_state and not down_state.is_in_invincible_state():
+		# ダメージ適用（ダメージ量は現在使用していないため0）
+		down_state.handle_damage(0, effect_type, direction, force)

@@ -21,6 +21,7 @@ var is_recovery_invincible: bool = false
 var knockback_direction: Vector2 = Vector2.ZERO
 var knockback_force_value: float = 0.0
 var current_animation_type: String = ""
+var effect_type: String = ""  # "down" or "knockback"
 
 ## AnimationTree状態終了時の処理
 func cleanup_state() -> void:
@@ -79,10 +80,7 @@ func handle_damage(_damage: int, animation_type: String, direction: Vector2, for
 	is_down = true
 	# ダウン状態は State Machine で管理（is_down() メソッドで判定）
 	current_animation_type = animation_type
-
-	# ダウン時は無敵を付与しない
-	is_invincible = false
-	invincibility_timer = 0.0
+	effect_type = animation_type
 
 	# コリジョンは地形との当たり判定のため有効のまま維持
 	down_duration_timer = get_parameter("damage_duration")
@@ -90,9 +88,25 @@ func handle_damage(_damage: int, animation_type: String, direction: Vector2, for
 	knockback_direction = direction
 	knockback_force_value = force
 
-	var knockback_multiplier: float = get_parameter("knockback_multiplier")
-	player.velocity.x = direction.x * force * knockback_multiplier
-	player.velocity.y = -get_parameter("knockback_vertical_force")
+	# 効果タイプに応じた処理
+	if effect_type == "knockback":
+		# knockback: 緩やかなノックバック + 無敵状態付与
+		var gentle_multiplier: float = 0.5  # downの半分の力
+		player.velocity.x = direction.x * force * gentle_multiplier
+		player.velocity.y = -get_parameter("knockback_vertical_force") * 0.7  # 垂直方向も緩やか
+
+		# 無敵状態を付与
+		is_invincible = true
+		invincibility_timer = get_parameter("damage_duration")
+	else:
+		# down: 強いノックバック + 無敵なし
+		var knockback_multiplier: float = get_parameter("knockback_multiplier")
+		player.velocity.x = direction.x * force * knockback_multiplier
+		player.velocity.y = -get_parameter("knockback_vertical_force")
+
+		# ダウン時は無敵を付与しない
+		is_invincible = false
+		invincibility_timer = 0.0
 
 	# KNOCKBACKステートへ遷移
 	player.update_animation_state("KNOCKBACK")
@@ -125,6 +139,10 @@ func handle_down_movement(_delta: float) -> void:
 ## ダウン状態でのジャンプ入力処理（player.gdから呼び出し）
 func try_recovery_jump() -> bool:
 	if Input.is_action_just_pressed("jump"):
+		# knockback指定の場合はジャンプでキャンセルできない
+		if effect_type == "knockback":
+			return false
+
 		var can_jump: bool = is_in_knockback_state() or is_in_knockback_landing_state()
 		if can_jump:
 			handle_recovery_jump()
@@ -142,18 +160,25 @@ func start_down_state() -> void:
 	if is_in_down_state:
 		return
 
-	is_in_down_state = true
-	down_timer = get_parameter("down_duration")
+	# 効果タイプに応じた処理
+	if effect_type == "knockback":
+		# knockback: idle状態へ遷移
+		finish_down()
+		player.update_animation_state("IDLE")
+	else:
+		# down: down状態へ遷移
+		is_in_down_state = true
+		down_timer = get_parameter("down_duration")
 
-	# down状態では無敵を解除（特殊なイベント実行のため）
-	is_invincible = false
-	invincibility_timer = 0.0
+		# down状態では無敵を解除（特殊なイベント実行のため）
+		is_invincible = false
+		invincibility_timer = 0.0
 
-	# 着地時に水平速度をリセットしてその場で倒れる
-	player.velocity.x = 0.0
+		# 着地時に水平速度をリセットしてその場で倒れる
+		player.velocity.x = 0.0
 
-	# DOWNステートへ遷移
-	player.update_animation_state("DOWN")
+		# DOWNステートへ遷移
+		player.update_animation_state("DOWN")
 
 func finish_down() -> void:
 	is_down = false
@@ -162,6 +187,7 @@ func finish_down() -> void:
 	down_duration_timer = 0.0
 	knockback_timer = 0.0
 	down_timer = 0.0
+	effect_type = ""  # 効果タイプをクリア
 
 	# down状態からの移行時に無敵時間を付与
 	is_recovery_invincible = true
