@@ -780,7 +780,7 @@ animation = &"normal_jump"
 animation = &"normal_run"
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_shooting"]
-animation = &"normal_shooting"
+animation = &"normal_shooting_01"
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_squat"]
 animation = &"normal_squat"

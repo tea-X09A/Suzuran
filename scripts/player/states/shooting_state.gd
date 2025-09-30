@@ -9,6 +9,7 @@ var can_back_jump: bool = false
 var shooting_timer: float = 0.0
 var shooting_grounded: bool = false
 var started_airborne: bool = false  # 状態開始時に空中にいたかのフラグ
+var is_shooting_02: bool = false  # shooting_02アニメーションを使用中かのフラグ
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
@@ -28,6 +29,7 @@ func cleanup_state() -> void:
 	shooting_timer = 0.0
 	shooting_grounded = false
 	started_airborne = false
+	is_shooting_02 = false
 
 ## 入力処理
 func handle_input(_delta: float) -> void:
@@ -35,7 +37,13 @@ func handle_input(_delta: float) -> void:
 	if try_back_jump_shooting():
 		return
 
-	# 地上のみジャンプとしゃがみを受け付ける
+	# shooting_02のアニメーション中は、squat以外でキャンセル不可
+	if is_shooting_02:
+		if can_transition_to_squat() and player.is_on_floor():
+			player.update_animation_state("SQUAT")
+		return
+
+	# 地上のみジャンプとしゃがみを受け付ける（shooting_01の場合）
 	if can_jump():
 		perform_jump()
 		return
@@ -50,14 +58,19 @@ func physics_update(delta: float) -> void:
 	if not player.is_on_floor():
 		apply_gravity(delta)
 
-	# 空中射撃中に着地した場合、キャンセルして遷移
-	if started_airborne and player.is_on_floor():
+	# shooting_02中に着地した場合、キャンセルして遷移
+	if is_shooting_02 and player.is_on_floor():
 		shooting_timer = 0.0
 		can_back_jump = false
+		is_shooting_02 = false
 		_transition_on_landing()
 		return
 
-	# 通常の射撃終了処理
+	# shooting_02の場合は、着地するまでアニメーションを維持（タイマー無視）
+	if is_shooting_02:
+		return
+
+	# 通常の射撃終了処理（shooting_01のみ）
 	if not update_shooting_state(delta):
 		handle_action_end_transition()
 
@@ -85,6 +98,14 @@ func handle_shooting() -> void:
 	shooting_timer = get_parameter("shooting_animation_duration")
 	shooting_grounded = player.is_on_floor()
 
+	# 空中の場合はshooting_02を使用
+	if not shooting_grounded:
+		is_shooting_02 = true
+		_set_shooting_animation("normal_shooting_02")
+	else:
+		is_shooting_02 = false
+		_set_shooting_animation("normal_shooting_01")
+
 	spawn_kunai()
 
 	can_back_jump = shooting_grounded
@@ -100,15 +121,19 @@ func handle_back_jump_shooting() -> void:
 
 	can_back_jump = false
 
-	# バックジャンプの速度を設定
+	# バックジャンプの速度を設定（垂直方向300程度、水平方向に強いベクトル）
 	var current_direction: float = 1.0 if sprite_2d.flip_h else -1.0
 	var back_direction: float = -current_direction
-	player.velocity.y = -get_parameter("jump_force")
-	player.velocity.x = back_direction * get_parameter("move_walk_speed")
+	player.velocity.y = get_parameter("jump_initial_velocity")
+	player.velocity.x = back_direction * get_parameter("move_run_speed")
 
 	# 射撃タイマーをリセット
 	shooting_timer = get_parameter("shooting_animation_duration")
 	shooting_grounded = false
+	is_shooting_02 = true
+
+	# アニメーションを02に切り替え
+	_set_shooting_animation("normal_shooting_02")
 
 	spawn_kunai()
 
@@ -139,9 +164,9 @@ func update_shooting_state(delta: float) -> bool:
 			return false
 	return true
 
-## バックジャンプ射撃入力チェック
+## バックジャンプ射撃入力チェック（射撃01のアニメーション中に再度shooting入力で発動）
 func try_back_jump_shooting() -> bool:
-	if can_back_jump and Input.is_action_just_pressed("back_jump_shooting"):
+	if can_back_jump and Input.is_action_just_pressed("shooting"):
 		handle_back_jump_shooting()
 		return true
 	return false
@@ -149,3 +174,15 @@ func try_back_jump_shooting() -> bool:
 ## アニメーション完了コールバック
 func _on_shooting_animation_finished() -> void:
 	shooting_timer = 0.0
+
+## SHOOTINGノードのアニメーションを変更する
+func _set_shooting_animation(animation_name: String) -> void:
+	if animation_tree and animation_tree.tree_root:
+		var state_machine_node: AnimationNodeStateMachine = animation_tree.tree_root as AnimationNodeStateMachine
+		if state_machine_node:
+			var shooting_node: AnimationNodeAnimation = state_machine_node.get_node("SHOOTING") as AnimationNodeAnimation
+			if shooting_node:
+				shooting_node.animation = animation_name
+				# アニメーション変更後、再度SHOOTINGステートに遷移して新しいアニメーションを適用
+				if state_machine:
+					state_machine.start("SHOOTING")
