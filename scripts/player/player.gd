@@ -103,6 +103,7 @@ func _initialize_state_system() -> void:
 	state_instances["SQUAT"] = SquatState.new(self)
 	state_instances["FIGHTING"] = FightingState.new(self)
 	state_instances["SHOOTING"] = ShootingState.new(self)
+	state_instances["KNOCKBACK"] = KnockbackState.new(self)
 	state_instances["DOWN"] = DownState.new(self)
 
 	# 初期状態をIDLEに設定

@@ -60,6 +60,10 @@ func physics_update(delta: float) -> void:
 			else:
 				player.update_animation_state("IDLE")
 
+	# knockback中に着地した場合、downアニメーションに遷移
+	if is_in_knockback_state() and player.is_on_floor():
+		start_down_state()
+
 	# 重力適用
 	if not player.is_on_floor():
 		apply_gravity(delta)
@@ -76,10 +80,9 @@ func handle_damage(_damage: int, animation_type: String, direction: Vector2, for
 	# ダウン状態は State Machine で管理（is_down() メソッドで判定）
 	current_animation_type = animation_type
 
-	# ノックバック中は無敵状態を維持
-	is_invincible = true
-	invincibility_timer = get_parameter("invincibility_duration")
-
+	# ダウン時は無敵を付与しない
+	is_invincible = false
+	invincibility_timer = 0.0
 
 	# コリジョンは地形との当たり判定のため有効のまま維持
 	down_duration_timer = get_parameter("damage_duration")
@@ -91,8 +94,8 @@ func handle_damage(_damage: int, animation_type: String, direction: Vector2, for
 	player.velocity.x = direction.x * force * knockback_multiplier
 	player.velocity.y = -get_parameter("knockback_vertical_force")
 
-
-	# ダメージアニメーションはAnimationTreeで自動実行
+	# KNOCKBACKステートへ遷移
+	player.update_animation_state("KNOCKBACK")
 
 # ======================== ダウン状態制御（player.gdから呼び出し） ========================
 ## ダウン状態更新（player.gdから呼び出し）
@@ -116,16 +119,8 @@ func update_down_state(delta: float) -> bool:
 
 ## ダウン中の移動処理（player.gdから呼び出し）
 func handle_down_movement(_delta: float) -> void:
-	# ノックバック着地状態の場合は限定的な移動を許可
-	if is_in_knockback_landing_state():
-		var direction_x: float = Input.get_axis("left", "right")
-		player.direction_x = direction_x
-		# ダメージ中の制限された移動処理
-		if direction_x != 0.0:
-			var walk_speed: float = get_parameter("move_walk_speed") * 0.5  # ダメージ中は速度半分
-			player.velocity.x = direction_x * walk_speed
-		else:
-			player.velocity.x = 0.0
+	# ダウン中は左右入力を無効化
+	pass
 
 ## ダウン状態でのジャンプ入力処理（player.gdから呼び出し）
 func try_recovery_jump() -> bool:
@@ -137,16 +132,9 @@ func try_recovery_jump() -> bool:
 	return false
 
 func apply_continuous_knockback() -> void:
-	var knockback_multiplier: float = get_parameter("knockback_multiplier")
-
-	# 地上でのノックバックは摩擦を適用して減衰させる
-	if player.is_on_floor():
-		# 地上では摩擦による減衰を適用
-		var friction_factor: float = 0.85
-		player.velocity.x = knockback_direction.x * knockback_force_value * knockback_multiplier * friction_factor
-	else:
-		# 空中では元の力を維持
-		player.velocity.x = knockback_direction.x * knockback_force_value * knockback_multiplier
+	# 空中では空気抵抗で緩やかに減衰
+	var air_friction: float = 0.96  # 空中での摩擦係数（1フレームあたり4%減速）
+	player.velocity.x *= air_friction
 
 # ======================== ダウン状態処理 ========================
 
@@ -161,8 +149,11 @@ func start_down_state() -> void:
 	is_invincible = false
 	invincibility_timer = 0.0
 
+	# 着地時に水平速度をリセットしてその場で倒れる
+	player.velocity.x = 0.0
 
-	# AnimationTreeが自動で適切なアニメーションを処理
+	# DOWNステートへ遷移
+	player.update_animation_state("DOWN")
 
 func finish_down() -> void:
 	is_down = false
@@ -205,11 +196,9 @@ func is_in_knockback_state() -> bool:
 
 func handle_recovery_jump() -> void:
 	if is_in_down_state:
-		# down状態からのジャンプ: 無敵解除と復帰処理
+		# down状態からのジャンプ: 無敵時間を付与して復帰
 		is_invincible = false
-		is_recovery_invincible = false
 		invincibility_timer = 0.0
-		recovery_invincibility_timer = 0.0
 		# 水平速度をリセットして垂直ジャンプにする
 		player.velocity.x = 0.0
 		finish_down()
