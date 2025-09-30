@@ -16,11 +16,11 @@ static var PARAMETERS: Dictionary = {
 		"move_run_speed": 350.0,            # 走行速度（ピクセル/秒）
 
 		# ======================== ジャンプパラメータ ========================
-		"jump_initial_velocity": -300.0,    # ジャンプ初速（ピクセル/秒）
+		"jump_initial_velocity": -350.0,    # ジャンプ初速（ピクセル/秒）
 		"jump_hold_duration": 0.3,          # 長押し受付時間（秒）
 		"jump_max_velocity": -500.0,        # 最大上昇速度（ピクセル/秒）
-		"jump_hold_acceleration": -1000.0,  # 長押し時の加速度（ピクセル/秒²）
-		"jump_gravity_scale": 1.3,          # ジャンプ時の重力スケール
+		"jump_hold_acceleration": -800.0,  # 長押し時の加速度（ピクセル/秒²）
+		"jump_gravity_scale": 1.2,          # ジャンプ時の重力スケール
 		"jump_max_fall_speed": 800.0,       # 最大落下速度（ピクセル/秒）
 		"landing_speed_retention": 0.3,     # 着地時の速度保持率（0.3 = 30%保持、70%減衰）
 		"landing_speed_threshold": 200.0,   # 着地時の速度減衰を適用する最小速度（ピクセル/秒）
