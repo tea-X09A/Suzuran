@@ -90,6 +90,9 @@ func handle_damage(_damage: int, animation_type: String, direction: Vector2, for
 
 	# 効果タイプに応じた処理
 	var knockback_multiplier: float = get_parameter("knockback_multiplier")
+	# down効果の場合は吹き飛びを大きくする
+	if effect_type == "down":
+		knockback_multiplier *= 1.5
 	player.velocity.x = direction.x * force * knockback_multiplier
 	player.velocity.y = -get_parameter("knockback_vertical_force")
 
