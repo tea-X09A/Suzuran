@@ -11,6 +11,7 @@ size = Vector2(65, 65)
 
 [node name="Trap_01" type="StaticBody2D" groups=["traps"]]
 script = ExtResource("2_trap01")
+effect_type = "knockback"
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 position = Vector2(-20.5, 20.5)

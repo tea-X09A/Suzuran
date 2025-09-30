@@ -1,24 +1,18 @@
 class_name InvincibilityEffect
 extends RefCounted
 
-# ======================== プレイヤー参照 ========================
-
+# プレイヤー参照
 var player: CharacterBody2D
 
-# ======================== 無敵エフェクト管理変数 ========================
-
+# 無敵エフェクト管理変数
 var is_invincible: bool = false
 var invincibility_timer: float = 0.0
 var blink_timer: float = 0.0
 var blink_interval: float = 0.1
 var is_visible: bool = true
 
-# ======================== 初期化 ========================
-
 func _init(player_instance: CharacterBody2D) -> void:
 	player = player_instance
-
-# ======================== 無敵エフェクト制御 ========================
 
 ## 無敵状態の設定
 func set_invincible(duration: float) -> void:
@@ -51,8 +45,6 @@ func update_invincibility_effect(delta: float) -> void:
 		blink_timer = 0.0
 		is_visible = not is_visible
 		_update_sprite_visibility()
-
-# ======================== プライベートメソッド ========================
 
 ## スプライトの可視性を更新（点滅エフェクト用）
 func _update_sprite_visibility() -> void:
