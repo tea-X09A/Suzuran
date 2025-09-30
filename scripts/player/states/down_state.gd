@@ -16,6 +16,7 @@ var is_down: bool = false
 var is_invincible: bool = false
 var is_in_down_state: bool = false
 var is_recovery_invincible: bool = false
+var was_in_air: bool = false  # 空中にいたかどうかの追跡フラグ
 
 # ノックバック関連
 var knockback_direction: Vector2 = Vector2.ZERO
@@ -61,10 +62,6 @@ func physics_update(delta: float) -> void:
 			else:
 				player.update_animation_state("IDLE")
 
-	# knockback中に着地した場合、downアニメーションに遷移
-	if is_in_knockback_state() and player.is_on_floor():
-		start_down_state()
-
 	# 重力適用
 	if not player.is_on_floor():
 		apply_gravity(delta)
@@ -81,6 +78,7 @@ func handle_damage(_damage: int, animation_type: String, direction: Vector2, for
 	# ダウン状態は State Machine で管理（is_down() メソッドで判定）
 	current_animation_type = animation_type
 	effect_type = animation_type
+	was_in_air = false  # 空中判定フラグをリセット
 
 	# コリジョンは地形との当たり判定のため有効のまま維持
 	down_duration_timer = get_parameter("damage_duration")
@@ -128,7 +126,12 @@ func update_down_state(delta: float) -> bool:
 	if is_in_down_state:
 		down_timer -= delta
 
-	update_invincibility_timer(delta)
+	# is_invincibleの更新
+	if is_invincible and invincibility_timer > 0.0:
+		invincibility_timer -= delta
+		if invincibility_timer <= 0.0:
+			is_invincible = false
+
 	return is_down
 
 ## ダウン中の移動処理（player.gdから呼び出し）
@@ -139,10 +142,6 @@ func handle_down_movement(_delta: float) -> void:
 ## ダウン状態でのジャンプ入力処理（player.gdから呼び出し）
 func try_recovery_jump() -> bool:
 	if Input.is_action_just_pressed("jump"):
-		# knockback指定の場合はジャンプでキャンセルできない
-		if effect_type == "knockback":
-			return false
-
 		var can_jump: bool = is_in_knockback_state() or is_in_knockback_landing_state()
 		if can_jump:
 			handle_recovery_jump()
@@ -169,6 +168,7 @@ func start_down_state() -> void:
 		# down: down状態へ遷移
 		is_in_down_state = true
 		down_timer = get_parameter("down_duration")
+		was_in_air = false  # 空中判定フラグをリセット
 
 		# down状態では無敵を解除（特殊なイベント実行のため）
 		is_invincible = false
@@ -188,6 +188,7 @@ func finish_down() -> void:
 	knockback_timer = 0.0
 	down_timer = 0.0
 	effect_type = ""  # 効果タイプをクリア
+	was_in_air = false  # 空中判定フラグをリセット
 
 	# down状態からの移行時に無敵時間を付与
 	is_recovery_invincible = true
@@ -200,14 +201,6 @@ func cancel_down() -> void:
 		finish_down()
 
 # ======================== 無敵状態管理 ========================
-
-func update_invincibility_timer(delta: float) -> void:
-	if is_invincible and invincibility_timer > 0.0:
-		invincibility_timer -= delta
-		if invincibility_timer <= 0.0:
-			is_invincible = false
-
-	update_recovery_invincibility_timer(delta)
 
 func is_in_invincible_state() -> bool:
 	return is_invincible or is_recovery_invincible
@@ -227,7 +220,11 @@ func handle_recovery_jump() -> void:
 		invincibility_timer = 0.0
 		# 水平速度をリセットして垂直ジャンプにする
 		player.velocity.x = 0.0
+		# 垂直方向にジャンプ初速を設定
+		player.velocity.y = get_parameter("jump_initial_velocity")
 		finish_down()
+		# JUMP状態へ遷移
+		player.update_animation_state("JUMP")
 	elif is_down and not is_in_down_state:
 		# ノックバック状態からのジャンプ: モーションキャンセルと無敵時間付与
 		# ノックバック効果をキャンセル
@@ -236,8 +233,12 @@ func handle_recovery_jump() -> void:
 		knockback_force_value = 0.0
 		# 水平速度をリセットして垂直ジャンプにする
 		player.velocity.x = 0.0
+		# 垂直方向にジャンプ初速を設定
+		player.velocity.y = get_parameter("jump_initial_velocity")
 		# ダメージ状態を終了し復帰無敵時間を付与
 		finish_down()
+		# JUMP状態へ遷移
+		player.update_animation_state("JUMP")
 
 func update_recovery_invincibility_timer(delta: float) -> void:
 	if is_recovery_invincible and recovery_invincibility_timer > 0.0:

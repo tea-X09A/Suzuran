@@ -133,6 +133,11 @@ func _physics_process(delta: float) -> void:
 	# squat状態キャンセルフラグの管理
 	_update_squat_cancel_flag()
 
+	# ダウン状態の復帰無敵時間を常に更新（全ステートで有効）
+	var down_state: DownState = state_instances.get("DOWN") as DownState
+	if down_state:
+		down_state.update_recovery_invincibility_timer(delta)
+
 	# 現在のステートに入力処理を移譲
 	current_state.handle_input(delta)
 	current_state.physics_update(delta)
