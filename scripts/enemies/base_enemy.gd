@@ -11,6 +11,10 @@ extends CharacterBody2D
 @onready var hurtbox: Area2D = $Hurtbox
 # DetectionArea（プレイヤー検知範囲）
 @onready var detection_area: Area2D = $DetectionArea
+# VisionShape（視界の可視化）
+@onready var vision_shape: Polygon2D = $DetectionArea/VisionShape
+# DetectionCollision（検知範囲のコリジョン）
+@onready var detection_collision: CollisionPolygon2D = $DetectionArea/DetectionCollision
 # 画面内外の検知
 @onready var visibility_enabler: VisibleOnScreenEnabler2D = $VisibleOnScreenEnabler2D
 
@@ -26,6 +30,12 @@ extends CharacterBody2D
 @export var lose_sight_delay: float = 2.0
 # キャプチャのクールダウン時間（秒）
 @export var capture_cooldown: float = 0.5
+# 視界のRayCast本数
+@export var vision_ray_count: int = 20
+# 視界の最大距離
+@export var vision_distance: float = 509.0
+# 視界の角度（度数、片側）
+@export var vision_angle: float = 10.0
 
 # ======================== 状態管理変数 ========================
 
@@ -59,6 +69,8 @@ var player_out_of_range: bool = false
 var time_out_of_range: float = 0.0
 # 最後にキャプチャした時間
 var last_capture_time: float = 0.0
+# 視界判定用のRayCast2D配列
+var raycasts: Array[RayCast2D] = []
 
 # ======================== 初期化処理 ========================
 
@@ -84,6 +96,9 @@ func _ready() -> void:
 
 	# 初期状態では無効化
 	_disable_collision_areas()
+
+	# 視界判定用のRayCastを生成
+	_setup_vision_raycasts()
 
 # ======================== パトロール処理 ========================
 
@@ -194,10 +209,83 @@ func _physics_process(delta: float) -> void:
 	# 向きの更新
 	_update_facing_direction()
 
+	# 視界の更新
+	_update_vision()
+
 	# フレームごとのプレイヤーコリジョンチェック（トラップと同様）
 	check_player_collision()
 
 # ======================== プレイヤー検知と追跡 ========================
+
+## 視界判定用のRayCast2Dを生成
+func _setup_vision_raycasts() -> void:
+	if not detection_area:
+		return
+
+	# 既存のRayCastをクリア
+	for raycast in raycasts:
+		raycast.queue_free()
+	raycasts.clear()
+
+	# 扇形の角度範囲でRayCastを生成
+	for i in range(vision_ray_count):
+		var raycast: RayCast2D = RayCast2D.new()
+
+		# 角度を計算（-vision_angle から +vision_angle まで）
+		var angle_step: float = (vision_angle * 2.0) / float(vision_ray_count - 1) if vision_ray_count > 1 else 0.0
+		var angle_deg: float = -vision_angle + (angle_step * float(i))
+		var angle_rad: float = deg_to_rad(angle_deg)
+
+		# RayCastの方向を設定
+		raycast.target_position = Vector2(
+			cos(angle_rad) * vision_distance,
+			sin(angle_rad) * vision_distance
+		)
+
+		# コリジョンマスクを設定（壁やプラットフォームのレイヤー1を検知）
+		raycast.collision_mask = 1
+		raycast.enabled = true
+		raycast.visible = false
+
+		# DetectionAreaの子として追加
+		detection_area.add_child(raycast)
+		raycasts.append(raycast)
+
+## 視界を更新（RayCastの衝突判定を行い、VisionShapeを更新）
+func _update_vision() -> void:
+	if not vision_shape or not detection_collision or raycasts.is_empty():
+		return
+
+	# 新しいpolygonを構築
+	var new_polygon: PackedVector2Array = PackedVector2Array()
+
+	# 原点を追加
+	new_polygon.append(Vector2.ZERO)
+
+	# 各RayCastの衝突点を収集
+	for raycast in raycasts:
+		# RayCastの衝突判定を強制的に更新
+		raycast.force_raycast_update()
+
+		if raycast.is_colliding():
+			# 衝突した場合は衝突点を使用
+			var collision_point: Vector2 = raycast.get_collision_point()
+			# DetectionAreaのローカル座標系に変換
+			var local_point: Vector2 = detection_area.to_local(collision_point)
+			new_polygon.append(local_point)
+		else:
+			# 衝突しなかった場合は最大距離の点を使用
+			new_polygon.append(raycast.target_position)
+
+	# VisionShapeとDetectionCollisionのpolygonを更新
+	vision_shape.polygon = new_polygon
+	detection_collision.polygon = new_polygon
+
+	# 検知中の場合は色を変更（HitboxCollisionと同じ色）
+	if current_state == "chasing":
+		vision_shape.color = Color(0.858824, 0.305882, 0.501961, 0.419608)
+	else:
+		vision_shape.color = Color(0.309804, 0.65098, 0.835294, 0.2)
 
 ## 向きを更新（左右移動に応じて反転）
 func _update_facing_direction() -> void:
