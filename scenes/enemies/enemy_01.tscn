@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://cvn3qwq0tl42h"]
+[gd_scene load_steps=6 format=3 uid="uid://cvn3qwq0tl42h"]
 
 [ext_resource type="Script" uid="uid://b5yxqvvo0gfal" path="res://scripts/enemies/enemy_01.gd" id="1_5f8g2"]
 [ext_resource type="Texture2D" uid="uid://dve0hcsf1db83" path="res://assets/images/enemies/Enemy52.png" id="1_6xk8f"]
@@ -11,9 +11,6 @@ size = Vector2(136.667, 140)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_8e3ao"]
 size = Vector2(136.667, 140)
-
-[sub_resource type="ConvexPolygonShape2D" id="ConvexPolygonShape2D_vision"]
-points = PackedVector2Array(0, 0, 450, -150, 463, -134, 475, -118, 485, -101, 494, -84, 499, -67, 503, -50, 506, -34, 508, -17, 509, 0, 508, 17, 506, 34, 503, 50, 499, 67, 494, 84, 485, 101, 475, 118, 463, 134, 450, 150)
 
 [node name="Enemy" type="CharacterBody2D"]
 collision_layer = 2
@@ -56,9 +53,9 @@ collision_mask = 4
 color = Color(0.309804, 0.65098, 0.835294, 0.2)
 polygon = PackedVector2Array(0, 0, 450, -150, 463, -134, 475, -118, 485, -101, 494, -84, 499, -67, 503, -50, 506, -34, 508, -17, 509, 0, 508, 17, 506, 34, 503, 50, 499, 67, 494, 84, 485, 101, 475, 118, 463, 134, 450, 150)
 
-[node name="DetectionCollision" type="CollisionShape2D" parent="DetectionArea"]
-shape = SubResource("ConvexPolygonShape2D_vision")
-debug_color = Color(0.309804, 0.65098, 0.835294, 0.419608)
+[node name="DetectionCollision" type="CollisionPolygon2D" parent="DetectionArea"]
+visible = false
+polygon = PackedVector2Array(0, 0, 450, -150, 463, -134, 475, -118, 485, -101, 494, -84, 499, -67, 503, -50, 506, -34, 508, -17, 509, 0, 508, 17, 506, 34, 503, 50, 499, 67, 494, 84, 485, 101, 475, 118, 463, 134, 450, 150)
 
 [node name="VisibleOnScreenEnabler2D" type="VisibleOnScreenEnabler2D" parent="." groups=["traps"]]
 position = Vector2(-4, 9)
