@@ -1,0 +1,44 @@
+[gd_scene load_steps=5 format=3 uid="uid://cvn3qwq0tl42h"]
+
+[ext_resource type="Texture2D" uid="uid://dve0hcsf1db83" path="res://assets/images/enemies/Enemy52.png" id="1_6xk8f"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ykcao"]
+size = Vector2(82, 84)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_6xk8f"]
+size = Vector2(136.667, 140)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_8e3ao"]
+size = Vector2(136.667, 140)
+
+[node name="Enemy" type="CharacterBody2D"]
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(3, 3)
+texture = ExtResource("1_6xk8f")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(-4, 9)
+shape = SubResource("RectangleShape2D_ykcao")
+
+[node name="Hurtbox" type="Area2D" parent="."]
+position = Vector2(-4, 9)
+
+[node name="HurtboxCollision" type="CollisionShape2D" parent="Hurtbox"]
+position = Vector2(-2.38419e-06, 0)
+scale = Vector2(0.6, 0.6)
+shape = SubResource("RectangleShape2D_6xk8f")
+
+[node name="Hitbox" type="Area2D" parent="."]
+position = Vector2(-4, 9)
+
+[node name="HitboxCollision" type="CollisionShape2D" parent="Hitbox"]
+scale = Vector2(0.6, 0.6)
+shape = SubResource("RectangleShape2D_8e3ao")
+debug_color = Color(0.858824, 0.305882, 0.501961, 0.419608)
+
+[node name="VisibleOnScreenEnabler2D" type="VisibleOnScreenEnabler2D" parent="." groups=["traps"]]
+position = Vector2(-4, 9)
+scale = Vector2(0.585714, 0.6)
+rect = Rect2(-70, -70, 140, 140)
+enable_mode = 1

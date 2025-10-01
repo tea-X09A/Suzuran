@@ -1,4 +1,4 @@
-[gd_scene load_steps=112 format=3 uid="uid://daofj62a4corn"]
+[gd_scene load_steps=116 format=3 uid="uid://daofj62a4corn"]
 
 [ext_resource type="Script" uid="uid://cyb2ijm5xuo6s" path="res://scripts/player/player.gd" id="1_lvxji"]
 [ext_resource type="Texture2D" uid="uid://ba2j33331esgm" path="res://assets/images/player/normal_idle/名称未設定のアートワーク (4).png" id="2_gmlin"]
@@ -10,6 +10,8 @@
 [ext_resource type="Texture2D" uid="uid://jle21g31pxn5" path="res://assets/images/player/normal_squat/frame_squat_001.png" id="6_0owmy"]
 [ext_resource type="Texture2D" uid="uid://4howketapm5p" path="res://assets/images/player/normal_shooting_01_001/frame_shooting_01_001.png" id="7_5gtgg"]
 [ext_resource type="Texture2D" uid="uid://danti7qvsclca" path="res://assets/images/player/normal_shooting_01_002/frame_shooting_01_002.png" id="10_je7p5"]
+[ext_resource type="Texture2D" uid="uid://b50ln74l5mfx3" path="res://assets/images/player/enemy_01/idle/名称未設定のアートワーク (19).png" id="11_fm80t"]
+[ext_resource type="Texture2D" uid="uid://cwpjlvwe42hjt" path="res://assets/images/player/enemy_01/down/名称未設定のアートワーク (18).png" id="12_gx1jg"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ry65h"]
 size = Vector2(68, 167)
@@ -786,9 +788,41 @@ tracks/2/keys = {
 "values": [true]
 }
 
+[sub_resource type="Animation" id="Animation_myrg7"]
+resource_name = "enemy_01_normal_idle"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:texture")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [ExtResource("11_fm80t")]
+}
+
+[sub_resource type="Animation" id="Animation_kvlxm"]
+resource_name = "enemy_01_normal_down"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:texture")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [ExtResource("12_gx1jg")]
+}
+
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_myrg7"]
 _data = {
 &"RESET": SubResource("Animation_gx1jg"),
+&"enemy_01_normal_down": SubResource("Animation_kvlxm"),
+&"enemy_01_normal_idle": SubResource("Animation_myrg7"),
 &"normal_down": SubResource("Animation_down"),
 &"normal_fall": SubResource("Animation_fall"),
 &"normal_fighting": SubResource("Animation_fighting"),
