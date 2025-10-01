@@ -105,6 +105,7 @@ func _initialize_state_system() -> void:
 	state_instances["SHOOTING"] = ShootingState.new(self)
 	state_instances["KNOCKBACK"] = KnockbackState.new(self)
 	state_instances["DOWN"] = DownState.new(self)
+	state_instances["CAPTURE"] = CaptureState.new(self)
 
 	# 初期状態をIDLEに設定
 	current_state = state_instances["IDLE"]

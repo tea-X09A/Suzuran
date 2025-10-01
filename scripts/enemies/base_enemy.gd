@@ -311,3 +311,29 @@ func _on_player_detected(_body: Node2D) -> void:
 ## プレイヤーを見失った時の追加処理（継承先でオーバーライド）
 func _on_player_lost(_body: Node2D) -> void:
 	pass
+
+# ======================== CAPTURE状態制御 ========================
+
+## CAPTURE状態開始時の処理
+func enter_capture_state() -> void:
+	# 移動を停止
+	velocity = Vector2.ZERO
+	# 現在の状態を待機に変更
+	current_state = "waiting"
+	wait_timer = 0.0
+	# 処理を無効化
+	processing_enabled = false
+	# 非表示にする
+	visible = false
+
+## CAPTURE状態終了時の処理
+func exit_capture_state() -> void:
+	# 表示する
+	visible = true
+	# 処理を有効化
+	processing_enabled = true
+	# パトロールを再開
+	current_state = "waiting"
+	wait_timer = 0.0
+	# 現在位置を新しいパトロール中心点として設定
+	patrol_center = global_position

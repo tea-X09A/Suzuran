@@ -49,9 +49,29 @@ func _chase_player() -> void:
 func _on_hitbox_body_entered(body: Node2D) -> void:
 	# プレイヤーグループのボディのみ処理
 	if body.is_in_group("player"):
-		# プレイヤーにダメージを与える処理
-		if body.has_method("take_damage"):
-			body.take_damage(damage)
+		# プレイヤーの現在の状態を確認
+		var player_state_name: String = ""
+		if body.has_method("get_animation_tree"):
+			var anim_tree: AnimationTree = body.get_animation_tree()
+			if anim_tree:
+				var state_machine: AnimationNodeStateMachinePlayback = anim_tree.get("parameters/playback")
+				if state_machine:
+					player_state_name = state_machine.get_current_node()
+
+		# プレイヤーがDOWN状態かどうかで使用するアニメーションを決定
+		var capture_animation: String = "enemy_01_normal_idle"
+		if player_state_name == "DOWN":
+			capture_animation = "enemy_01_normal_down"
+
+		# プレイヤーのアニメーションを変更
+		if body.has_method("get_animation_player"):
+			var anim_player: AnimationPlayer = body.get_animation_player()
+			if anim_player and anim_player.has_animation(capture_animation):
+				anim_player.play(capture_animation)
+
+		# プレイヤーをCAPTURE状態に遷移
+		if body.has_method("update_animation_state"):
+			body.update_animation_state("CAPTURE")
 
 # ======================== ダメージ処理 ========================
 
