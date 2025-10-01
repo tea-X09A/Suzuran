@@ -22,6 +22,8 @@ extends CharacterBody2D
 @export var patrol_range: float = 100.0
 # 待機時間（秒）
 @export var wait_duration: float = 2.0
+# プレイヤーを見失うまでの遅延時間（秒）
+@export var lose_sight_delay: float = 2.0
 
 # ======================== 状態管理変数 ========================
 
@@ -49,6 +51,10 @@ var last_movement_direction: float = 0.0
 var distance_since_collision: float = 0.0
 # 壁衝突判定を再開する距離
 var min_distance_from_wall: float = 20.0
+# プレイヤーが検知範囲外にいるかどうか
+var player_out_of_range: bool = false
+# プレイヤーが範囲外にいる時間
+var time_out_of_range: float = 0.0
 
 # ======================== 初期化処理 ========================
 
@@ -121,12 +127,24 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
 
+	# プレイヤーが範囲外にいる時間のカウント
+	if player_out_of_range and current_state == "chasing":
+		time_out_of_range += delta
+		# 遅延時間を超えたらプレイヤーを見失う
+		if time_out_of_range >= lose_sight_delay:
+			_lose_player()
+
 	# 現在の状態に応じた処理
 	match current_state:
 		"chasing":
 			# プレイヤーを追跡
 			if player:
 				_chase_player()
+
+			# 追跡中も壁衝突を検知
+			if is_on_wall():
+				hit_wall = true
+				last_movement_direction = sign(velocity.x) if velocity.x != 0 else last_movement_direction
 
 		"waiting":
 			# 待機中
@@ -195,6 +213,27 @@ func _update_facing_direction() -> void:
 func _chase_player() -> void:
 	pass
 
+## プレイヤーを見失う処理
+func _lose_player() -> void:
+	# プレイヤー参照をnullにする前に保存
+	var lost_player: Node2D = player
+	velocity.x = 0.0
+	player = null
+	# 現在位置を新しいパトロール中心点として設定
+	patrol_center = global_position
+	# 待機状態へ移行
+	current_state = "waiting"
+	wait_timer = 0.0
+	# 壁に接触していない場合のみ壁衝突フラグをリセット
+	if not is_on_wall():
+		hit_wall = false
+		distance_since_collision = 0.0
+	# 範囲外フラグをリセット
+	player_out_of_range = false
+	time_out_of_range = 0.0
+	# 継承先で追加処理を行うための仮想関数
+	_on_player_lost(lost_player)
+
 # ======================== コリジョン管理 ========================
 
 ## コリジョンエリアを有効化
@@ -237,6 +276,9 @@ func _on_screen_exited() -> void:
 	# 壁衝突フラグをリセット
 	hit_wall = false
 	distance_since_collision = 0.0
+	# 範囲外フラグをリセット
+	player_out_of_range = false
+	time_out_of_range = 0.0
 
 # ======================== 検知エリアシグナルハンドラ ========================
 
@@ -246,6 +288,9 @@ func _on_detection_area_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player"):
 		player = body
 		current_state = "chasing"
+		# 範囲外フラグをリセット
+		player_out_of_range = false
+		time_out_of_range = 0.0
 		# 継承先で追加処理を行うための仮想関数
 		_on_player_detected(body)
 
@@ -253,18 +298,9 @@ func _on_detection_area_body_entered(body: Node2D) -> void:
 func _on_detection_area_body_exited(body: Node2D) -> void:
 	# プレイヤーグループのボディのみ処理
 	if body.is_in_group("player"):
-		velocity.x = 0.0
-		player = null
-		# 現在位置を新しいパトロール中心点として設定
-		patrol_center = global_position
-		# 待機状態へ移行
-		current_state = "waiting"
-		wait_timer = 0.0
-		# 壁衝突フラグをリセット
-		hit_wall = false
-		distance_since_collision = 0.0
-		# 継承先で追加処理を行うための仮想関数
-		_on_player_lost(body)
+		# 範囲外フラグを立てて時間のカウントを開始
+		player_out_of_range = true
+		time_out_of_range = 0.0
 
 # ======================== 仮想関数（継承先でオーバーライド） ========================
 
