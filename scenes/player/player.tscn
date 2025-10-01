@@ -1157,6 +1157,7 @@ size = Vector2(157, 63)
 size = Vector2(60, 30)
 
 [node name="Player" type="CharacterBody2D" groups=["player"]]
+z_index = 1
 collision_layer = 4
 script = ExtResource("1_lvxji")
 
