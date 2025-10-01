@@ -17,6 +17,21 @@ extends Control
 @export var heart_color: Color = Color(1.0, 0.2, 0.2, 1.0)  # 赤色
 @export var dot_color: Color = Color.WHITE
 
+# ハートのドットパターン（11x11）
+const HEART_PATTERN: Array = [
+	[0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0],
+	[0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0],
+	[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+	[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+	[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+	[0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+	[0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+	[0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+	[0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+	[0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+]
+
 # 数字のドットパターン（5x7）
 const DIGIT_PATTERNS: Dictionary = {
 	0: [
@@ -130,7 +145,7 @@ func _draw() -> void:
 
 func _draw_dotted_gauge(center: Vector2, start_angle: float, end_angle: float) -> void:
 	var dot_count: int = 64  # 円周上に配置するドットの総数
-	var dot_size: float = 8.0  # ドットのサイズ（ピクセル）
+	var dot_size: float = 10.0  # ドットのサイズ（ピクセル）
 	var angle_step: float = TAU / float(dot_count)
 
 	# 背景のドット（薄いグレー）- 正方形
@@ -150,36 +165,56 @@ func _draw_dotted_gauge(center: Vector2, start_angle: float, end_angle: float) -
 			draw_rect(rect, gauge_color)
 
 func _draw_heart(center: Vector2) -> void:
-	var heart_size: float = 40.0
-	var points: PackedVector2Array = PackedVector2Array()
+	var dot_size: float = 5.0  # 各ドットのサイズ
+	var spacing: float = 5.0  # ドット間の間隔
 
-	# ハートの形状を生成
-	for i in range(32):
-		var t: float = float(i) / 32.0 * TAU
-		var x: float = 16.0 * pow(sin(t), 3)
-		var y: float = -(13.0 * cos(t) - 5.0 * cos(2.0 * t) - 2.0 * cos(3.0 * t) - cos(4.0 * t))
-		points.append(center + Vector2(x, y) * heart_size / 20.0)
+	# パターンの実際の境界を計算
+	var min_row: int = 0
+	var max_row: int = 9  # 最後の行は空なので除外
+	var min_col: int = 0
+	var max_col: int = 10
 
-	draw_colored_polygon(points, heart_color)
+	var pattern_width: float = (max_col - min_col + 1) * spacing
+	var pattern_height: float = (max_row - min_row + 1) * spacing
 
-	# ハイライトの追加（左上）
-	var highlight_pos: Vector2 = center + Vector2(-20, -12)
+	# パターンの中心オフセットを計算（0.5 spacingずつ調整して正確に中央に）
+	var start_pos: Vector2 = center - Vector2(pattern_width / 2.0, pattern_height / 2.0) + Vector2(spacing / 2.0, spacing / 2.0)
+
+	# ハートのドットパターンを描画
+	for row in range(11):
+		for col in range(11):
+			if HEART_PATTERN[row][col] == 1:
+				var pos: Vector2 = start_pos + Vector2(col * spacing, row * spacing)
+				var rect: Rect2 = Rect2(pos - Vector2(dot_size / 2.0, dot_size / 2.0), Vector2(dot_size, dot_size))
+				draw_rect(rect, heart_color)
+
+	# ハイライトのドット（左上に2x2のドット）
 	var highlight_color: Color = Color(1.0, 1.0, 1.0, 0.7)
-	draw_circle(highlight_pos, 3.5, highlight_color)
+	var highlight_positions: Array = [
+		Vector2(2, 2),
+		Vector2(3, 2),
+		Vector2(2, 3)
+	]
+
+	for highlight_pos in highlight_positions:
+		var pos: Vector2 = start_pos + highlight_pos * spacing
+		var rect: Rect2 = Rect2(pos - Vector2(dot_size / 2.0, dot_size / 2.0), Vector2(dot_size, dot_size))
+		draw_rect(rect, highlight_color)
 
 func _draw_dot_number(center: Vector2, number: int) -> void:
 	if number < 0 or number > 9:
 		return
 
 	var pattern: Array = DIGIT_PATTERNS[number]
-	var dot_size: float = 1.8
-	var spacing: float = 3.0
+	var dot_size: float = 5.0  # 正方形のドットのサイズ（ハートと同じ）
+	var spacing: float = 3.0  # ドット間の間隔
 	var pattern_width: float = 5 * spacing
 	var pattern_height: float = 7 * spacing
-	var start_pos: Vector2 = center - Vector2(pattern_width / 2.0, pattern_height / 2.0)
+	var start_pos: Vector2 = center - Vector2(pattern_width / 2.0, pattern_height / 2.0) + Vector2(spacing / 2.0, spacing / 2.0)
 
 	for row in range(7):
 		for col in range(5):
 			if pattern[row][col] == 1:
 				var pos: Vector2 = start_pos + Vector2(col * spacing, row * spacing)
-				draw_circle(pos, dot_size, dot_color)
+				var rect: Rect2 = Rect2(pos - Vector2(dot_size / 2.0, dot_size / 2.0), Vector2(dot_size, dot_size))
+				draw_rect(rect, dot_color)
