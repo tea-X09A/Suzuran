@@ -1,10 +1,11 @@
-[gd_scene load_steps=8 format=4 uid="uid://c66yhlgjdohsy"]
+[gd_scene load_steps=9 format=4 uid="uid://c66yhlgjdohsy"]
 
 [ext_resource type="PackedScene" uid="uid://cb3hree4jheeu" path="res://scenes/levels/camera.tscn" id="1_o8kyb"]
 [ext_resource type="Texture2D" uid="uid://cvvb866p8u71i" path="res://assets/images/tilesets/tilesheet_complete.png" id="3_5kr0j"]
 [ext_resource type="PackedScene" uid="uid://daofj62a4corn" path="res://scenes/player/player.tscn" id="3_hghvf"]
 [ext_resource type="PackedScene" uid="uid://ygpxc8s354rc" path="res://scenes/traps/trap_01.tscn" id="4_5kr0j"]
 [ext_resource type="PackedScene" uid="uid://cvn3qwq0tl42h" path="res://scenes/enemies/enemy_01.tscn" id="5_ry65h"]
+[ext_resource type="Script" uid="uid://dxdj20rflv3f0" path="res://scripts/ui/circular_progress.gd" id="6_circular"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ry65h"]
 texture = ExtResource("3_5kr0j")
@@ -297,6 +298,15 @@ tile_map_data = PackedByteArray("AAD2//f/AAAAAAkAAAD2//j/AAAAAAkAAAD2//n/AAAAAAk
 tile_set = SubResource("TileSet_d0grl")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="HPGauge" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 50.0
+offset_top = 50.0
+offset_right = 150.0
+offset_bottom = 150.0
+script = ExtResource("6_circular")
 
 [node name="trap_01" parent="." instance=ExtResource("4_5kr0j")]
 position = Vector2(-499, -73)

@@ -9,8 +9,8 @@ size = Vector2(82, 84)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_6xk8f"]
 size = Vector2(136.667, 140)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_8e3ao"]
-size = Vector2(136.667, 140)
+[sub_resource type="CircleShape2D" id="CircleShape2D_uavjf"]
+radius = 58.3333
 
 [node name="Enemy" type="CharacterBody2D"]
 collision_layer = 2
@@ -41,7 +41,7 @@ collision_mask = 4
 
 [node name="HitboxCollision" type="CollisionShape2D" parent="Hitbox"]
 scale = Vector2(0.6, 0.6)
-shape = SubResource("RectangleShape2D_8e3ao")
+shape = SubResource("CircleShape2D_uavjf")
 debug_color = Color(0.858824, 0.305882, 0.501961, 0.419608)
 
 [node name="DetectionArea" type="Area2D" parent="."]
