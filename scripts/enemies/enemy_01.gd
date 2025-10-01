@@ -19,13 +19,13 @@ func _ready() -> void:
 # ======================== プレイヤー検知時の挙動 ========================
 
 ## プレイヤーを検知した時の追加処理
-func _on_player_detected(body: Node2D) -> void:
+func _on_player_detected(_body: Node2D) -> void:
 	# Enemy01固有の検知時処理をここに追加
 	# 例: 攻撃アニメーション開始、効果音再生など
 	pass
 
 ## プレイヤーを見失った時の追加処理
-func _on_player_lost(body: Node2D) -> void:
+func _on_player_lost(_body: Node2D) -> void:
 	# Enemy01固有の見失い時処理をここに追加
 	# 例: 攻撃アニメーション停止など
 	pass
@@ -56,7 +56,7 @@ func _on_hitbox_body_entered(body: Node2D) -> void:
 # ======================== ダメージ処理 ========================
 
 ## ダメージを受ける処理
-func take_damage(amount: int) -> void:
+func take_damage(_amount: int) -> void:
 	# ここにダメージ処理を追加
 	# 例: HPを減らす、ノックバック、死亡処理など
 	pass

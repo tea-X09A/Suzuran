@@ -269,9 +269,9 @@ func _on_detection_area_body_exited(body: Node2D) -> void:
 # ======================== 仮想関数（継承先でオーバーライド） ========================
 
 ## プレイヤーを検知した時の追加処理（継承先でオーバーライド）
-func _on_player_detected(body: Node2D) -> void:
+func _on_player_detected(_body: Node2D) -> void:
 	pass
 
 ## プレイヤーを見失った時の追加処理（継承先でオーバーライド）
-func _on_player_lost(body: Node2D) -> void:
+func _on_player_lost(_body: Node2D) -> void:
 	pass
