@@ -119,18 +119,35 @@ func _draw() -> void:
 	var start_angle: float = -PI / 2  # 12時の位置から開始
 	var end_angle: float = start_angle + TAU * progress  # 時計回りに進行
 
-	# 背景の円（薄いグレー）
-	draw_arc(center, radius, 0, TAU, 64, background_color, thickness, true)
-
-	# プログレスゲージ（ピンク）
-	if progress > 0.0:
-		draw_arc(center, radius, start_angle, end_angle, 64, gauge_color, thickness, true)
+	# 円形ゲージをドットで描画
+	_draw_dotted_gauge(center, start_angle, end_angle)
 
 	# ハートの描画
 	_draw_heart(center)
 
 	# ドット数字の描画
 	_draw_dot_number(center, hp_value)
+
+func _draw_dotted_gauge(center: Vector2, start_angle: float, end_angle: float) -> void:
+	var dot_count: int = 64  # 円周上に配置するドットの総数
+	var dot_size: float = 8.0  # ドットのサイズ（ピクセル）
+	var angle_step: float = TAU / float(dot_count)
+
+	# 背景のドット（薄いグレー）- 正方形
+	for i in range(dot_count):
+		var angle: float = float(i) * angle_step
+		var pos: Vector2 = center + Vector2(cos(angle), sin(angle)) * radius
+		var rect: Rect2 = Rect2(pos - Vector2(dot_size / 2.0, dot_size / 2.0), Vector2(dot_size, dot_size))
+		draw_rect(rect, background_color)
+
+	# プログレスのドット（ピンク）- 正方形
+	if progress > 0.0:
+		var progress_dot_count: int = int(float(dot_count) * progress)
+		for i in range(progress_dot_count):
+			var angle: float = start_angle + float(i) * angle_step
+			var pos: Vector2 = center + Vector2(cos(angle), sin(angle)) * radius
+			var rect: Rect2 = Rect2(pos - Vector2(dot_size / 2.0, dot_size / 2.0), Vector2(dot_size, dot_size))
+			draw_rect(rect, gauge_color)
 
 func _draw_heart(center: Vector2) -> void:
 	var heart_size: float = 40.0
