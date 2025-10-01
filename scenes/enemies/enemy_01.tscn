@@ -37,7 +37,7 @@ shape = SubResource("RectangleShape2D_6xk8f")
 [node name="Hitbox" type="Area2D" parent="."]
 position = Vector2(-4, 9)
 collision_layer = 16
-collision_mask = 0
+collision_mask = 4
 
 [node name="HitboxCollision" type="CollisionShape2D" parent="Hitbox"]
 scale = Vector2(0.6, 0.6)

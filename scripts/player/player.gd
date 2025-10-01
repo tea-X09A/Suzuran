@@ -55,6 +55,8 @@ var ignore_jump_horizontal_velocity: bool = false
 var squat_was_cancelled: bool = false
 # Hurtbox/Hitboxの初期X位置を保存（反転処理用）
 var original_box_positions: Dictionary = {}
+# CAPTURE状態時に使用するアニメーション名
+var capture_animation_name: String = "enemy_01_normal_idle"
 
 # ======================== ステート管理システム ========================
 

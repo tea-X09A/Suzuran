@@ -49,6 +49,10 @@ func _chase_player() -> void:
 func _on_hitbox_body_entered(body: Node2D) -> void:
 	# プレイヤーグループのボディのみ処理
 	if body.is_in_group("player"):
+		# プレイヤーが無敵状態の場合は処理しない
+		if body.has_method("is_invincible") and body.is_invincible():
+			return
+
 		# プレイヤーの現在の状態を確認
 		var player_state_name: String = ""
 		if body.has_method("get_animation_tree"):
@@ -58,16 +62,13 @@ func _on_hitbox_body_entered(body: Node2D) -> void:
 				if state_machine:
 					player_state_name = state_machine.get_current_node()
 
-		# プレイヤーがDOWN状態かどうかで使用するアニメーションを決定
+		# プレイヤーがDOWNまたはKNOCKBACK状態かどうかで使用するアニメーションを決定
 		var capture_animation: String = "enemy_01_normal_idle"
-		if player_state_name == "DOWN":
+		if player_state_name == "DOWN" or player_state_name == "KNOCKBACK":
 			capture_animation = "enemy_01_normal_down"
 
-		# プレイヤーのアニメーションを変更
-		if body.has_method("get_animation_player"):
-			var anim_player: AnimationPlayer = body.get_animation_player()
-			if anim_player and anim_player.has_animation(capture_animation):
-				anim_player.play(capture_animation)
+		# プレイヤーに使用するアニメーションを設定
+		body.capture_animation_name = capture_animation
 
 		# プレイヤーをCAPTURE状態に遷移
 		if body.has_method("update_animation_state"):
