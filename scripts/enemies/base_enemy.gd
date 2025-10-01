@@ -440,6 +440,8 @@ func _on_screen_exited() -> void:
 	# 範囲外フラグをリセット
 	player_out_of_range = false
 	time_out_of_range = 0.0
+	# 視界の色をリセット（検知状態の色をクリア）
+	_update_vision()
 
 # ======================== 検知エリアシグナルハンドラ ========================
 
