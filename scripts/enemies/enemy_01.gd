@@ -3,6 +3,8 @@ extends CharacterBody2D
 
 # ======================== ノード参照キャッシュ ========================
 
+# Sprite2D（見た目）
+@onready var sprite: Sprite2D = $Sprite2D
 # Hitbox（プレイヤーにダメージを与える範囲）
 @onready var hitbox: Area2D = $Hitbox
 # Hurtbox（プレイヤーの攻撃を受ける範囲）
@@ -194,11 +196,31 @@ func _physics_process(delta: float) -> void:
 			hit_wall = false
 			print("Enemy01: 壁から十分離れた - distance=", distance_since_collision)
 
+	# 向きの更新
+	_update_facing_direction()
+
 	# 移動があった場合のみ出力（デバッグ用）
 	if global_position != previous_position and _debug_frame_count % 30 == 0:
 		print("Enemy01: [移動] state=", current_state, " pos=", global_position, " vel=", velocity, " hit_wall=", hit_wall, " dist_since_collision=", distance_since_collision)
 
 # ======================== プレイヤー検知と追跡 ========================
+
+## 向きを更新（左右移動に応じて反転）
+func _update_facing_direction() -> void:
+	if velocity.x != 0:
+		var direction: float = sign(velocity.x)
+		# Sprite2Dの反転（元のscaleは3なので、3または-3にする）
+		if sprite:
+			sprite.scale.x = 3.0 * direction
+		# DetectionAreaの反転
+		if detection_area:
+			detection_area.scale.x = direction
+		# Hitboxの反転
+		if hitbox:
+			hitbox.scale.x = direction
+		# Hurtboxの反転
+		if hurtbox:
+			hurtbox.scale.x = direction
 
 ## プレイヤーを追跡
 func _chase_player() -> void:
