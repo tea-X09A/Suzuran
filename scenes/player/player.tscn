@@ -295,6 +295,36 @@ tracks/22/keys = {
 "values": [false]
 }
 
+[sub_resource type="Animation" id="Animation_kvlxm"]
+resource_name = "enemy_01_normal_down"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:texture")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [ExtResource("12_gx1jg")]
+}
+
+[sub_resource type="Animation" id="Animation_myrg7"]
+resource_name = "enemy_01_normal_idle"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:texture")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [ExtResource("11_fm80t")]
+}
+
 [sub_resource type="Animation" id="Animation_down"]
 resource_name = "normal_down"
 length = 0.5
@@ -788,36 +818,6 @@ tracks/2/keys = {
 "values": [true]
 }
 
-[sub_resource type="Animation" id="Animation_myrg7"]
-resource_name = "enemy_01_normal_idle"
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Sprite2D:texture")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 1,
-"values": [ExtResource("11_fm80t")]
-}
-
-[sub_resource type="Animation" id="Animation_kvlxm"]
-resource_name = "enemy_01_normal_down"
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Sprite2D:texture")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 1,
-"values": [ExtResource("12_gx1jg")]
-}
-
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_myrg7"]
 _data = {
 &"RESET": SubResource("Animation_gx1jg"),
@@ -1118,7 +1118,8 @@ size = Vector2(157, 63)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_fm80t"]
 size = Vector2(60, 30)
 
-[node name="Player" type="CharacterBody2D"]
+[node name="Player" type="CharacterBody2D" groups=["player"]]
+collision_layer = 4
 script = ExtResource("1_lvxji")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]

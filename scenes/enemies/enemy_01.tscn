@@ -1,5 +1,6 @@
-[gd_scene load_steps=5 format=3 uid="uid://cvn3qwq0tl42h"]
+[gd_scene load_steps=7 format=3 uid="uid://cvn3qwq0tl42h"]
 
+[ext_resource type="Script" uid="uid://b5yxqvvo0gfal" path="res://scripts/enemies/enemy_01.gd" id="1_5f8g2"]
 [ext_resource type="Texture2D" uid="uid://dve0hcsf1db83" path="res://assets/images/enemies/Enemy52.png" id="1_6xk8f"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ykcao"]
@@ -11,7 +12,12 @@ size = Vector2(136.667, 140)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_8e3ao"]
 size = Vector2(136.667, 140)
 
+[sub_resource type="CircleShape2D" id="CircleShape2D_detect"]
+radius = 200.0
+
 [node name="Enemy" type="CharacterBody2D"]
+collision_layer = 2
+script = ExtResource("1_5f8g2")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 scale = Vector2(3, 3)
@@ -23,6 +29,8 @@ shape = SubResource("RectangleShape2D_ykcao")
 
 [node name="Hurtbox" type="Area2D" parent="."]
 position = Vector2(-4, 9)
+collision_layer = 0
+collision_mask = 8
 
 [node name="HurtboxCollision" type="CollisionShape2D" parent="Hurtbox"]
 position = Vector2(-2.38419e-06, 0)
@@ -31,14 +39,24 @@ shape = SubResource("RectangleShape2D_6xk8f")
 
 [node name="Hitbox" type="Area2D" parent="."]
 position = Vector2(-4, 9)
+collision_layer = 16
+collision_mask = 0
 
 [node name="HitboxCollision" type="CollisionShape2D" parent="Hitbox"]
 scale = Vector2(0.6, 0.6)
 shape = SubResource("RectangleShape2D_8e3ao")
 debug_color = Color(0.858824, 0.305882, 0.501961, 0.419608)
 
+[node name="DetectionArea" type="Area2D" parent="."]
+position = Vector2(-4, 9)
+collision_layer = 0
+collision_mask = 4
+
+[node name="DetectionCollision" type="CollisionShape2D" parent="DetectionArea"]
+shape = SubResource("CircleShape2D_detect")
+debug_color = Color(0.309804, 0.65098, 0.835294, 0.419608)
+
 [node name="VisibleOnScreenEnabler2D" type="VisibleOnScreenEnabler2D" parent="." groups=["traps"]]
 position = Vector2(-4, 9)
 scale = Vector2(0.585714, 0.6)
 rect = Rect2(-70, -70, 140, 140)
-enable_mode = 1
