@@ -24,6 +24,8 @@ extends CharacterBody2D
 @export var wait_duration: float = 2.0
 # プレイヤーを見失うまでの遅延時間（秒）
 @export var lose_sight_delay: float = 2.0
+# キャプチャのクールダウン時間（秒）
+@export var capture_cooldown: float = 0.5
 
 # ======================== 状態管理変数 ========================
 
@@ -55,6 +57,8 @@ var min_distance_from_wall: float = 20.0
 var player_out_of_range: bool = false
 # プレイヤーが範囲外にいる時間
 var time_out_of_range: float = 0.0
+# 最後にキャプチャした時間
+var last_capture_time: float = 0.0
 
 # ======================== 初期化処理 ========================
 
@@ -190,6 +194,9 @@ func _physics_process(delta: float) -> void:
 	# 向きの更新
 	_update_facing_direction()
 
+	# フレームごとのプレイヤーコリジョンチェック（トラップと同様）
+	check_player_collision()
+
 # ======================== プレイヤー検知と追跡 ========================
 
 ## 向きを更新（左右移動に応じて反転）
@@ -233,6 +240,72 @@ func _lose_player() -> void:
 	time_out_of_range = 0.0
 	# 継承先で追加処理を行うための仮想関数
 	_on_player_lost(lost_player)
+
+# ======================== Hitboxによるプレイヤー検知 ========================
+
+## フレームごとのプレイヤーコリジョンチェック（トラップと同様）
+func check_player_collision() -> void:
+	if not hitbox:
+		return
+
+	# クールダウン中は処理しない
+	var current_time: float = Time.get_unix_time_from_system()
+	if current_time - last_capture_time < capture_cooldown:
+		return
+
+	# プレイヤーとの重なりをチェック
+	var overlapping_bodies: Array[Node2D] = hitbox.get_overlapping_bodies()
+
+	for body in overlapping_bodies:
+		if body.is_in_group("player"):
+			# 実際にキャプチャを適用した場合のみタイマーを更新
+			if apply_capture_to_player(body):
+				last_capture_time = current_time
+			break
+
+## プレイヤーにキャプチャを適用
+func apply_capture_to_player(body: Node2D) -> bool:
+	# プレイヤーが無敵状態の場合はキャプチャしない
+	if body.has_method("is_invincible") and body.is_invincible():
+		return false
+
+	# プレイヤーの速度を完全に停止（水平・垂直ともに0にして動作の反動を残さない）
+	if body is CharacterBody2D:
+		body.velocity = Vector2.ZERO
+
+	# プレイヤーの現在の状態を確認
+	var player_state_name: String = ""
+	if body.has_method("get_animation_tree"):
+		var anim_tree: AnimationTree = body.get_animation_tree()
+		if anim_tree:
+			var state_machine: AnimationNodeStateMachinePlayback = anim_tree.get("parameters/playback")
+			if state_machine:
+				player_state_name = state_machine.get_current_node()
+
+	# プレイヤーがDOWNまたはKNOCKBACK状態かどうかで使用するアニメーションを決定
+	var capture_animation: String = get_capture_animation_normal()
+	if player_state_name == "DOWN" or player_state_name == "KNOCKBACK":
+		capture_animation = get_capture_animation_down()
+
+	# プレイヤーに使用するアニメーションを設定
+	body.capture_animation_name = capture_animation
+
+	# プレイヤーをCAPTURE状態に遷移
+	if body.has_method("update_animation_state"):
+		body.update_animation_state("CAPTURE")
+
+	print("敵がプレイヤーをキャプチャ: アニメーション=", capture_animation)
+	return true
+
+## キャプチャアニメーション（通常時）を取得（継承先でオーバーライド必須）
+func get_capture_animation_normal() -> String:
+	push_error("get_capture_animation_normal() must be overridden in derived class")
+	return ""
+
+## キャプチャアニメーション（DOWN/KNOCKBACK時）を取得（継承先でオーバーライド必須）
+func get_capture_animation_down() -> String:
+	push_error("get_capture_animation_down() must be overridden in derived class")
+	return ""
 
 # ======================== コリジョン管理 ========================
 
