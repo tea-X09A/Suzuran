@@ -41,7 +41,7 @@ extends CharacterBody2D
 
 # 敵のID（アニメーション名に使用、継承先で設定）
 var enemy_id: String = ""
-# キャプチャ時の状態（アニメーション名に使用）
+# キャプチャ時の状態（アニメーション名に使用、初期値をnormalとする）
 var capture_condition: String = "normal"
 # 処理が有効かどうかのフラグ
 var processing_enabled: bool = false
@@ -81,6 +81,8 @@ var raycasts: Array[RayCast2D] = []
 var vision_update_counter: int = 0
 # 視界更新の間隔（フレーム数）
 var vision_update_interval: int = 5
+# hitboxと重なっているプレイヤー（キャッシュ用）
+var overlapping_player: Node2D = null
 
 # ======================== 初期化処理 ========================
 
@@ -157,6 +159,9 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
 
+	# hitboxと重なっているプレイヤーをチェック（1フレームに1回のみ）
+	overlapping_player = _get_overlapping_player()
+
 	# プレイヤーが範囲外にいる時間のカウント
 	if player_out_of_range and current_state == "chasing":
 		time_out_of_range += delta
@@ -167,9 +172,14 @@ func _physics_process(delta: float) -> void:
 	# 現在の状態に応じた処理
 	match current_state:
 		"chasing":
-			# プレイヤーを追跡
-			if player:
-				_chase_player()
+			# hitboxがplayerのhurtboxと重なっているかチェック
+			if overlapping_player:
+				# 攻撃範囲内なので立ち止まる
+				velocity.x = 0.0
+			else:
+				# プレイヤーを追跡
+				if player:
+					_chase_player()
 			# 追跡中も壁衝突を検知
 			if is_on_wall():
 				hit_wall = true
@@ -217,8 +227,9 @@ func _physics_process(delta: float) -> void:
 	if vision_update_counter >= vision_update_interval:
 		vision_update_counter = 0
 		_update_vision()
-	# フレームごとのプレイヤーコリジョンチェック
-	check_player_collision()
+	# キャプチャ処理
+	if overlapping_player:
+		_try_capture_player(overlapping_player)
 
 # ======================== プレイヤー検知と追跡 ========================
 
@@ -294,6 +305,21 @@ func _update_facing_direction() -> void:
 func _chase_player() -> void:
 	pass
 
+## hitboxと重なっているプレイヤーを取得
+func _get_overlapping_player() -> Node2D:
+	if not hitbox:
+		return null
+
+	# プレイヤーのHurtboxとの重なりをチェック
+	for area in hitbox.get_overlapping_areas():
+		# Hurtboxの親ノードを取得
+		var parent_node: Node = area.get_parent()
+		# 親ノードがプレイヤーグループに所属しているか確認
+		if parent_node and parent_node.is_in_group("player"):
+			return parent_node
+
+	return null
+
 ## 待機状態にリセット
 func _reset_to_waiting() -> void:
 	current_state = "waiting"
@@ -329,26 +355,16 @@ func _lose_player() -> void:
 
 # ======================== Hitboxによるプレイヤー検知 ========================
 
-## フレームごとのプレイヤーコリジョンチェック
-func check_player_collision() -> void:
-	if not hitbox:
-		return
-
+## キャプチャ処理を試行
+func _try_capture_player(player_node: Node2D) -> void:
 	# クールダウン中は処理しない
 	var current_time: float = Time.get_unix_time_from_system()
 	if current_time - last_capture_time < capture_cooldown:
 		return
 
-	# プレイヤーのHurtboxとの重なりをチェック
-	for area in hitbox.get_overlapping_areas():
-		# Hurtboxの親ノードを取得
-		var parent_node: Node = area.get_parent()
-		# 親ノードがプレイヤーグループに所属しているか確認
-		if parent_node and parent_node.is_in_group("player"):
-			# 実際にキャプチャを適用した場合のみタイマーを更新
-			if apply_capture_to_player(parent_node):
-				last_capture_time = current_time
-			break
+	# 実際にキャプチャを適用した場合のみタイマーを更新
+	if apply_capture_to_player(player_node):
+		last_capture_time = current_time
 
 ## プレイヤーにキャプチャを適用
 func apply_capture_to_player(body: Node2D) -> bool:
