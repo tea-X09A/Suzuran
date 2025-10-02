@@ -187,8 +187,8 @@ func _enable_all_collision_boxes() -> void:
 
 ## CAPTURE状態時のHP減少処理
 func _update_hp_depletion(delta: float) -> void:
-	# 毎秒1ずつHP減少
-	player.current_hp -= delta
+	# 2秒ごとに1ずつHP減少
+	player.current_hp -= delta * 0.5
 
 	# HPが0未満にならないようにクランプ
 	if player.current_hp < 0.0:
@@ -196,4 +196,4 @@ func _update_hp_depletion(delta: float) -> void:
 
 	# UIのHPゲージを更新
 	if player.hp_gauge:
-		player.hp_gauge.progress = player.current_hp / 100.0
+		player.hp_gauge.progress = player.current_hp / 32.0

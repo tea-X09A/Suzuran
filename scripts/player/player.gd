@@ -59,8 +59,8 @@ var original_box_positions: Dictionary = {}
 var capture_animation_name: String = "enemy_01_normal_idle"
 # シールド残量（初期値3）
 var shield_count: int = 3
-# 現在のHP（初期値100）
-var current_hp: float = 100.0
+# 現在のHP（初期値32）
+var current_hp: float = 32.0
 # UI HPゲージへの参照
 var hp_gauge: Control = null
 # ダメージ表記への参照
@@ -147,7 +147,7 @@ func _initialize_ui() -> void:
 		if hp_gauge:
 			# シールド値とHP値を初期化
 			hp_gauge.hp_value = shield_count
-			hp_gauge.progress = current_hp / 100.0
+			hp_gauge.progress = current_hp / 32.0
 
 # ======================== メイン処理ループ ========================
 
@@ -296,13 +296,13 @@ func handle_enemy_hit(enemy_direction: Vector2) -> bool:
 func show_damage_number(damage: int) -> void:
 	# 既存のダメージ表記がある場合は上書き
 	if damage_number and is_instance_valid(damage_number):
-		damage_number.text = str(damage)
+		damage_number.display_value = damage
 		damage_number.reset_fade()
 		return
 
 	# 新規作成
 	damage_number = DamageNumber.new()
-	damage_number.text = str(damage)
+	damage_number.display_value = damage
 
 	# スプライトの頂点から少し上に配置
 	var sprite_height: float = 0.0
@@ -311,6 +311,4 @@ func show_damage_number(damage: int) -> void:
 	var offset_above_head: float = 10.0  # 頭上からの追加オフセット
 	damage_number.position = Vector2(0, -(sprite_height / 2.0 + offset_above_head))
 
-	damage_number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	damage_number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	add_child(damage_number)
