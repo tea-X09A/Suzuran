@@ -71,6 +71,10 @@ var time_out_of_range: float = 0.0
 var last_capture_time: float = 0.0
 # 視界判定用のRayCast2D配列
 var raycasts: Array[RayCast2D] = []
+# 視界更新のフレームカウンター
+var vision_update_counter: int = 0
+# 視界更新の間隔（フレーム数）
+var vision_update_interval: int = 5
 
 # ======================== 初期化処理 ========================
 
@@ -81,6 +85,9 @@ func _ready() -> void:
 	GRAVITY = ProjectSettings.get_setting("physics/2d/default_gravity")
 	# 初期位置をパトロールの中心として記録
 	patrol_center = global_position
+
+	# 視界更新のタイミングをずらす（各敵のインスタンスIDを基にオフセットを設定）
+	vision_update_counter = get_instance_id() % vision_update_interval
 
 	# VisibleOnScreenEnabler2Dのシグナルに接続
 	if visibility_enabler:
@@ -196,8 +203,11 @@ func _physics_process(delta: float) -> void:
 
 	# 向きの更新
 	_update_facing_direction()
-	# 視界の更新
-	_update_vision()
+	# 視界の更新（間引き処理）
+	vision_update_counter += 1
+	if vision_update_counter >= vision_update_interval:
+		vision_update_counter = 0
+		_update_vision()
 	# フレームごとのプレイヤーコリジョンチェック
 	check_player_collision()
 
