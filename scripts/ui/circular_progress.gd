@@ -10,8 +10,8 @@ extends Control
 		hp_value = value
 		queue_redraw()
 
-@export var radius: float = 50.0
-@export var thickness: float = 8.0
+@export var radius: float = 75.0
+@export var thickness: float = 12.0
 @export var gauge_color: Color = Color(1.0, 0.4, 0.7, 1.0)  # ピンク色
 @export var background_color: Color = Color(0.2, 0.2, 0.2, 0.3)
 @export var heart_color: Color = Color(1.0, 0.2, 0.2, 1.0)  # 赤色
@@ -144,7 +144,7 @@ func _draw() -> void:
 
 func _draw_dotted_gauge(center: Vector2, start_angle: float) -> void:
 	var dot_count: int = 32  # 円周上に配置するドットの総数
-	var dot_size: float = 10.0  # ドットのサイズ（ピクセル）
+	var dot_size: float = 15.0  # ドットのサイズ（ピクセル）
 	var angle_step: float = TAU / float(dot_count)
 
 	# 背景のドット（薄いグレー）- 正方形
@@ -165,8 +165,8 @@ func _draw_dotted_gauge(center: Vector2, start_angle: float) -> void:
 			draw_rect(rect, gauge_color)
 
 func _draw_heart(center: Vector2) -> void:
-	var dot_size: float = 5.0  # 各ドットのサイズ
-	var spacing: float = 5.0  # ドット間の間隔
+	var dot_size: float = 7.5  # 各ドットのサイズ
+	var spacing: float = 7.5  # ドット間の間隔
 
 	# パターンの実際の境界を計算
 	var min_row: int = 0
@@ -206,8 +206,8 @@ func _draw_dot_number(center: Vector2, number: int) -> void:
 		return
 
 	var pattern: Array = DIGIT_PATTERNS[number]
-	var dot_size: float = 5.0  # 正方形のドットのサイズ（ハートと同じ）
-	var spacing: float = 3.0  # ドット間の間隔
+	var dot_size: float = 7.5  # 正方形のドットのサイズ（ハートと同じ）
+	var spacing: float = 4.5  # ドット間の間隔
 	var pattern_width: float = 5 * spacing
 	var pattern_height: float = 7 * spacing
 	var start_pos: Vector2 = center - Vector2(pattern_width / 2.0, pattern_height / 2.0) + Vector2(spacing / 2.0, spacing / 2.0)

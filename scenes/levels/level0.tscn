@@ -304,8 +304,8 @@ layout_mode = 3
 anchors_preset = 0
 offset_left = 50.0
 offset_top = 50.0
-offset_right = 150.0
-offset_bottom = 150.0
+offset_right = 200.0
+offset_bottom = 200.0
 script = ExtResource("6_circular")
 
 [node name="trap_01" parent="." instance=ExtResource("4_5kr0j")]
