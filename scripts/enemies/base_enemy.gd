@@ -337,6 +337,19 @@ func apply_capture_to_player(body: Node2D) -> bool:
 	if body.has_method("is_invincible") and body.is_invincible():
 		return false
 
+	# 敵からプレイヤーへの方向を計算
+	var direction_to_player: Vector2 = (body.global_position - global_position).normalized()
+
+	# プレイヤーの敵ヒット処理を呼び出す
+	var should_knockback: bool = false
+	if body.has_method("handle_enemy_hit"):
+		should_knockback = body.handle_enemy_hit(direction_to_player)
+
+	# knockback処理が実行された場合はここで終了
+	if should_knockback:
+		return true
+
+	# シールドが0の場合、CAPTURE状態へ遷移
 	# プレイヤーの速度を完全に停止（水平・垂直ともに0にして動作の反動を残さない）
 	if body is CharacterBody2D:
 		body.velocity = Vector2.ZERO

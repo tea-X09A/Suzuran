@@ -46,6 +46,9 @@ func physics_update(delta: float) -> void:
 	else:
 		player.velocity.y = 0.0
 
+	# HP減少処理（毎秒1ずつ減少）
+	_update_hp_depletion(delta)
+
 # ======================== 入力処理 ========================
 
 ## 入力処理（jumpのみでキャンセル可能）
@@ -179,3 +182,18 @@ func _enable_all_collision_boxes() -> void:
 	player.fall_hurtbox_collision.disabled = false
 	player.walk_hurtbox_collision.disabled = false
 	player.fighting_hitbox_collision.disabled = false
+
+# ======================== HP減少処理 ========================
+
+## CAPTURE状態時のHP減少処理
+func _update_hp_depletion(delta: float) -> void:
+	# 毎秒1ずつHP減少
+	player.current_hp -= delta
+
+	# HPが0未満にならないようにクランプ
+	if player.current_hp < 0.0:
+		player.current_hp = 0.0
+
+	# UIのHPゲージを更新
+	if player.hp_gauge:
+		player.hp_gauge.progress = player.current_hp / 100.0

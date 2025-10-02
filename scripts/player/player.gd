@@ -57,6 +57,12 @@ var squat_was_cancelled: bool = false
 var original_box_positions: Dictionary = {}
 # CAPTURE状態時に使用するアニメーション名
 var capture_animation_name: String = "enemy_01_normal_idle"
+# シールド残量（初期値3）
+var shield_count: int = 3
+# 現在のHP（初期値100）
+var current_hp: float = 100.0
+# UI HPゲージへの参照
+var hp_gauge: Control = null
 
 # ======================== ステート管理システム ========================
 
@@ -73,6 +79,7 @@ func _ready() -> void:
 	condition = initial_condition
 	GRAVITY = ProjectSettings.get_setting("physics/2d/default_gravity")
 	_initialize_systems()
+	_initialize_ui()
 
 ## システムコンポーネントの初期化
 func _initialize_systems() -> void:
@@ -128,6 +135,17 @@ func _initialize_box_positions() -> void:
 
 	# 初期のsprite向きに基づいて位置を更新
 	_update_box_positions(sprite_2d.flip_h)
+
+## UIシステムの初期化
+func _initialize_ui() -> void:
+	# CanvasLayerからHPGaugeノードを探す
+	var canvas_layer: CanvasLayer = get_tree().root.get_node_or_null("Level0/CanvasLayer")
+	if canvas_layer:
+		hp_gauge = canvas_layer.get_node_or_null("HPGauge")
+		if hp_gauge:
+			# シールド値とHP値を初期化
+			hp_gauge.hp_value = shield_count
+			hp_gauge.progress = current_hp / 100.0
 
 # ======================== メイン処理ループ ========================
 
@@ -238,3 +256,33 @@ func handle_trap_damage(effect_type: String, direction: Vector2, force: float) -
 	if down_state:
 		# ダメージ適用（ダメージ量は現在使用していないため0）
 		down_state.handle_damage(0, effect_type, direction, force)
+
+## 敵のhitboxとの衝突処理
+func handle_enemy_hit(enemy_direction: Vector2) -> bool:
+	# 無敵状態の場合は何もしない
+	if is_invincible():
+		return false
+
+	# シールドが残っている場合
+	if shield_count > 0:
+		# シールドを1減らす
+		shield_count -= 1
+		# UIを更新
+		if hp_gauge:
+			hp_gauge.hp_value = shield_count
+
+		# knockback処理（トラップのknockbackと同じ処理）
+		var down_state: DownState = state_instances.get("DOWN") as DownState
+		if down_state:
+			# knockbackエフェクトを適用（force=500.0はトラップと同じ）
+			down_state.handle_damage(0, "knockback", enemy_direction, 500.0)
+
+		print("シールド減少: 残り", shield_count)
+		return true
+
+	# シールドが0の場合はCAPTURE状態へ
+	else:
+		# 速度を完全に停止
+		velocity = Vector2.ZERO
+		print("シールド0: CAPTURE状態へ移行")
+		return false  # CAPTUREは敵側で処理する
