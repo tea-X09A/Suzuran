@@ -63,6 +63,8 @@ var shield_count: int = 3
 var current_hp: float = 100.0
 # UI HPゲージへの参照
 var hp_gauge: Control = null
+# ダメージ表記への参照
+var damage_number: DamageNumber = null
 
 # ======================== ステート管理システム ========================
 
@@ -271,6 +273,9 @@ func handle_enemy_hit(enemy_direction: Vector2) -> bool:
 		if hp_gauge:
 			hp_gauge.hp_value = shield_count
 
+		# ダメージ表記を表示
+		show_damage_number(-1)
+
 		# knockback処理（トラップのknockbackと同じ処理）
 		var down_state: DownState = state_instances.get("DOWN") as DownState
 		if down_state:
@@ -286,3 +291,26 @@ func handle_enemy_hit(enemy_direction: Vector2) -> bool:
 		velocity = Vector2.ZERO
 		print("シールド0: CAPTURE状態へ移行")
 		return false  # CAPTUREは敵側で処理する
+
+## ダメージ表記を表示
+func show_damage_number(damage: int) -> void:
+	# 既存のダメージ表記がある場合は上書き
+	if damage_number and is_instance_valid(damage_number):
+		damage_number.text = str(damage)
+		damage_number.reset_fade()
+		return
+
+	# 新規作成
+	damage_number = DamageNumber.new()
+	damage_number.text = str(damage)
+
+	# スプライトの頂点から少し上に配置
+	var sprite_height: float = 0.0
+	if sprite_2d and sprite_2d.texture:
+		sprite_height = sprite_2d.texture.get_height()
+	var offset_above_head: float = 10.0  # 頭上からの追加オフセット
+	damage_number.position = Vector2(0, -(sprite_height / 2.0 + offset_above_head))
+
+	damage_number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	damage_number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	add_child(damage_number)

@@ -145,13 +145,19 @@ func start_down_state() -> void:
 	player.velocity.x = 0.0
 
 	if effect_type == "knockback":
-		# knockback効果: IDLE状態へ遷移
+		# knockback効果: IDLE状態へ遷移（無敵付与）
 		is_down = false
 		is_in_down_state = false
 		down_duration_timer = 0.0
 		knockback_timer = 0.0
 		down_timer = 0.0
 		effect_type = ""
+
+		# 着地時に復帰無敵を付与
+		is_recovery_invincible = true
+		recovery_invincibility_timer = get_parameter("recovery_invincibility_duration")
+		player.invincibility_effect.set_invincible(recovery_invincibility_timer)
+
 		player.update_animation_state("IDLE")
 		down_finished.emit()
 	else:
