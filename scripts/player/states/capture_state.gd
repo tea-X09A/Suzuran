@@ -10,6 +10,15 @@ const CAPTURE_RECOVERY_INVINCIBILITY_DURATION: float = 2.0
 
 ## CAPTURE状態開始時の初期化
 func initialize_state() -> void:
+	# down_stateをクリア（knockback/down判定を解除）
+	var down_state: DownState = player.state_instances.get("DOWN") as DownState
+	if down_state:
+		down_state.is_down = false
+		down_state.is_in_down_state = false
+		down_state.knockback_timer = 0.0
+		down_state.down_timer = 0.0
+		down_state.effect_type = ""
+
 	# プレイヤーを地面に着地させる
 	_land_on_ground()
 

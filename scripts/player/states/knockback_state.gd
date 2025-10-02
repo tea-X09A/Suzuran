@@ -1,6 +1,12 @@
 class_name KnockbackState
 extends BaseState
 
+## ノックバック状態初期化
+func initialize_state() -> void:
+	var down_state: DownState = player.state_instances.get("DOWN") as DownState
+	if down_state:
+		down_state.was_in_air = false
+
 ## 入力処理
 func handle_input(_delta: float) -> void:
 	var down_state: DownState = player.state_instances.get("DOWN") as DownState

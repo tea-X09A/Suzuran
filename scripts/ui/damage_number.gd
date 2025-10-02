@@ -165,13 +165,13 @@ func _draw() -> void:
 
 	# 各文字を描画
 	for i in range(value_str.length()):
-		var char: String = value_str[i]
+		var character: String = value_str[i]
 		var pattern: Array
 
-		if char == "-":
+		if character == "-":
 			pattern = MINUS_PATTERN
 		else:
-			var digit: int = int(char)
+			var digit: int = int(character)
 			pattern = DIGIT_PATTERNS[digit]
 
 		# パターンを描画

@@ -81,7 +81,6 @@ func handle_damage(_damage: int, animation_type: String, direction: Vector2, for
 	is_down = true
 	current_animation_type = animation_type
 	effect_type = animation_type
-	was_in_air = false
 
 	down_duration_timer = get_parameter("damage_duration")
 	knockback_timer = get_parameter("knockback_duration")

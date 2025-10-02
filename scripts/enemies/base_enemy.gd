@@ -373,8 +373,17 @@ func apply_capture_to_player(body: Node2D) -> bool:
 			if state_machine:
 				player_state_name = state_machine.get_current_node()
 
-	# プレイヤーがDOWNまたはKNOCKBACK状態かどうかで使用するアニメーションを決定
-	var capture_animation: String = get_capture_animation_down() if player_state_name in ["DOWN", "KNOCKBACK"] else get_capture_animation_normal()
+	# プレイヤーがDOWNまたはKNOCKBACK状態の場合、接触時の位置で判定
+	var capture_animation: String
+	if player_state_name in ["DOWN", "KNOCKBACK"]:
+		# 着地している場合はdownアニメーション、空中の場合はidleアニメーション
+		if body.is_on_floor():
+			capture_animation = get_capture_animation_down()
+		else:
+			capture_animation = get_capture_animation_normal()
+	else:
+		capture_animation = get_capture_animation_normal()
+
 	# プレイヤーに使用するアニメーションを設定
 	body.capture_animation_name = capture_animation
 

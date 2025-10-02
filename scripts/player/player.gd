@@ -265,6 +265,13 @@ func handle_enemy_hit(enemy_direction: Vector2) -> bool:
 	if is_invincible():
 		return false
 
+	var down_state: DownState = state_instances.get("DOWN") as DownState
+
+	# knockback/down状態中の場合は無条件でCAPTURE状態へ
+	if down_state and (down_state.is_in_knockback_state() or down_state.is_in_knockback_landing_state()):
+		velocity = Vector2.ZERO
+		return false  # CAPTUREは敵側で処理する
+
 	# シールドが残っている場合
 	if shield_count > 0:
 		# シールドを1減らす
@@ -277,19 +284,16 @@ func handle_enemy_hit(enemy_direction: Vector2) -> bool:
 		show_damage_number(-1)
 
 		# knockback処理（トラップのknockbackと同じ処理）
-		var down_state: DownState = state_instances.get("DOWN") as DownState
 		if down_state:
 			# knockbackエフェクトを適用（force=500.0はトラップと同じ）
 			down_state.handle_damage(0, "knockback", enemy_direction, 500.0)
 
-		print("シールド減少: 残り", shield_count)
 		return true
 
 	# シールドが0の場合はCAPTURE状態へ
 	else:
 		# 速度を完全に停止
 		velocity = Vector2.ZERO
-		print("シールド0: CAPTURE状態へ移行")
 		return false  # CAPTUREは敵側で処理する
 
 ## ダメージ表記を表示

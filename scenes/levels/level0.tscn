@@ -312,6 +312,7 @@ script = ExtResource("6_circular")
 position = Vector2(-499, -73)
 
 [node name="Enemy" parent="." instance=ExtResource("5_ry65h")]
+visible = false
 position = Vector2(-256, 80)
 
 [node name="Enemy2" parent="." instance=ExtResource("5_ry65h")]

@@ -1,4 +1,4 @@
-[gd_scene load_steps=128 format=3 uid="uid://daofj62a4corn"]
+[gd_scene load_steps=130 format=3 uid="uid://daofj62a4corn"]
 
 [ext_resource type="Script" uid="uid://cyb2ijm5xuo6s" path="res://scripts/player/player.gd" id="1_lvxji"]
 [ext_resource type="Texture2D" uid="uid://ba2j33331esgm" path="res://assets/images/player/normal_idle/名称未設定のアートワーク (4).png" id="2_gmlin"]
@@ -14,7 +14,7 @@
 [ext_resource type="Texture2D" uid="uid://cwpjlvwe42hjt" path="res://assets/images/player/enemy_01/down/名称未設定のアートワーク (18).png" id="12_gx1jg"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_fm80t"]
-radius = 34.0
+radius = 33.0
 height = 168.0
 
 [sub_resource type="Animation" id="Animation_gx1jg"]
@@ -1130,29 +1130,45 @@ states/WALK/position = Vector2(400, 250)
 transitions = ["Start", "IDLE", SubResource("AnimationNodeStateMachineTransition_007i1"), "IDLE", "WALK", SubResource("AnimationNodeStateMachineTransition_idle_walk"), "WALK", "IDLE", SubResource("AnimationNodeStateMachineTransition_walk_idle"), "WALK", "RUN", SubResource("AnimationNodeStateMachineTransition_walk_run"), "RUN", "WALK", SubResource("AnimationNodeStateMachineTransition_run_walk"), "RUN", "IDLE", SubResource("AnimationNodeStateMachineTransition_6cv16"), "IDLE", "JUMP", SubResource("AnimationNodeStateMachineTransition_idle_jump"), "WALK", "JUMP", SubResource("AnimationNodeStateMachineTransition_walk_jump"), "RUN", "JUMP", SubResource("AnimationNodeStateMachineTransition_run_jump"), "JUMP", "FALL", SubResource("AnimationNodeStateMachineTransition_jump_fall"), "FALL", "IDLE", SubResource("AnimationNodeStateMachineTransition_fall_idle"), "FALL", "WALK", SubResource("AnimationNodeStateMachineTransition_fall_walk"), "FALL", "RUN", SubResource("AnimationNodeStateMachineTransition_fall_run"), "IDLE", "SQUAT", SubResource("AnimationNodeStateMachineTransition_idle_squat"), "SQUAT", "IDLE", SubResource("AnimationNodeStateMachineTransition_squat_idle"), "WALK", "SQUAT", SubResource("AnimationNodeStateMachineTransition_walk_squat"), "SQUAT", "WALK", SubResource("AnimationNodeStateMachineTransition_squat_walk"), "RUN", "SQUAT", SubResource("AnimationNodeStateMachineTransition_run_squat"), "SQUAT", "RUN", SubResource("AnimationNodeStateMachineTransition_squat_run"), "FIGHTING", "SQUAT", SubResource("AnimationNodeStateMachineTransition_fighting_squat"), "SQUAT", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_squat_fighting"), "SHOOTING", "SQUAT", SubResource("AnimationNodeStateMachineTransition_shooting_squat"), "SQUAT", "SHOOTING", SubResource("AnimationNodeStateMachineTransition_squat_shooting"), "IDLE", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_idle_fighting"), "FIGHTING", "IDLE", SubResource("AnimationNodeStateMachineTransition_fighting_idle"), "WALK", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_walk_fighting"), "FIGHTING", "WALK", SubResource("AnimationNodeStateMachineTransition_fighting_walk"), "RUN", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_run_fighting"), "FIGHTING", "RUN", SubResource("AnimationNodeStateMachineTransition_fighting_run"), "JUMP", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_jump_fighting"), "FIGHTING", "JUMP", SubResource("AnimationNodeStateMachineTransition_fighting_jump"), "FALL", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_fall_fighting"), "FIGHTING", "FALL", SubResource("AnimationNodeStateMachineTransition_fighting_fall"), "IDLE", "SHOOTING", SubResource("AnimationNodeStateMachineTransition_idle_shooting"), "SHOOTING", "IDLE", SubResource("AnimationNodeStateMachineTransition_shooting_idle"), "WALK", "SHOOTING", SubResource("AnimationNodeStateMachineTransition_walk_shooting"), "SHOOTING", "WALK", SubResource("AnimationNodeStateMachineTransition_shooting_walk"), "RUN", "SHOOTING", SubResource("AnimationNodeStateMachineTransition_run_shooting"), "SHOOTING", "RUN", SubResource("AnimationNodeStateMachineTransition_shooting_run"), "JUMP", "SHOOTING", SubResource("AnimationNodeStateMachineTransition_jump_shooting"), "SHOOTING", "JUMP", SubResource("AnimationNodeStateMachineTransition_shooting_jump"), "FALL", "SHOOTING", SubResource("AnimationNodeStateMachineTransition_fall_shooting"), "SHOOTING", "FALL", SubResource("AnimationNodeStateMachineTransition_shooting_fall"), "IDLE", "DOWN", SubResource("AnimationNodeStateMachineTransition_idle_down"), "DOWN", "IDLE", SubResource("AnimationNodeStateMachineTransition_down_idle"), "WALK", "DOWN", SubResource("AnimationNodeStateMachineTransition_walk_down"), "DOWN", "WALK", SubResource("AnimationNodeStateMachineTransition_down_walk"), "RUN", "DOWN", SubResource("AnimationNodeStateMachineTransition_run_down"), "DOWN", "RUN", SubResource("AnimationNodeStateMachineTransition_down_run"), "JUMP", "DOWN", SubResource("AnimationNodeStateMachineTransition_jump_down"), "DOWN", "JUMP", SubResource("AnimationNodeStateMachineTransition_down_jump"), "FALL", "DOWN", SubResource("AnimationNodeStateMachineTransition_fall_down"), "DOWN", "FALL", SubResource("AnimationNodeStateMachineTransition_down_fall"), "FIGHTING", "DOWN", SubResource("AnimationNodeStateMachineTransition_fighting_down"), "DOWN", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_down_fighting"), "SHOOTING", "DOWN", SubResource("AnimationNodeStateMachineTransition_shooting_down"), "DOWN", "SHOOTING", SubResource("AnimationNodeStateMachineTransition_down_shooting"), "IDLE", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_idle_knockback"), "WALK", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_walk_knockback"), "RUN", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_run_knockback"), "JUMP", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_jump_knockback"), "FALL", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_fall_knockback"), "FIGHTING", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_fighting_knockback"), "SHOOTING", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_shooting_knockback"), "SQUAT", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_squat_knockback"), "KNOCKBACK", "DOWN", SubResource("AnimationNodeStateMachineTransition_knockback_down"), "KNOCKBACK", "JUMP", SubResource("AnimationNodeStateMachineTransition_knockback_jump"), "IDLE", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_idle_capture"), "WALK", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_walk_capture"), "RUN", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_run_capture"), "JUMP", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_jump_capture"), "FALL", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_fall_capture"), "FIGHTING", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_fighting_capture"), "SHOOTING", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_shooting_capture"), "SQUAT", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_squat_capture"), "DOWN", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_down_capture"), "CAPTURE", "JUMP", SubResource("AnimationNodeStateMachineTransition_capture_jump"), "CAPTURE", "FALL", SubResource("AnimationNodeStateMachineTransition_capture_fall")]
 graph_offset = Vector2(87.1404, 69.2574)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_walk_hurtbox"]
-size = Vector2(80, 180)
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_gx1jg"]
+radius = 34.0
+height = 168.0
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_lgqa7"]
-size = Vector2(80, 82)
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_ugbui"]
+radius = 33.0
+height = 70.0
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_jump_hurtbox"]
-size = Vector2(63, 173)
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_fcs02"]
+radius = 33.5
+height = 169.0
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_run_hurtbox"]
-size = Vector2(80, 180)
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_myrg7"]
+radius = 33.5
+height = 169.0
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
-size = Vector2(80, 129)
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_kvlxm"]
+radius = 33.0
+height = 168.0
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_shooting_hurtbox"]
-size = Vector2(80, 179)
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_uf5tr"]
+radius = 37.0
+height = 127.0
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_0owmy"]
-size = Vector2(84, 151)
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_lgqa7"]
+radius = 33.0
+height = 167.0
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_down_hurtbox"]
-size = Vector2(157, 63)
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_8ydkj"]
+radius = 40.0
+height = 141.0
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_3j4b4"]
+radius = 32.0
+height = 152.0
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_yj68g"]
+radius = 33.0
+height = 168.0
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_fm80t"]
 size = Vector2(60, 30)
@@ -1184,8 +1200,8 @@ collision_layer = 4
 
 [node name="IdleHurtboxCollision" type="CollisionShape2D" parent="IdleHurtbox"]
 visible = false
-position = Vector2(-1, 12)
-shape = SubResource("RectangleShape2D_walk_hurtbox")
+position = Vector2(-1, 13)
+shape = SubResource("CapsuleShape2D_gx1jg")
 disabled = true
 
 [node name="SquatHurtbox" type="Area2D" parent="."]
@@ -1194,7 +1210,7 @@ collision_layer = 4
 [node name="SquatHurtboxCollision" type="CollisionShape2D" parent="SquatHurtbox"]
 visible = false
 position = Vector2(-1, 61)
-shape = SubResource("RectangleShape2D_lgqa7")
+shape = SubResource("CapsuleShape2D_ugbui")
 disabled = true
 
 [node name="JumpHurtbox" type="Area2D" parent="."]
@@ -1203,7 +1219,16 @@ collision_layer = 4
 [node name="JumpHurtboxCollision" type="CollisionShape2D" parent="JumpHurtbox"]
 visible = false
 position = Vector2(-9.5, 3.5)
-shape = SubResource("RectangleShape2D_jump_hurtbox")
+shape = SubResource("CapsuleShape2D_fcs02")
+disabled = true
+
+[node name="FallHurtbox" type="Area2D" parent="."]
+collision_layer = 4
+
+[node name="FallHurtboxCollision" type="CollisionShape2D" parent="FallHurtbox"]
+visible = false
+position = Vector2(-9.5, 3.5)
+shape = SubResource("CapsuleShape2D_myrg7")
 disabled = true
 
 [node name="RunHurtbox" type="Area2D" parent="."]
@@ -1212,7 +1237,7 @@ collision_layer = 4
 [node name="RunHurtboxCollision" type="CollisionShape2D" parent="RunHurtbox"]
 visible = false
 position = Vector2(-1, 12)
-shape = SubResource("RectangleShape2D_run_hurtbox")
+shape = SubResource("CapsuleShape2D_kvlxm")
 disabled = true
 
 [node name="FightingHurtbox" type="Area2D" parent="."]
@@ -1222,7 +1247,7 @@ monitorable = false
 [node name="FightingHurtboxCollision" type="CollisionShape2D" parent="FightingHurtbox"]
 visible = false
 position = Vector2(19, 24.5)
-shape = SubResource("RectangleShape2D_hitbox")
+shape = SubResource("CapsuleShape2D_uf5tr")
 disabled = true
 
 [node name="ShootingHurtbox" type="Area2D" parent="."]
@@ -1231,7 +1256,7 @@ collision_layer = 4
 [node name="ShootingHurtboxCollision" type="CollisionShape2D" parent="ShootingHurtbox"]
 visible = false
 position = Vector2(-1, 12.5)
-shape = SubResource("RectangleShape2D_shooting_hurtbox")
+shape = SubResource("CapsuleShape2D_lgqa7")
 disabled = true
 
 [node name="KnockBackHurtbox" type="Area2D" parent="."]
@@ -1240,7 +1265,7 @@ collision_layer = 4
 [node name="KnockBackHurtboxCollision" type="CollisionShape2D" parent="KnockBackHurtbox"]
 visible = false
 position = Vector2(-8, 9.5)
-shape = SubResource("RectangleShape2D_0owmy")
+shape = SubResource("CapsuleShape2D_8ydkj")
 disabled = true
 
 [node name="DownHurtbox" type="Area2D" parent="."]
@@ -1249,16 +1274,8 @@ collision_layer = 4
 [node name="DownHurtboxCollision" type="CollisionShape2D" parent="DownHurtbox"]
 visible = false
 position = Vector2(12, 64)
-shape = SubResource("RectangleShape2D_down_hurtbox")
-disabled = true
-
-[node name="FallHurtbox" type="Area2D" parent="."]
-collision_layer = 4
-
-[node name="FallHurtboxCollision" type="CollisionShape2D" parent="FallHurtbox"]
-visible = false
-position = Vector2(-9.5, 3.5)
-shape = SubResource("RectangleShape2D_jump_hurtbox")
+rotation = -1.57079
+shape = SubResource("CapsuleShape2D_3j4b4")
 disabled = true
 
 [node name="WalkHurtbox" type="Area2D" parent="."]
@@ -1267,7 +1284,7 @@ collision_layer = 4
 [node name="WalkHurtboxCollision" type="CollisionShape2D" parent="WalkHurtbox"]
 visible = false
 position = Vector2(-1, 12)
-shape = SubResource("RectangleShape2D_walk_hurtbox")
+shape = SubResource("CapsuleShape2D_yj68g")
 disabled = true
 
 [node name="FightingHitbox" type="Area2D" parent="."]
