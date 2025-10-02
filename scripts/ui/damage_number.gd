@@ -13,6 +13,8 @@ var fade_timer: float = 0.0
 var fade_duration: float = 2.0
 ## 表示開始時の不透明度
 var initial_alpha: float = 1.0
+## 上方向への移動速度（ピクセル/秒）
+var upward_speed: float = 20.0
 
 # マイナス記号のドットパターン（5x7）
 const MINUS_PATTERN: Array = [
@@ -134,13 +136,11 @@ func _process(delta: float) -> void:
 		var alpha: float = fade_timer / fade_duration
 		modulate.a = alpha
 
+		# 上方向へゆっくり移動
+		position.y -= upward_speed * delta
+
 		if fade_timer <= 0.0:
 			queue_free()
-
-## ダメージ表記をリセット（上書き時に使用）
-func reset_fade() -> void:
-	fade_timer = fade_duration
-	modulate.a = initial_alpha
 
 func _draw() -> void:
 	var value_str: String = str(display_value)

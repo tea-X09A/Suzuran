@@ -294,21 +294,19 @@ func handle_enemy_hit(enemy_direction: Vector2) -> bool:
 
 ## ダメージ表記を表示
 func show_damage_number(damage: int) -> void:
-	# 既存のダメージ表記がある場合は上書き
+	# 既存のダメージ表記がある場合は削除
 	if damage_number and is_instance_valid(damage_number):
-		damage_number.display_value = damage
-		damage_number.reset_fade()
-		return
+		damage_number.queue_free()
 
 	# 新規作成
 	damage_number = DamageNumber.new()
 	damage_number.display_value = damage
 
-	# スプライトの頂点から少し上に配置
+	# スプライトの中心付近に配置（ここから上方向へフェードアウト）
 	var sprite_height: float = 0.0
 	if sprite_2d and sprite_2d.texture:
 		sprite_height = sprite_2d.texture.get_height()
-	var offset_above_head: float = 10.0  # 頭上からの追加オフセット
-	damage_number.position = Vector2(0, -(sprite_height / 2.0 + offset_above_head))
+	var offset_from_top: float = -20.0  # スプライト頂点からのオフセット（マイナスで下方向）
+	damage_number.position = Vector2(0, -(sprite_height / 2.0 + offset_from_top))
 
 	add_child(damage_number)
