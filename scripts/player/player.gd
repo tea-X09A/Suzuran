@@ -153,8 +153,9 @@ func _initialize_ui() -> void:
 
 ## 物理演算ステップごとの更新処理（移動・物理系）
 func _physics_process(delta: float) -> void:
-	# squat状態キャンセルフラグの管理
-	_update_squat_cancel_flag()
+	# squat状態キャンセルフラグの管理（squatボタンが離されたらフラグをクリア）
+	if squat_was_cancelled and not Input.is_action_pressed("squat"):
+		squat_was_cancelled = false
 
 	# ダウン状態の復帰無敵時間を常に更新（全ステートで有効）
 	var down_state: DownState = state_instances.get("DOWN") as DownState
@@ -170,12 +171,6 @@ func _physics_process(delta: float) -> void:
 
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
-
-## squat状態キャンセルフラグの更新
-func _update_squat_cancel_flag() -> void:
-	# squatボタンが離されたらフラグをクリア
-	if squat_was_cancelled and not Input.is_action_pressed("squat"):
-		squat_was_cancelled = false
 
 ## アニメーション状態更新
 func update_animation_state(state_name: String) -> void:
@@ -209,17 +204,38 @@ func _update_box_positions(is_facing_right: bool) -> void:
 	# 右向き（flip_h=true）の場合はX位置を反転、左向き（flip_h=false）の場合は元の位置
 	var flip_multiplier: float = -1.0 if is_facing_right else 1.0
 
-	idle_hurtbox_collision.position.x = original_box_positions["idle"] * flip_multiplier
-	squat_hurtbox_collision.position.x = original_box_positions["squat"] * flip_multiplier
-	jump_hurtbox_collision.position.x = original_box_positions["jump"] * flip_multiplier
-	run_hurtbox_collision.position.x = original_box_positions["run"] * flip_multiplier
-	fighting_hurtbox_collision.position.x = original_box_positions["fighting_hurt"] * flip_multiplier
-	shooting_hurtbox_collision.position.x = original_box_positions["shooting"] * flip_multiplier
-	knockback_hurtbox_collision.position.x = original_box_positions["knockback"] * flip_multiplier
-	down_hurtbox_collision.position.x = original_box_positions["down"] * flip_multiplier
-	fall_hurtbox_collision.position.x = original_box_positions["fall"] * flip_multiplier
-	walk_hurtbox_collision.position.x = original_box_positions["walk"] * flip_multiplier
-	fighting_hitbox_collision.position.x = original_box_positions["fighting_hit"] * flip_multiplier
+	# 全てのコリジョンボックスの位置を一括更新
+	var collision_boxes: Array[Dictionary] = [
+		{"collision": idle_hurtbox_collision, "key": "idle"},
+		{"collision": squat_hurtbox_collision, "key": "squat"},
+		{"collision": jump_hurtbox_collision, "key": "jump"},
+		{"collision": run_hurtbox_collision, "key": "run"},
+		{"collision": fighting_hurtbox_collision, "key": "fighting_hurt"},
+		{"collision": shooting_hurtbox_collision, "key": "shooting"},
+		{"collision": knockback_hurtbox_collision, "key": "knockback"},
+		{"collision": down_hurtbox_collision, "key": "down"},
+		{"collision": fall_hurtbox_collision, "key": "fall"},
+		{"collision": walk_hurtbox_collision, "key": "walk"},
+		{"collision": fighting_hitbox_collision, "key": "fighting_hit"}
+	]
+
+	for box in collision_boxes:
+		box.collision.position.x = original_box_positions[box.key] * flip_multiplier
+
+## 全てのCollision boxを有効化/無効化
+func set_all_collision_boxes_enabled(enabled: bool) -> void:
+	# 全てのhurtboxとhitboxを一括で有効化/無効化
+	idle_hurtbox_collision.disabled = not enabled
+	squat_hurtbox_collision.disabled = not enabled
+	jump_hurtbox_collision.disabled = not enabled
+	run_hurtbox_collision.disabled = not enabled
+	fighting_hurtbox_collision.disabled = not enabled
+	shooting_hurtbox_collision.disabled = not enabled
+	knockback_hurtbox_collision.disabled = not enabled
+	down_hurtbox_collision.disabled = not enabled
+	fall_hurtbox_collision.disabled = not enabled
+	walk_hurtbox_collision.disabled = not enabled
+	fighting_hitbox_collision.disabled = not enabled
 
 # ======================== プロパティアクセサ ========================
 

@@ -49,6 +49,8 @@ var GRAVITY: float
 var patrol_center: Vector2
 # 現在の目標位置
 var target_position: Vector2
+# スプライトの初期スケール（反転処理用）
+var initial_sprite_scale_x: float = 0.0
 # 現在の状態（"patrol", "waiting", "chasing"）
 var current_state: String = "waiting"
 # 待機タイマー
@@ -85,6 +87,9 @@ func _ready() -> void:
 	GRAVITY = ProjectSettings.get_setting("physics/2d/default_gravity")
 	# 初期位置をパトロールの中心として記録
 	patrol_center = global_position
+	# スプライトの初期スケールを保存
+	if sprite:
+		initial_sprite_scale_x = abs(sprite.scale.x)
 
 	# 視界更新のタイミングをずらす（各敵のインスタンスIDを基にオフセットを設定）
 	vision_update_counter = get_instance_id() % vision_update_interval
@@ -273,9 +278,9 @@ func _update_facing_direction() -> void:
 		return
 
 	var direction: float = sign(velocity.x)
-	# Sprite2Dの反転（元のscaleは3なので、3または-3にする）
-	if sprite:
-		sprite.scale.x = 3.0 * direction
+	# Sprite2Dの反転（初期スケールを保持して反転）
+	if sprite and initial_sprite_scale_x > 0.0:
+		sprite.scale.x = initial_sprite_scale_x * direction
 	# DetectionArea, Hitbox, Hurtboxの反転
 	for node in [detection_area, hitbox, hurtbox]:
 		if node:
@@ -350,7 +355,7 @@ func apply_capture_to_player(body: Node2D) -> bool:
 	# 敵からプレイヤーへの方向を計算
 	var direction_to_player: Vector2 = (body.global_position - global_position).normalized()
 
-	# プレイヤーの敵ヒット処理を呼び出す
+	# プレイヤーの敵ヒット処理を呼び出す（シールドによるknockback判定）
 	var should_knockback: bool = false
 	if body.has_method("handle_enemy_hit"):
 		should_knockback = body.handle_enemy_hit(direction_to_player)
@@ -360,29 +365,17 @@ func apply_capture_to_player(body: Node2D) -> bool:
 		return true
 
 	# シールドが0の場合、CAPTURE状態へ遷移
-	# プレイヤーの速度を完全に停止（水平・垂直ともに0にして動作の反動を残さない）
+	_transition_to_capture(body)
+	return true
+
+## プレイヤーをCAPTURE状態に遷移させる
+func _transition_to_capture(body: Node2D) -> void:
+	# プレイヤーの速度を完全に停止
 	if body is CharacterBody2D:
 		body.velocity = Vector2.ZERO
 
-	# プレイヤーの現在の状態を確認
-	var player_state_name: String = ""
-	if body.has_method("get_animation_tree"):
-		var anim_tree: AnimationTree = body.get_animation_tree()
-		if anim_tree:
-			var state_machine: AnimationNodeStateMachinePlayback = anim_tree.get("parameters/playback")
-			if state_machine:
-				player_state_name = state_machine.get_current_node()
-
-	# プレイヤーがDOWNまたはKNOCKBACK状態の場合、接触時の位置で判定
-	var capture_animation: String
-	if player_state_name in ["DOWN", "KNOCKBACK"]:
-		# 着地している場合はdownアニメーション、空中の場合はidleアニメーション
-		if body.is_on_floor():
-			capture_animation = get_capture_animation_down()
-		else:
-			capture_animation = get_capture_animation_normal()
-	else:
-		capture_animation = get_capture_animation_normal()
+	# 使用するキャプチャアニメーションを選択
+	var capture_animation: String = _select_capture_animation(body)
 
 	# プレイヤーに使用するアニメーションを設定
 	body.capture_animation_name = capture_animation
@@ -392,7 +385,32 @@ func apply_capture_to_player(body: Node2D) -> bool:
 		body.update_animation_state("CAPTURE")
 
 	print("敵がプレイヤーをキャプチャ: アニメーション=", capture_animation)
-	return true
+
+## キャプチャアニメーションを選択
+func _select_capture_animation(body: Node2D) -> String:
+	# プレイヤーの現在の状態を確認
+	var player_state_name: String = _get_player_state_name(body)
+
+	# プレイヤーがDOWNまたはKNOCKBACK状態の場合、接触時の位置で判定
+	if player_state_name in ["DOWN", "KNOCKBACK"]:
+		# 着地している場合はdownアニメーション、空中の場合はidleアニメーション
+		return get_capture_animation_down() if body.is_on_floor() else get_capture_animation_normal()
+	else:
+		return get_capture_animation_normal()
+
+## プレイヤーの現在の状態名を取得
+func _get_player_state_name(body: Node2D) -> String:
+	if not body.has_method("get_animation_tree"):
+		return ""
+
+	var anim_tree: AnimationTree = body.get_animation_tree()
+	if not anim_tree:
+		return ""
+
+	var state_machine: AnimationNodeStateMachinePlayback = anim_tree.get("parameters/playback")
+	if state_machine:
+		return str(state_machine.get_current_node())
+	return ""
 
 ## キャプチャアニメーション（通常時）を取得（継承先でオーバーライド必須）
 func get_capture_animation_normal() -> String:

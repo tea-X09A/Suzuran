@@ -13,11 +13,8 @@ func initialize_state() -> void:
 	# down_stateをクリア（knockback/down判定を解除）
 	var down_state: DownState = player.state_instances.get("DOWN") as DownState
 	if down_state:
-		down_state.is_down = false
-		down_state.is_in_down_state = false
-		down_state.knockback_timer = 0.0
-		down_state.down_timer = 0.0
-		down_state.effect_type = ""
+		# DownStateの状態をリセット（無敵付与なし）
+		down_state.finish_down(false)
 
 	# プレイヤーを地面に着地させる
 	_land_on_ground()
@@ -30,7 +27,7 @@ func initialize_state() -> void:
 	# 全てのenemyの移動をキャンセルし、その場で立ち止まらせる
 	_stop_all_enemies()
 	# 全てのhitboxとhurtboxを無効化
-	_disable_all_collision_boxes()
+	player.set_all_collision_boxes_enabled(false)
 
 ## CAPTURE状態終了時のクリーンアップ
 func cleanup_state() -> void:
@@ -40,7 +37,7 @@ func cleanup_state() -> void:
 	# 全てのenemyを表示し、通常のパトロールを再開させる
 	_resume_all_enemies()
 	# 全てのhitboxとhurtboxを再度有効化
-	_enable_all_collision_boxes()
+	player.set_all_collision_boxes_enabled(true)
 
 # ======================== 物理更新処理 ========================
 
@@ -161,36 +158,6 @@ func _apply_recovery_invincibility() -> void:
 		down_state.recovery_invincibility_timer = CAPTURE_RECOVERY_INVINCIBILITY_DURATION
 		# 視覚効果を設定
 		player.invincibility_effect.set_invincible(CAPTURE_RECOVERY_INVINCIBILITY_DURATION)
-
-# ======================== Collision Box制御処理 ========================
-
-## 全てのhitboxとhurtboxを無効化
-func _disable_all_collision_boxes() -> void:
-	player.idle_hurtbox_collision.disabled = true
-	player.squat_hurtbox_collision.disabled = true
-	player.jump_hurtbox_collision.disabled = true
-	player.run_hurtbox_collision.disabled = true
-	player.fighting_hurtbox_collision.disabled = true
-	player.shooting_hurtbox_collision.disabled = true
-	player.knockback_hurtbox_collision.disabled = true
-	player.down_hurtbox_collision.disabled = true
-	player.fall_hurtbox_collision.disabled = true
-	player.walk_hurtbox_collision.disabled = true
-	player.fighting_hitbox_collision.disabled = true
-
-## 全てのhitboxとhurtboxを再度有効化
-func _enable_all_collision_boxes() -> void:
-	player.idle_hurtbox_collision.disabled = false
-	player.squat_hurtbox_collision.disabled = false
-	player.jump_hurtbox_collision.disabled = false
-	player.run_hurtbox_collision.disabled = false
-	player.fighting_hurtbox_collision.disabled = false
-	player.shooting_hurtbox_collision.disabled = false
-	player.knockback_hurtbox_collision.disabled = false
-	player.down_hurtbox_collision.disabled = false
-	player.fall_hurtbox_collision.disabled = false
-	player.walk_hurtbox_collision.disabled = false
-	player.fighting_hitbox_collision.disabled = false
 
 # ======================== HP減少処理 ========================
 
