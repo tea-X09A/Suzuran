@@ -341,13 +341,16 @@ func check_player_collision() -> void:
 	if current_time - last_capture_time < capture_cooldown:
 		return
 
-	# プレイヤーとの重なりをチェック
-	var overlapping_bodies: Array[Node2D] = hitbox.get_overlapping_bodies()
+	# プレイヤーのHurtboxとの重なりをチェック
+	var overlapping_areas: Array[Area2D] = hitbox.get_overlapping_areas()
 
-	for body in overlapping_bodies:
-		if body.is_in_group("player"):
+	for area in overlapping_areas:
+		# Hurtboxの親ノードを取得
+		var parent_node: Node = area.get_parent()
+		# 親ノードがプレイヤーグループに所属しているか確認
+		if parent_node and parent_node.is_in_group("player"):
 			# 実際にキャプチャを適用した場合のみタイマーを更新
-			if apply_capture_to_player(body):
+			if apply_capture_to_player(parent_node):
 				last_capture_time = current_time
 			break
 

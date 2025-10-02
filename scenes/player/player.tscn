@@ -13,8 +13,9 @@
 [ext_resource type="Texture2D" uid="uid://b50ln74l5mfx3" path="res://assets/images/player/enemy_01/idle/名称未設定のアートワーク (19).png" id="11_fm80t"]
 [ext_resource type="Texture2D" uid="uid://cwpjlvwe42hjt" path="res://assets/images/player/enemy_01/down/名称未設定のアートワーク (18).png" id="12_gx1jg"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_ry65h"]
-size = Vector2(68, 167)
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_fm80t"]
+radius = 34.0
+height = 168.0
 
 [sub_resource type="Animation" id="Animation_gx1jg"]
 length = 0.001
@@ -1166,8 +1167,8 @@ texture = ExtResource("2_gmlin")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 visible = false
-position = Vector2(-1, 12.5)
-shape = SubResource("RectangleShape2D_ry65h")
+position = Vector2(-1, 13)
+shape = SubResource("CapsuleShape2D_fm80t")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {
@@ -1179,6 +1180,7 @@ tree_root = SubResource("AnimationNodeStateMachine_j4nxn")
 anim_player = NodePath("../AnimationPlayer")
 
 [node name="IdleHurtbox" type="Area2D" parent="."]
+collision_layer = 4
 
 [node name="IdleHurtboxCollision" type="CollisionShape2D" parent="IdleHurtbox"]
 visible = false
@@ -1187,6 +1189,7 @@ shape = SubResource("RectangleShape2D_walk_hurtbox")
 disabled = true
 
 [node name="SquatHurtbox" type="Area2D" parent="."]
+collision_layer = 4
 
 [node name="SquatHurtboxCollision" type="CollisionShape2D" parent="SquatHurtbox"]
 visible = false
@@ -1195,6 +1198,7 @@ shape = SubResource("RectangleShape2D_lgqa7")
 disabled = true
 
 [node name="JumpHurtbox" type="Area2D" parent="."]
+collision_layer = 4
 
 [node name="JumpHurtboxCollision" type="CollisionShape2D" parent="JumpHurtbox"]
 visible = false
@@ -1203,6 +1207,7 @@ shape = SubResource("RectangleShape2D_jump_hurtbox")
 disabled = true
 
 [node name="RunHurtbox" type="Area2D" parent="."]
+collision_layer = 4
 
 [node name="RunHurtboxCollision" type="CollisionShape2D" parent="RunHurtbox"]
 visible = false
@@ -1211,6 +1216,7 @@ shape = SubResource("RectangleShape2D_run_hurtbox")
 disabled = true
 
 [node name="FightingHurtbox" type="Area2D" parent="."]
+collision_layer = 4
 monitorable = false
 
 [node name="FightingHurtboxCollision" type="CollisionShape2D" parent="FightingHurtbox"]
@@ -1220,6 +1226,7 @@ shape = SubResource("RectangleShape2D_hitbox")
 disabled = true
 
 [node name="ShootingHurtbox" type="Area2D" parent="."]
+collision_layer = 4
 
 [node name="ShootingHurtboxCollision" type="CollisionShape2D" parent="ShootingHurtbox"]
 visible = false
@@ -1228,6 +1235,7 @@ shape = SubResource("RectangleShape2D_shooting_hurtbox")
 disabled = true
 
 [node name="KnockBackHurtbox" type="Area2D" parent="."]
+collision_layer = 4
 
 [node name="KnockBackHurtboxCollision" type="CollisionShape2D" parent="KnockBackHurtbox"]
 visible = false
@@ -1236,6 +1244,7 @@ shape = SubResource("RectangleShape2D_0owmy")
 disabled = true
 
 [node name="DownHurtbox" type="Area2D" parent="."]
+collision_layer = 4
 
 [node name="DownHurtboxCollision" type="CollisionShape2D" parent="DownHurtbox"]
 visible = false
@@ -1244,6 +1253,7 @@ shape = SubResource("RectangleShape2D_down_hurtbox")
 disabled = true
 
 [node name="FallHurtbox" type="Area2D" parent="."]
+collision_layer = 4
 
 [node name="FallHurtboxCollision" type="CollisionShape2D" parent="FallHurtbox"]
 visible = false
@@ -1252,6 +1262,7 @@ shape = SubResource("RectangleShape2D_jump_hurtbox")
 disabled = true
 
 [node name="WalkHurtbox" type="Area2D" parent="."]
+collision_layer = 4
 
 [node name="WalkHurtboxCollision" type="CollisionShape2D" parent="WalkHurtbox"]
 visible = false
