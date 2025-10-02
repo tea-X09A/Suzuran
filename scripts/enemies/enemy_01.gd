@@ -1,6 +1,14 @@
 class_name Enemy01
 extends BaseEnemy
 
+# ======================== 初期化処理 ========================
+
+func _ready() -> void:
+	# 敵IDを設定
+	enemy_id = "01"
+	# 基底クラスの初期化を呼び出す
+	super._ready()
+
 # ======================== エクスポート設定 ========================
 
 # ダメージ値（将来の拡張用）
@@ -18,16 +26,6 @@ func _chase_player() -> void:
 
 	# 水平方向に移動
 	velocity.x = direction * move_speed
-
-# ======================== キャプチャアニメーション ========================
-
-## キャプチャアニメーション（通常時）を取得
-func get_capture_animation_normal() -> String:
-	return "enemy_01_normal_idle"
-
-## キャプチャアニメーション（DOWN/KNOCKBACK時）を取得
-func get_capture_animation_down() -> String:
-	return "enemy_01_normal_down"
 
 # ======================== ダメージ処理 ========================
 

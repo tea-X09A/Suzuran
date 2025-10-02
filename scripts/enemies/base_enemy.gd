@@ -39,6 +39,10 @@ extends CharacterBody2D
 
 # ======================== 状態管理変数 ========================
 
+# 敵のID（アニメーション名に使用、継承先で設定）
+var enemy_id: String = ""
+# キャプチャ時の状態（アニメーション名に使用）
+var capture_condition: String = "normal"
 # 処理が有効かどうかのフラグ
 var processing_enabled: bool = false
 # プレイヤーノードへの参照
@@ -388,6 +392,12 @@ func _transition_to_capture(body: Node2D) -> void:
 
 ## キャプチャアニメーションを選択
 func _select_capture_animation(body: Node2D) -> String:
+	# プレイヤーのconditionを取得してcapture_conditionに設定
+	if body.has_method("get_condition"):
+		var player_condition: int = body.get_condition()
+		# enumを文字列に変換（0: NORMAL, 1: EXPANSION）
+		capture_condition = "normal" if player_condition == 0 else "expansion"
+
 	# プレイヤーの現在の状態を確認
 	var player_state_name: String = _get_player_state_name(body)
 
@@ -412,15 +422,13 @@ func _get_player_state_name(body: Node2D) -> String:
 		return str(state_machine.get_current_node())
 	return ""
 
-## キャプチャアニメーション（通常時）を取得（継承先でオーバーライド必須）
+## キャプチャアニメーション（通常時）を取得
 func get_capture_animation_normal() -> String:
-	push_error("get_capture_animation_normal() must be overridden in derived class")
-	return ""
+	return "enemy_" + enemy_id + "_" + capture_condition + "_idle"
 
-## キャプチャアニメーション（DOWN/KNOCKBACK時）を取得（継承先でオーバーライド必須）
+## キャプチャアニメーション（DOWN/KNOCKBACK時）を取得
 func get_capture_animation_down() -> String:
-	push_error("get_capture_animation_down() must be overridden in derived class")
-	return ""
+	return "enemy_" + enemy_id + "_" + capture_condition + "_down"
 
 # ======================== コリジョン管理 ========================
 
