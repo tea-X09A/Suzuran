@@ -3,7 +3,7 @@ class_name Kunai
 
 # ========== クナイ設定 ==========
 @export var lifetime: float = 2.0  # 生存時間（秒）
-@export var damage: int = 25  # ダメージ量
+@export var damage: int = 1  # ダメージ量
 
 # ========== 内部状態変数 ==========
 var velocity: Vector2 = Vector2.ZERO
@@ -32,12 +32,15 @@ func _physics_process(delta: float) -> void:
 		destroy_kunai()
 
 # クナイの初期化（プレイヤーから呼び出される）
-func initialize(direction: float, speed: float, shooter: Node2D) -> void:
+func initialize(direction: float, speed: float, shooter: Node2D, damage_value: int = 1) -> void:
 	# 速度設定
 	velocity = Vector2(direction * speed, 0.0)
 
 	# 発射者を記録
 	owner_character = shooter
+
+	# ダメージ値を設定
+	damage = damage_value
 
 	# スプライトの向きを設定
 	if direction < 0.0:
@@ -53,7 +56,9 @@ func _on_body_entered(body: Node2D) -> void:
 
 	# ダメージ処理（対象がダメージを受けられる場合）
 	if body.has_method("take_damage"):
-		body.take_damage(damage)
+		# クナイの進行方向をノックバック方向として使用
+		var knockback_direction: Vector2 = velocity.normalized()
+		body.take_damage(damage, knockback_direction, self)
 
 	# クナイを破壊
 	destroy_kunai()
@@ -77,8 +82,12 @@ func _on_area_entered(area: Area2D) -> void:
 			destroy_kunai()
 		else:
 			# ダメージ処理（対象がダメージを受けられる場合）
-			if area.has_method("take_damage"):
-				area.take_damage(damage)
+			# Areaの親ノード（敵本体）に対してダメージを与える
+			var target: Node = area.get_parent()
+			if target and target.has_method("take_damage"):
+				# クナイの進行方向をノックバック方向として使用
+				var knockback_direction: Vector2 = velocity.normalized()
+				target.take_damage(damage, knockback_direction, self)
 
 			# クナイを破壊
 			destroy_kunai()

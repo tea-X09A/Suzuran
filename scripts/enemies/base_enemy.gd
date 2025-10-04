@@ -36,6 +36,12 @@ extends CharacterBody2D
 @export var vision_distance: float = 509.0
 # 視界の角度（度数、片側）
 @export var vision_angle: float = 10.0
+# 最大HP
+@export var max_hp: int = 5
+# ノックバックの力
+@export var knockback_force: float = 300.0
+# ノックバックの持続時間（秒）
+@export var knockback_duration: float = 0.3
 
 # ======================== 状態管理変数 ========================
 
@@ -81,10 +87,18 @@ var vision_update_counter: int = 0
 var vision_update_interval: int = 5
 # hitboxと重なっているプレイヤー（キャッシュ用）
 var overlapping_player: Node2D = null
-# コリジョンエリアの有効化を出力したかどうか
-var collision_enabled_logged: bool = false
-# コリジョンエリアの無効化を出力したかどうか
-var collision_disabled_logged: bool = false
+# 現在のHP
+var current_hp: int = 5
+# ノックバック中かどうかのフラグ
+var is_in_knockback: bool = false
+# ノックバックタイマー
+var knockback_timer: float = 0.0
+# ノックバック方向
+var knockback_velocity: Vector2 = Vector2.ZERO
+# ノックバック後に向くべき方向（0.0なら変更なし）
+var direction_to_face_after_knockback: float = 0.0
+# HPゲージへの参照
+var hp_gauge: Control = null
 
 # ======================== 初期化処理 ========================
 
@@ -96,6 +110,9 @@ func _ready() -> void:
 	# スプライトの初期スケールを保存
 	if sprite:
 		initial_sprite_scale_x = abs(sprite.scale.x)
+
+	# HPの初期化
+	current_hp = max_hp
 
 	# 視界更新のタイミングをずらす（各敵のインスタンスIDを基にオフセットを設定）
 	vision_update_counter = get_instance_id() % vision_update_interval
@@ -117,6 +134,8 @@ func _ready() -> void:
 		detection_area.monitoring = false
 	# 視界判定用のRayCastを生成
 	_setup_vision_raycasts()
+	# HPゲージを作成
+	_create_hp_gauge()
 
 # ======================== パトロール処理 ========================
 
@@ -160,6 +179,42 @@ func _patrol_movement() -> void:
 # ======================== 物理更新処理 ========================
 
 func _physics_process(delta: float) -> void:
+	# ノックバック処理の更新
+	if is_in_knockback:
+		knockback_timer -= delta
+		if knockback_timer <= 0.0:
+			# ノックバック終了
+			is_in_knockback = false
+			knockback_velocity = Vector2.ZERO
+
+			# ノックバック後に向きを変更する必要がある場合
+			if direction_to_face_after_knockback != 0.0:
+				# スプライトの反転
+				if sprite:
+					sprite.scale.x = initial_sprite_scale_x * direction_to_face_after_knockback
+				# DetectionArea, Hitbox, Hurtboxの反転
+				for node in [detection_area, hitbox, hurtbox]:
+					if node:
+						node.scale.x = direction_to_face_after_knockback
+				# フラグをリセット
+				direction_to_face_after_knockback = 0.0
+
+			# 画面内の場合のみhitboxとdetection_areaを再有効化
+			if on_screen:
+				if hitbox:
+					hitbox.set_deferred("monitoring", true)
+					hitbox.set_deferred("monitorable", true)
+					hitbox.visible = true
+				if detection_area:
+					detection_area.set_deferred("monitoring", true)
+					detection_area.visible = true
+		else:
+			# ノックバック速度を適用
+			velocity = knockback_velocity
+			# ノックバック中は移動処理をスキップ
+			move_and_slide()
+			return
+
 	# 重力を適用
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
@@ -193,18 +248,22 @@ func _physics_process(delta: float) -> void:
 				last_movement_direction = sign(velocity.x) if velocity.x != 0 else last_movement_direction
 
 		"waiting":
-			# 待機中
-			velocity.x = 0.0
-			wait_timer += delta
-			if wait_timer >= wait_duration:
-				# 待機時間が経過したらパトロール状態へ移行
-				current_state = "patrol"
-				# 壁衝突後の場合は逆方向へ移動
-				if hit_wall:
-					_generate_reverse_patrol_target()
-					distance_since_collision = 0.0
-				else:
-					_generate_random_patrol_target()
+			# プレイヤーが検知されている場合は待機をスキップして追跡状態に移行
+			if player:
+				current_state = "chasing"
+			else:
+				# 待機中
+				velocity.x = 0.0
+				wait_timer += delta
+				if wait_timer >= wait_duration:
+					# 待機時間が経過したらパトロール状態へ移行
+					current_state = "patrol"
+					# 壁衝突後の場合は逆方向へ移動
+					if hit_wall:
+						_generate_reverse_patrol_target()
+						distance_since_collision = 0.0
+					else:
+						_generate_random_patrol_target()
 
 		"patrol":
 			# パトロール移動
@@ -317,6 +376,10 @@ func _chase_player() -> void:
 ## hitboxと重なっているプレイヤーを取得
 func _get_overlapping_player() -> Node2D:
 	if not hitbox:
+		return null
+
+	# monitoringが無効の場合は処理しない（CLAUDE.mdガイドライン準拠）
+	if not hitbox.monitoring:
 		return null
 
 	# プレイヤーのHurtboxとの重なりをチェック
@@ -457,20 +520,16 @@ func get_capture_animation_down() -> String:
 
 ## コリジョンエリアの有効/無効を一括設定（hitboxとhurtboxのみ）
 func _set_collision_areas(enabled: bool) -> void:
-	for area in [hitbox, hurtbox]:
-		if area:
-			area.monitoring = enabled
-			area.monitorable = enabled
+	# Hitbox: プレイヤーのHurtboxを検知するため、monitoringとmonitorableの両方を設定
+	# 物理演算中の変更に対応するため、set_deferredを使用（CLAUDE.mdガイドライン準拠）
+	if hitbox:
+		hitbox.set_deferred("monitoring", enabled)
+		hitbox.set_deferred("monitorable", enabled)
 
-	# 初回の有効化/無効化のみ状態を出力
-	if enabled and not collision_enabled_logged:
-		collision_enabled_logged = true
-		var hitbox_state: String = "ON" if (hitbox and hitbox.monitoring) else "OFF"
-		print("[%s] プレイヤー検知有効化: Hitbox=%s" % [name, hitbox_state])
-	elif not enabled and not collision_disabled_logged:
-		collision_disabled_logged = true
-		var hitbox_state: String = "ON" if (hitbox and hitbox.monitoring) else "OFF"
-		print("[%s] プレイヤー検知無効化: Hitbox=%s" % [name, hitbox_state])
+	# Hurtbox: プレイヤーの攻撃から検知されるだけなので、monitorableのみ設定
+	if hurtbox:
+		hurtbox.set_deferred("monitoring", false)
+		hurtbox.set_deferred("monitorable", enabled)
 
 ## コリジョンエリアを有効化
 func _enable_collision_areas() -> void:
@@ -520,6 +579,7 @@ func _on_detection_area_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player"):
 		player = body
 		current_state = "chasing"
+		wait_timer = 0.0  # 待機タイマーをリセット
 		# 範囲外フラグをリセット
 		player_out_of_range = false
 		time_out_of_range = 0.0
@@ -571,3 +631,122 @@ func exit_capture_state() -> void:
 			detection_area.monitoring = true
 	# パトロールを再開
 	_reset_to_waiting()
+
+# ======================== ダメージ処理 ========================
+
+## ダメージを受ける処理
+func take_damage(damage: int, direction: Vector2, attacker: Node = null) -> void:
+	# すでに死んでいる場合は処理しない
+	if current_hp <= 0:
+		return
+
+	# パトロール状態または待機状態の場合の特別処理
+	if current_state in ["patrol", "waiting"]:
+		# FightingHitboxからの攻撃の場合は即死
+		if attacker and attacker.name == "FightingHitbox":
+			current_hp = 0
+			_die()
+			return
+		# Kunai（shooting）からの攻撃の場合は追跡状態へ移行
+		elif attacker and attacker is Kunai:
+			# ノックバック後に向くべき方向を保存
+			var kunai_velocity: Vector2 = attacker.velocity
+			if kunai_velocity.x != 0:
+				direction_to_face_after_knockback = sign(kunai_velocity.x)
+
+			# 追跡状態へ移行
+			current_state = "chasing"
+			# プレイヤーへの参照を設定
+			player = attacker.owner_character
+			# 範囲外フラグをリセット
+			player_out_of_range = false
+			time_out_of_range = 0.0
+
+	# ダメージを適用
+	current_hp -= damage
+	print("[%s] ダメージ: %d, 残りHP: %d/%d" % [name, damage, current_hp, max_hp])
+
+	# HPゲージを更新
+	_update_hp_gauge()
+
+	# ノックバックを適用
+	_apply_knockback(direction)
+
+	# HPが0以下になったら死亡処理
+	if current_hp <= 0:
+		_die()
+
+## ノックバックを適用
+func _apply_knockback(direction: Vector2) -> void:
+	# ノックバック状態に遷移
+	is_in_knockback = true
+	knockback_timer = knockback_duration
+	# ノックバック速度を設定（水平方向のみ）
+	knockback_velocity = Vector2(direction.x * knockback_force, -100.0)  # 少し浮く
+
+	# hitboxを無効化・非表示
+	if hitbox:
+		hitbox.set_deferred("monitoring", false)
+		hitbox.set_deferred("monitorable", false)
+		hitbox.visible = false
+
+	# detection_areaを無効化・非表示
+	if detection_area:
+		detection_area.set_deferred("monitoring", false)
+		detection_area.visible = false
+
+## 死亡処理
+func _die() -> void:
+	print("[%s] 死亡" % name)
+	# コリジョンを無効化
+	_disable_collision_areas()
+	if detection_area:
+		detection_area.monitoring = false
+	# HPゲージを非表示
+	if hp_gauge:
+		hp_gauge.visible = false
+	# エネミーを削除
+	queue_free()
+
+# ======================== HPゲージ処理 ========================
+
+## HPゲージを作成
+func _create_hp_gauge() -> void:
+	# HPゲージ用のControlノードを作成
+	hp_gauge = Control.new()
+	hp_gauge.name = "HPGauge"
+	# Sprite2Dの上に配置（Y座標はマイナスで上方向）
+	hp_gauge.position = Vector2(0, -80)
+	add_child(hp_gauge)
+
+	# HPゲージを更新
+	_update_hp_gauge()
+
+## HPゲージを更新
+func _update_hp_gauge() -> void:
+	if not hp_gauge:
+		return
+
+	# 既存の子ノードを削除
+	for child in hp_gauge.get_children():
+		child.queue_free()
+
+	# ドット1つのサイズ
+	var dot_size: int = 4
+	# ドット間の間隔
+	var dot_spacing: int = 1
+	# ゲージの開始位置（中央揃え）
+	var total_width: int = (dot_size + dot_spacing) * max_hp - dot_spacing
+	var start_x: float = -total_width / 2.0
+
+	# 各HPドットを描画
+	for i in range(max_hp):
+		var dot: ColorRect = ColorRect.new()
+		dot.size = Vector2(dot_size, dot_size)
+		dot.position = Vector2(start_x + i * (dot_size + dot_spacing), 0)
+		# 現在のHP以下の場合はオレンジ色、それ以外は暗い色
+		if i < current_hp:
+			dot.color = Color(1.0, 0.5, 0.0)  # オレンジ色
+		else:
+			dot.color = Color(0.2, 0.2, 0.2)  # 暗い色
+		hp_gauge.add_child(dot)
