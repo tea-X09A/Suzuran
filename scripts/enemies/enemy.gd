@@ -1,4 +1,4 @@
-class_name BaseEnemy
+class_name Enemy
 extends CharacterBody2D
 
 # ======================== ノード参照キャッシュ ========================
@@ -24,33 +24,33 @@ var animation_state_machine: AnimationNodeStateMachinePlayback = null
 
 # ======================== エクスポート設定 ========================
 
-# 移動速度
-@export var move_speed: float = 50.0
-# パトロール範囲（初期位置からの距離）
-@export var patrol_range: float = 100.0
-# 待機時間（秒）
-@export var wait_duration: float = 3.0
-# プレイヤーを見失うまでの遅延時間（秒）
-@export var lose_sight_delay: float = 2.0
-# キャプチャのクールダウン時間（秒）
-@export var capture_cooldown: float = 0.5
-# 視界のRayCast本数
-@export var vision_ray_count: int = 20
-# 視界の最大距離
-@export var vision_distance: float = 509.0
-# 視界の角度（度数、片側）
-@export var vision_angle: float = 10.0
-# 最大HP
-@export var max_hp: int = 5
-# ノックバックの力
-@export var knockback_force: float = 300.0
-# ノックバックの持続時間（秒）
-@export var knockback_duration: float = 0.3
+# 敵のID（アニメーション名に使用、エディタで設定）
+@export var enemy_id: String = ""
 
 # ======================== 状態管理変数 ========================
 
-# 敵のID（アニメーション名に使用、継承先で設定）
-var enemy_id: String = ""
+# 移動速度
+var move_speed: float = 50.0
+# パトロール範囲（初期位置からの距離）
+var patrol_range: float = 100.0
+# 待機時間（秒）
+var wait_duration: float = 3.0
+# プレイヤーを見失うまでの遅延時間（秒）
+var lose_sight_delay: float = 2.0
+# キャプチャのクールダウン時間（秒）
+var capture_cooldown: float = 0.5
+# 視界のRayCast本数
+var vision_ray_count: int = 20
+# 視界の最大距離
+var vision_distance: float = 509.0
+# 視界の角度（度数、片側）
+var vision_angle: float = 10.0
+# 最大HP
+var max_hp: int = 5
+# ノックバックの力
+var knockback_force: float = 300.0
+# ノックバックの持続時間（秒）
+var knockback_duration: float = 0.3
 # キャプチャ時の状態（アニメーション名に使用、初期値をnormalとする）
 var capture_condition: String = "normal"
 # 画面内にいるかどうかのフラグ
@@ -197,7 +197,7 @@ func _initialize_state_system() -> void:
 ## 状態遷移
 func change_state(new_state_name: String) -> void:
 	if not state_instances.has(new_state_name):
-		print("[BaseEnemy] 警告: 存在しないステート: ", new_state_name)
+		print("[Enemy] 警告: 存在しないステート: ", new_state_name)
 		return
 
 	var new_state: BaseEnemyState = state_instances[new_state_name]
@@ -209,29 +209,6 @@ func change_state(new_state_name: String) -> void:
 	current_state.initialize_state()
 	# アニメーションステートを更新
 	current_state.set_animation_state(new_state_name)
-
-# ======================== パトロール処理 ========================
-
-## ランダムなパトロール目標位置を生成
-func _generate_random_patrol_target() -> void:
-	# 左右のランダムな方向を決定(-1: 左, 1: 右)
-	var direction: float = 1.0 if randf() > 0.5 else -1.0
-	# 移動距離をランダムに生成
-	var move_distance: float = randf_range(patrol_range * 0.5, patrol_range)
-	# 現在位置から左右に目標位置を設定
-	var target_x: float = global_position.x + (direction * move_distance)
-	target_position = Vector2(target_x, global_position.y)
-
-## 壁衝突後の逆方向パトロール目標位置を生成
-func _generate_reverse_patrol_target() -> void:
-	# 直前に進もうとした方向の逆方向にランダムな位置を生成
-	var reverse_direction: float = -last_movement_direction
-	# 現在位置から逆方向に移動する距離をランダムに生成（patrol_rangeの50%～100%の距離）
-	var move_distance: float = randf_range(patrol_range * 0.5, patrol_range)
-	# 現在位置から逆方向に目標位置を設定
-	var target_x: float = global_position.x + (reverse_direction * move_distance)
-	target_position = Vector2(target_x, global_position.y)
-
 
 # ======================== 物理更新処理 ========================
 
@@ -323,11 +300,6 @@ func _update_vision() -> void:
 	detection_collision.polygon = new_polygon
 	# 検知中の場合は色を変更（HitboxCollisionと同じ色）
 	vision_shape.color = Color(0.858824, 0.305882, 0.501961, 0.419608) if player != null else Color(0.309804, 0.65098, 0.835294, 0.2)
-
-
-## プレイヤーを追跡（継承先でオーバーライド）
-func _chase_player() -> void:
-	pass
 
 ## hitboxと重なっているプレイヤーを取得
 func _get_overlapping_player() -> Node2D:

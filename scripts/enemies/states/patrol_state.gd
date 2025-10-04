@@ -6,10 +6,10 @@ func initialize_state() -> void:
 	# パトロール目標位置を生成
 	# 壁衝突後の場合は逆方向へ移動
 	if enemy.hit_wall:
-		enemy._generate_reverse_patrol_target()
+		_generate_reverse_patrol_target()
 		enemy.distance_since_collision = 0.0
 	else:
-		enemy._generate_random_patrol_target()
+		_generate_random_patrol_target()
 
 ## ステート開始時の処理
 var previous_position: Vector2 = Vector2.ZERO
@@ -59,3 +59,23 @@ func _patrol_movement() -> void:
 		apply_movement(direction, enemy.move_speed)
 		# 進もうとしている方向を記録
 		enemy.last_movement_direction = direction
+
+## ランダムなパトロール目標位置を生成
+func _generate_random_patrol_target() -> void:
+	# 左右のランダムな方向を決定(-1: 左, 1: 右)
+	var direction: float = 1.0 if randf() > 0.5 else -1.0
+	# 移動距離をランダムに生成
+	var move_distance: float = randf_range(enemy.patrol_range * 0.5, enemy.patrol_range)
+	# 現在位置から左右に目標位置を設定
+	var target_x: float = enemy.global_position.x + (direction * move_distance)
+	enemy.target_position = Vector2(target_x, enemy.global_position.y)
+
+## 壁衝突後の逆方向パトロール目標位置を生成
+func _generate_reverse_patrol_target() -> void:
+	# 直前に進もうとした方向の逆方向にランダムな位置を生成
+	var reverse_direction: float = -enemy.last_movement_direction
+	# 現在位置から逆方向に移動する距離をランダムに生成（patrol_rangeの50%～100%の距離）
+	var move_distance: float = randf_range(enemy.patrol_range * 0.5, enemy.patrol_range)
+	# 現在位置から逆方向に目標位置を設定
+	var target_x: float = enemy.global_position.x + (reverse_direction * move_distance)
+	enemy.target_position = Vector2(target_x, enemy.global_position.y)
