@@ -569,20 +569,15 @@ func take_damage(damage: int, direction: Vector2, attacker: Node = null) -> void
 			current_hp = 0
 			_die()
 			return
-		# Kunai（shooting）からの攻撃の場合は追跡状態へ移行
+		# Kunai（shooting）からの攻撃の場合はプレイヤーの方向へ向く
 		elif attacker and attacker is Kunai:
-			# ノックバック後に向くべき方向を保存
-			var kunai_velocity: Vector2 = attacker.velocity
-			if kunai_velocity.x != 0:
-				direction_to_face_after_knockback = sign(kunai_velocity.x)
-
-			# 追跡状態へ移行
-			change_state("CHASE")
-			# プレイヤーへの参照を設定
-			player = attacker.owner_character
-			# 範囲外フラグをリセット
-			player_out_of_range = false
-			time_out_of_range = 0.0
+			# プレイヤーへの参照を取得
+			var kunai_owner: Node2D = attacker.owner_character
+			if kunai_owner:
+				# プレイヤーの方向を計算
+				var direction_to_player: float = sign(kunai_owner.global_position.x - global_position.x)
+				if direction_to_player != 0:
+					direction_to_face_after_knockback = direction_to_player
 
 	# ダメージを適用
 	current_hp -= damage

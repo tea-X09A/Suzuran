@@ -31,15 +31,19 @@ func cleanup_state() -> void:
 		# フラグをリセット
 		enemy.direction_to_face_after_knockback = 0.0
 
-	# 画面内の場合のみhitboxとdetection_areaを再有効化
+	# hitboxとdetection_areaのvisibleを常に復元
+	if enemy.hitbox:
+		enemy.hitbox.visible = true
+	if enemy.detection_area:
+		enemy.detection_area.visible = true
+
+	# 画面内の場合のみmonitoringを再有効化
 	if enemy.on_screen:
 		if enemy.hitbox:
 			enemy.hitbox.set_deferred("monitoring", true)
 			enemy.hitbox.set_deferred("monitorable", true)
-			enemy.hitbox.visible = true
 		if enemy.detection_area:
 			enemy.detection_area.set_deferred("monitoring", true)
-			enemy.detection_area.visible = true
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:
