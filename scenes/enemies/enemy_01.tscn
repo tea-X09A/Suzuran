@@ -59,7 +59,7 @@ polygon = PackedVector2Array(0, 0, 450, -150, 463, -134, 475, -118, 485, -101, 4
 visible = false
 polygon = PackedVector2Array(0, 0, 450, -150, 463, -134, 475, -118, 485, -101, 494, -84, 499, -67, 503, -50, 506, -34, 508, -17, 509, 0, 508, 17, 506, 34, 503, 50, 499, 67, 494, 84, 485, 101, 475, 118, 463, 134, 450, 150)
 
-[node name="VisibleOnScreenEnabler2D" type="VisibleOnScreenEnabler2D" parent="." groups=["traps"]]
+[node name="VisibleOnScreenNotifier2D" type="VisibleOnScreenNotifier2D" parent="." groups=["traps"]]
 position = Vector2(-4, 9)
 scale = Vector2(0.585714, 0.6)
 rect = Rect2(-70, -70, 140, 140)

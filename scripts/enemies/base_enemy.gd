@@ -16,7 +16,7 @@ extends CharacterBody2D
 # DetectionCollision（検知範囲のコリジョン）
 @onready var detection_collision: CollisionPolygon2D = $DetectionArea/DetectionCollision
 # 画面内外の検知
-@onready var visibility_enabler: VisibleOnScreenEnabler2D = $VisibleOnScreenEnabler2D
+@onready var visibility_notifier: VisibleOnScreenNotifier2D = $VisibleOnScreenNotifier2D
 
 # ======================== エクスポート設定 ========================
 
@@ -25,7 +25,7 @@ extends CharacterBody2D
 # パトロール範囲（初期位置からの距離）
 @export var patrol_range: float = 100.0
 # 待機時間（秒）
-@export var wait_duration: float = 2.0
+@export var wait_duration: float = 3.0
 # プレイヤーを見失うまでの遅延時間（秒）
 @export var lose_sight_delay: float = 2.0
 # キャプチャのクールダウン時間（秒）
@@ -43,14 +43,12 @@ extends CharacterBody2D
 var enemy_id: String = ""
 # キャプチャ時の状態（アニメーション名に使用、初期値をnormalとする）
 var capture_condition: String = "normal"
-# 処理が有効かどうかのフラグ
-var processing_enabled: bool = false
+# 画面内にいるかどうかのフラグ
+var on_screen: bool = false
 # プレイヤーノードへの参照
 var player: Node2D = null
 # 重力加速度
 var GRAVITY: float
-# パトロールの中心位置
-var patrol_center: Vector2
 # 現在の目標位置
 var target_position: Vector2
 # スプライトの初期スケール（反転処理用）
@@ -83,6 +81,10 @@ var vision_update_counter: int = 0
 var vision_update_interval: int = 5
 # hitboxと重なっているプレイヤー（キャッシュ用）
 var overlapping_player: Node2D = null
+# コリジョンエリアの有効化を出力したかどうか
+var collision_enabled_logged: bool = false
+# コリジョンエリアの無効化を出力したかどうか
+var collision_disabled_logged: bool = false
 
 # ======================== 初期化処理 ========================
 
@@ -91,8 +93,6 @@ func _ready() -> void:
 	add_to_group("enemies")
 	# 重力を取得
 	GRAVITY = ProjectSettings.get_setting("physics/2d/default_gravity")
-	# 初期位置をパトロールの中心として記録
-	patrol_center = global_position
 	# スプライトの初期スケールを保存
 	if sprite:
 		initial_sprite_scale_x = abs(sprite.scale.x)
@@ -100,18 +100,21 @@ func _ready() -> void:
 	# 視界更新のタイミングをずらす（各敵のインスタンスIDを基にオフセットを設定）
 	vision_update_counter = get_instance_id() % vision_update_interval
 
-	# VisibleOnScreenEnabler2Dのシグナルに接続
-	if visibility_enabler:
-		visibility_enabler.screen_entered.connect(_on_screen_entered)
-		visibility_enabler.screen_exited.connect(_on_screen_exited)
+	# VisibleOnScreenNotifier2Dのシグナルに接続
+	if visibility_notifier:
+		visibility_notifier.screen_entered.connect(_on_screen_entered)
+		visibility_notifier.screen_exited.connect(_on_screen_exited)
 
 	# DetectionAreaのシグナルに接続
 	if detection_area:
 		detection_area.body_entered.connect(_on_detection_area_body_entered)
 		detection_area.body_exited.connect(_on_detection_area_body_exited)
 
-	# 初期状態では無効化
+	# 初期状態ではhitboxとhurtboxを無効化
 	_disable_collision_areas()
+	# detection_areaも初期状態では無効化（画面内に入ったら有効化）
+	if detection_area:
+		detection_area.monitoring = false
 	# 視界判定用のRayCastを生成
 	_setup_vision_raycasts()
 
@@ -119,8 +122,13 @@ func _ready() -> void:
 
 ## ランダムなパトロール目標位置を生成
 func _generate_random_patrol_target() -> void:
-	var random_offset: float = randf_range(-patrol_range, patrol_range)
-	target_position = Vector2(patrol_center.x + random_offset, patrol_center.y)
+	# 左右のランダムな方向を決定(-1: 左, 1: 右)
+	var direction: float = 1.0 if randf() > 0.5 else -1.0
+	# 移動距離をランダムに生成
+	var move_distance: float = randf_range(patrol_range * 0.5, patrol_range)
+	# 現在位置から左右に目標位置を設定
+	var target_x: float = global_position.x + (direction * move_distance)
+	target_position = Vector2(target_x, global_position.y)
 
 ## 壁衝突後の逆方向パトロール目標位置を生成
 func _generate_reverse_patrol_target() -> void:
@@ -128,9 +136,9 @@ func _generate_reverse_patrol_target() -> void:
 	var reverse_direction: float = -last_movement_direction
 	# 現在位置から逆方向に移動する距離をランダムに生成（patrol_rangeの50%～100%の距離）
 	var move_distance: float = randf_range(patrol_range * 0.5, patrol_range)
-	# 現在位置から逆方向に目標位置を設定（パトロール範囲制限なし）
+	# 現在位置から逆方向に目標位置を設定
 	var target_x: float = global_position.x + (reverse_direction * move_distance)
-	target_position = Vector2(target_x, patrol_center.y)
+	target_position = Vector2(target_x, global_position.y)
 
 ## パトロール移動処理
 func _patrol_movement() -> void:
@@ -152,22 +160,21 @@ func _patrol_movement() -> void:
 # ======================== 物理更新処理 ========================
 
 func _physics_process(delta: float) -> void:
-	if not processing_enabled:
-		return
-
 	# 重力を適用
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
 
-	# hitboxと重なっているプレイヤーをチェック（1フレームに1回のみ）
-	overlapping_player = _get_overlapping_player()
+	# 画面内の場合のみプレイヤー検知処理を実行
+	if on_screen:
+		# hitboxと重なっているプレイヤーをチェック（1フレームに1回のみ）
+		overlapping_player = _get_overlapping_player()
 
-	# プレイヤーが範囲外にいる時間のカウント
-	if player_out_of_range and current_state == "chasing":
-		time_out_of_range += delta
-		# 遅延時間を超えたらプレイヤーを見失う
-		if time_out_of_range >= lose_sight_delay:
-			_lose_player()
+		# プレイヤーが範囲外にいる時間のカウント
+		if player_out_of_range and current_state == "chasing":
+			time_out_of_range += delta
+			# 遅延時間を超えたらプレイヤーを見失う
+			if time_out_of_range >= lose_sight_delay:
+				_lose_player()
 
 	# 現在の状態に応じた処理
 	match current_state:
@@ -222,13 +229,15 @@ func _physics_process(delta: float) -> void:
 
 	# 向きの更新
 	_update_facing_direction()
-	# 視界の更新（間引き処理）
+
+	# 視界の更新（間引き処理、画面外でも実行して形状を更新）
 	vision_update_counter += 1
 	if vision_update_counter >= vision_update_interval:
 		vision_update_counter = 0
 		_update_vision()
-	# キャプチャ処理
-	if overlapping_player:
+
+	# 画面内の場合のみキャプチャ処理を実行
+	if on_screen and overlapping_player:
 		_try_capture_player(overlapping_player)
 
 # ======================== プレイヤー検知と追跡 ========================
@@ -339,8 +348,6 @@ func _lose_player() -> void:
 	var lost_player: Node2D = player
 	player = null
 	velocity.x = 0.0
-	# 現在位置を新しいパトロール中心点として設定
-	patrol_center = global_position
 	# 待機状態へ移行
 	_reset_to_waiting()
 	# 壁に接触していない場合のみ壁衝突フラグをリセット
@@ -448,14 +455,22 @@ func get_capture_animation_down() -> String:
 
 # ======================== コリジョン管理 ========================
 
-## コリジョンエリアの有効/無効を一括設定
+## コリジョンエリアの有効/無効を一括設定（hitboxとhurtboxのみ）
 func _set_collision_areas(enabled: bool) -> void:
 	for area in [hitbox, hurtbox]:
 		if area:
 			area.monitoring = enabled
 			area.monitorable = enabled
-	if detection_area:
-		detection_area.monitoring = enabled
+
+	# 初回の有効化/無効化のみ状態を出力
+	if enabled and not collision_enabled_logged:
+		collision_enabled_logged = true
+		var hitbox_state: String = "ON" if (hitbox and hitbox.monitoring) else "OFF"
+		print("[%s] プレイヤー検知有効化: Hitbox=%s" % [name, hitbox_state])
+	elif not enabled and not collision_disabled_logged:
+		collision_disabled_logged = true
+		var hitbox_state: String = "ON" if (hitbox and hitbox.monitoring) else "OFF"
+		print("[%s] プレイヤー検知無効化: Hitbox=%s" % [name, hitbox_state])
 
 ## コリジョンエリアを有効化
 func _enable_collision_areas() -> void:
@@ -469,18 +484,31 @@ func _disable_collision_areas() -> void:
 
 ## 画面内に入った時の処理
 func _on_screen_entered() -> void:
-	processing_enabled = true
+	on_screen = true
 	_enable_collision_areas()
+	# detection_areaのmonitoringを有効化
+	if detection_area:
+		detection_area.monitoring = true
 
 ## 画面外に出た時の処理
 func _on_screen_exited() -> void:
-	processing_enabled = false
+	on_screen = false
+	# プレイヤー検知をクリア
+	overlapping_player = null
+	# hitboxとhurtboxのみ無効化
 	_disable_collision_areas()
-	velocity = Vector2.ZERO
-	player = null
-	_reset_to_waiting()
-	# 壁衝突フラグと範囲外フラグをリセット
-	_reset_state_flags()
+	# detection_areaのmonitoringを無効化（視覚的には表示されたまま）
+	if detection_area:
+		detection_area.monitoring = false
+	# プレイヤー追跡を解除
+	if player:
+		player = null
+		# 追跡中だった場合はパトロールに戻る
+		if current_state == "chasing":
+			_reset_to_waiting()
+			# 範囲外フラグをリセット
+			player_out_of_range = false
+			time_out_of_range = 0.0
 	# 視界の色をリセット（検知状態の色をクリア）
 	_update_vision()
 
@@ -524,8 +552,11 @@ func enter_capture_state() -> void:
 	velocity = Vector2.ZERO
 	# 現在の状態を待機に変更
 	_reset_to_waiting()
-	# 処理を無効化
-	processing_enabled = false
+	# hitboxとhurtboxを無効化
+	_disable_collision_areas()
+	# detection_areaも無効化
+	if detection_area:
+		detection_area.monitoring = false
 	# 非表示にする
 	visible = false
 
@@ -533,9 +564,10 @@ func enter_capture_state() -> void:
 func exit_capture_state() -> void:
 	# 表示する
 	visible = true
-	# 処理を有効化
-	processing_enabled = true
+	# 画面内の場合はhitbox、hurtbox、detection_areaを有効化
+	if on_screen:
+		_enable_collision_areas()
+		if detection_area:
+			detection_area.monitoring = true
 	# パトロールを再開
 	_reset_to_waiting()
-	# 現在位置を新しいパトロール中心点として設定
-	patrol_center = global_position
