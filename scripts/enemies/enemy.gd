@@ -17,6 +17,10 @@ extends CharacterBody2D
 @onready var detection_collision: CollisionPolygon2D = $DetectionArea/DetectionCollision
 # 画面内外の検知
 @onready var visibility_notifier: VisibleOnScreenNotifier2D = $VisibleOnScreenNotifier2D
+# AnimationTree（アニメーション制御）
+@onready var animation_tree: AnimationTree = $AnimationTree
+# AnimationTreeのステートマシン
+var animation_state_machine: AnimationNodeStateMachinePlayback = null
 
 # ======================== エクスポート設定 ========================
 
@@ -59,8 +63,6 @@ var GRAVITY: float
 var target_position: Vector2
 # スプライトの初期スケール（反転処理用）
 var initial_sprite_scale_x: float = 0.0
-# 現在の状態（"patrol", "waiting", "chasing"）
-var current_state: String = "waiting"
 # 待機タイマー
 var wait_timer: float = 0.0
 # 目標位置への到達判定距離
@@ -89,8 +91,6 @@ var vision_update_interval: int = 5
 var overlapping_player: Node2D = null
 # 現在のHP
 var current_hp: int = 5
-# ノックバック中かどうかのフラグ
-var is_in_knockback: bool = false
 # ノックバックタイマー
 var knockback_timer: float = 0.0
 # ノックバック方向
@@ -99,6 +99,13 @@ var knockback_velocity: Vector2 = Vector2.ZERO
 var direction_to_face_after_knockback: float = 0.0
 # HPゲージへの参照
 var hp_gauge: Control = null
+
+# ======================== ステート管理システム ========================
+
+# ステートインスタンス辞書
+var state_instances: Dictionary = {}
+# 現在のアクティブステート
+var current_state: BaseEnemyState
 
 # ======================== 初期化処理 ========================
 
@@ -136,6 +143,72 @@ func _ready() -> void:
 	_setup_vision_raycasts()
 	# HPゲージを作成
 	_create_hp_gauge()
+	# AnimationTreeの初期化
+	_initialize_animation_tree()
+	# ステート管理システムの初期化
+	_initialize_state_system()
+
+# ======================== AnimationTree初期化 ========================
+
+## AnimationTreeを初期化
+func _initialize_animation_tree() -> void:
+	if not animation_tree:
+		return
+
+	# AnimationTreeを有効化
+	animation_tree.active = true
+	# ステートマシンを取得
+	animation_state_machine = animation_tree.get("parameters/playback")
+	# 初期ステートをIDLEに設定
+	if animation_state_machine:
+		animation_state_machine.travel("IDLE")
+
+## アニメーションステートを更新
+func _update_animation_state() -> void:
+	if not animation_state_machine:
+		return
+
+	# 現在のステート名を取得
+	var state_name: String = ""
+	if current_state:
+		state_name = current_state.get_current_state_name()
+
+	# ステート名が空の場合は処理を終了
+	if state_name.is_empty():
+		return
+
+	# アニメーションステートマシンを更新
+	animation_state_machine.travel(state_name)
+
+# ======================== ステート管理システム初期化 ========================
+
+## ステート管理システムの初期化
+func _initialize_state_system() -> void:
+	# 全ステートインスタンスを作成
+	state_instances["IDLE"] = EnemyIdleState.new(self)
+	state_instances["PATROL"] = EnemyPatrolState.new(self)
+	state_instances["CHASE"] = EnemyChaseState.new(self)
+	state_instances["KNOCKBACK"] = EnemyKnockbackState.new(self)
+
+	# 初期状態をIDLEに設定
+	current_state = state_instances["IDLE"]
+	current_state.initialize_state()
+
+## 状態遷移
+func change_state(new_state_name: String) -> void:
+	if not state_instances.has(new_state_name):
+		print("[BaseEnemy] 警告: 存在しないステート: ", new_state_name)
+		return
+
+	var new_state: BaseEnemyState = state_instances[new_state_name]
+	# 前のステートのクリーンアップ
+	if current_state:
+		current_state.cleanup_state()
+	# 新しいステートに変更
+	current_state = new_state
+	current_state.initialize_state()
+	# アニメーションステートを更新
+	current_state.set_animation_state(new_state_name)
 
 # ======================== パトロール処理 ========================
 
@@ -159,135 +232,21 @@ func _generate_reverse_patrol_target() -> void:
 	var target_x: float = global_position.x + (reverse_direction * move_distance)
 	target_position = Vector2(target_x, global_position.y)
 
-## パトロール移動処理
-func _patrol_movement() -> void:
-	# 目標位置への方向を計算
-	var direction: float = sign(target_position.x - global_position.x)
-
-	# 目標位置に到達したかチェック
-	if abs(target_position.x - global_position.x) <= arrival_threshold:
-		# 到達したら待機状態へ移行
-		current_state = "waiting"
-		wait_timer = 0.0
-		velocity.x = 0.0
-	else:
-		# 目標位置へ移動
-		velocity.x = direction * move_speed
-		# 進もうとしている方向を記録
-		last_movement_direction = direction
 
 # ======================== 物理更新処理 ========================
 
 func _physics_process(delta: float) -> void:
-	# ノックバック処理の更新
-	if is_in_knockback:
-		knockback_timer -= delta
-		if knockback_timer <= 0.0:
-			# ノックバック終了
-			is_in_knockback = false
-			knockback_velocity = Vector2.ZERO
-
-			# ノックバック後に向きを変更する必要がある場合
-			if direction_to_face_after_knockback != 0.0:
-				# スプライトの反転
-				if sprite:
-					sprite.scale.x = initial_sprite_scale_x * direction_to_face_after_knockback
-				# DetectionArea, Hitbox, Hurtboxの反転
-				for node in [detection_area, hitbox, hurtbox]:
-					if node:
-						node.scale.x = direction_to_face_after_knockback
-				# フラグをリセット
-				direction_to_face_after_knockback = 0.0
-
-			# 画面内の場合のみhitboxとdetection_areaを再有効化
-			if on_screen:
-				if hitbox:
-					hitbox.set_deferred("monitoring", true)
-					hitbox.set_deferred("monitorable", true)
-					hitbox.visible = true
-				if detection_area:
-					detection_area.set_deferred("monitoring", true)
-					detection_area.visible = true
-		else:
-			# ノックバック速度を適用
-			velocity = knockback_velocity
-			# ノックバック中は移動処理をスキップ
-			move_and_slide()
-			return
-
-	# 重力を適用
-	if not is_on_floor():
-		velocity.y += GRAVITY * delta
-
 	# 画面内の場合のみプレイヤー検知処理を実行
 	if on_screen:
 		# hitboxと重なっているプレイヤーをチェック（1フレームに1回のみ）
 		overlapping_player = _get_overlapping_player()
 
 		# プレイヤーが範囲外にいる時間のカウント
-		if player_out_of_range and current_state == "chasing":
+		if player_out_of_range and player:
 			time_out_of_range += delta
 			# 遅延時間を超えたらプレイヤーを見失う
 			if time_out_of_range >= lose_sight_delay:
 				_lose_player()
-
-	# 現在の状態に応じた処理
-	match current_state:
-		"chasing":
-			# hitboxがplayerのhurtboxと重なっているかチェック
-			if overlapping_player:
-				# 攻撃範囲内なので立ち止まる
-				velocity.x = 0.0
-			else:
-				# プレイヤーを追跡
-				if player:
-					_chase_player()
-			# 追跡中も壁衝突を検知
-			if is_on_wall():
-				hit_wall = true
-				last_movement_direction = sign(velocity.x) if velocity.x != 0 else last_movement_direction
-
-		"waiting":
-			# プレイヤーが検知されている場合は待機をスキップして追跡状態に移行
-			if player:
-				current_state = "chasing"
-			else:
-				# 待機中
-				velocity.x = 0.0
-				wait_timer += delta
-				if wait_timer >= wait_duration:
-					# 待機時間が経過したらパトロール状態へ移行
-					current_state = "patrol"
-					# 壁衝突後の場合は逆方向へ移動
-					if hit_wall:
-						_generate_reverse_patrol_target()
-						distance_since_collision = 0.0
-					else:
-						_generate_random_patrol_target()
-
-		"patrol":
-			# パトロール移動
-			_patrol_movement()
-			# 壁衝突後の移動距離が一定以上の場合のみ壁衝突判定を行う
-			if not (hit_wall and distance_since_collision < min_distance_from_wall) and is_on_wall():
-				# 壁に衝突した場合の処理
-				_reset_to_waiting()
-				hit_wall = true
-				distance_since_collision = 0.0
-
-	# 移動処理
-	var previous_position: Vector2 = global_position
-	move_and_slide()
-
-	# 移動距離を記録（壁衝突後の場合）
-	if hit_wall and current_state == "patrol":
-		distance_since_collision += global_position.distance_to(previous_position)
-		if distance_since_collision >= min_distance_from_wall:
-			# 十分な距離を移動したので hit_wall フラグをクリア
-			hit_wall = false
-
-	# 向きの更新
-	_update_facing_direction()
 
 	# 視界の更新（間引き処理、画面外でも実行して形状を更新）
 	vision_update_counter += 1
@@ -298,6 +257,16 @@ func _physics_process(delta: float) -> void:
 	# 画面内の場合のみキャプチャ処理を実行
 	if on_screen and overlapping_player:
 		_try_capture_player(overlapping_player)
+
+	# 現在のステートに処理を移譲
+	if current_state:
+		current_state.physics_update(delta)
+
+	# Godot物理エンジンによる移動実行
+	move_and_slide()
+
+	# アニメーションステートを更新
+	_update_animation_state()
 
 # ======================== プレイヤー検知と追跡 ========================
 
@@ -353,21 +322,8 @@ func _update_vision() -> void:
 	vision_shape.polygon = new_polygon
 	detection_collision.polygon = new_polygon
 	# 検知中の場合は色を変更（HitboxCollisionと同じ色）
-	vision_shape.color = Color(0.858824, 0.305882, 0.501961, 0.419608) if current_state == "chasing" else Color(0.309804, 0.65098, 0.835294, 0.2)
+	vision_shape.color = Color(0.858824, 0.305882, 0.501961, 0.419608) if player != null else Color(0.309804, 0.65098, 0.835294, 0.2)
 
-## 向きを更新（左右移動に応じて反転）
-func _update_facing_direction() -> void:
-	if velocity.x == 0:
-		return
-
-	var direction: float = sign(velocity.x)
-	# Sprite2Dの反転（初期スケールを保持して反転）
-	if sprite and initial_sprite_scale_x > 0.0:
-		sprite.scale.x = initial_sprite_scale_x * direction
-	# DetectionArea, Hitbox, Hurtboxの反転
-	for node in [detection_area, hitbox, hurtbox]:
-		if node:
-			node.scale.x = direction
 
 ## プレイヤーを追跡（継承先でオーバーライド）
 func _chase_player() -> void:
@@ -392,11 +348,6 @@ func _get_overlapping_player() -> Node2D:
 
 	return null
 
-## 待機状態にリセット
-func _reset_to_waiting() -> void:
-	current_state = "waiting"
-	wait_timer = 0.0
-	velocity.x = 0.0
 
 ## 状態フラグをリセット
 func _reset_state_flags() -> void:
@@ -412,7 +363,7 @@ func _lose_player() -> void:
 	player = null
 	velocity.x = 0.0
 	# 待機状態へ移行
-	_reset_to_waiting()
+	change_state("IDLE")
 	# 壁に接触していない場合のみ壁衝突フラグをリセット
 	if not is_on_wall():
 		_reset_state_flags()
@@ -562,12 +513,11 @@ func _on_screen_exited() -> void:
 	# プレイヤー追跡を解除
 	if player:
 		player = null
-		# 追跡中だった場合はパトロールに戻る
-		if current_state == "chasing":
-			_reset_to_waiting()
-			# 範囲外フラグをリセット
-			player_out_of_range = false
-			time_out_of_range = 0.0
+		# 追跡中だった場合はIDLE状態に戻る
+		change_state("IDLE")
+		# 範囲外フラグをリセット
+		player_out_of_range = false
+		time_out_of_range = 0.0
 	# 視界の色をリセット（検知状態の色をクリア）
 	_update_vision()
 
@@ -578,7 +528,7 @@ func _on_detection_area_body_entered(body: Node2D) -> void:
 	# プレイヤーグループのボディのみ処理
 	if body.is_in_group("player"):
 		player = body
-		current_state = "chasing"
+		change_state("CHASE")
 		wait_timer = 0.0  # 待機タイマーをリセット
 		# 範囲外フラグをリセット
 		player_out_of_range = false
@@ -611,7 +561,7 @@ func enter_capture_state() -> void:
 	# 移動を停止
 	velocity = Vector2.ZERO
 	# 現在の状態を待機に変更
-	_reset_to_waiting()
+	change_state("IDLE")
 	# hitboxとhurtboxを無効化
 	_disable_collision_areas()
 	# detection_areaも無効化
@@ -630,7 +580,7 @@ func exit_capture_state() -> void:
 		if detection_area:
 			detection_area.monitoring = true
 	# パトロールを再開
-	_reset_to_waiting()
+	change_state("IDLE")
 
 # ======================== ダメージ処理 ========================
 
@@ -641,7 +591,7 @@ func take_damage(damage: int, direction: Vector2, attacker: Node = null) -> void
 		return
 
 	# パトロール状態または待機状態の場合の特別処理
-	if current_state in ["patrol", "waiting"]:
+	if current_state == state_instances["PATROL"] or current_state == state_instances["IDLE"]:
 		# FightingHitboxからの攻撃の場合は即死
 		if attacker and attacker.name == "FightingHitbox":
 			current_hp = 0
@@ -655,7 +605,7 @@ func take_damage(damage: int, direction: Vector2, attacker: Node = null) -> void
 				direction_to_face_after_knockback = sign(kunai_velocity.x)
 
 			# 追跡状態へ移行
-			current_state = "chasing"
+			change_state("CHASE")
 			# プレイヤーへの参照を設定
 			player = attacker.owner_character
 			# 範囲外フラグをリセット
@@ -670,30 +620,25 @@ func take_damage(damage: int, direction: Vector2, attacker: Node = null) -> void
 	_update_hp_gauge()
 
 	# ノックバックを適用
-	_apply_knockback(direction)
+	_apply_knockback(direction, attacker)
 
 	# HPが0以下になったら死亡処理
 	if current_hp <= 0:
 		_die()
 
 ## ノックバックを適用
-func _apply_knockback(direction: Vector2) -> void:
-	# ノックバック状態に遷移
-	is_in_knockback = true
+func _apply_knockback(direction: Vector2, attacker: Node = null) -> void:
+	# ノックバックタイマーを設定
 	knockback_timer = knockback_duration
 	# ノックバック速度を設定（水平方向のみ）
-	knockback_velocity = Vector2(direction.x * knockback_force, -100.0)  # 少し浮く
+	# FightingHitboxからの攻撃の場合は2倍の力
+	var current_knockback_force: float = knockback_force
+	if attacker and attacker.name == "FightingHitbox":
+		current_knockback_force *= 2.0
+	knockback_velocity = Vector2(direction.x * current_knockback_force, -100.0)  # 少し浮く
 
-	# hitboxを無効化・非表示
-	if hitbox:
-		hitbox.set_deferred("monitoring", false)
-		hitbox.set_deferred("monitorable", false)
-		hitbox.visible = false
-
-	# detection_areaを無効化・非表示
-	if detection_area:
-		detection_area.set_deferred("monitoring", false)
-		detection_area.visible = false
+	# ノックバック状態に遷移
+	change_state("KNOCKBACK")
 
 ## 死亡処理
 func _die() -> void:
