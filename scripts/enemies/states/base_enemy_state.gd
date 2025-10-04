@@ -38,12 +38,6 @@ func set_animation_state(state_name: String) -> void:
 	if animation_state_machine:
 		animation_state_machine.travel(state_name.to_upper())
 
-## 現在のstate machine状態を取得
-func get_current_state_name() -> String:
-	if animation_state_machine:
-		return animation_state_machine.get_current_node()
-	return ""
-
 ## スプライト方向を更新
 func update_sprite_direction(direction: float) -> void:
 	if direction == 0.0:

@@ -163,23 +163,6 @@ func _initialize_animation_tree() -> void:
 	if animation_state_machine:
 		animation_state_machine.travel("IDLE")
 
-## アニメーションステートを更新
-func _update_animation_state() -> void:
-	if not animation_state_machine:
-		return
-
-	# 現在のステート名を取得
-	var state_name: String = ""
-	if current_state:
-		state_name = current_state.get_current_state_name()
-
-	# ステート名が空の場合は処理を終了
-	if state_name.is_empty():
-		return
-
-	# アニメーションステートマシンを更新
-	animation_state_machine.travel(state_name)
-
 # ======================== ステート管理システム初期化 ========================
 
 ## ステート管理システムの初期化
@@ -251,9 +234,6 @@ func _physics_process(delta: float) -> void:
 
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
-
-	# アニメーションステートを更新
-	_update_animation_state()
 
 # ======================== プレイヤー検知と追跡 ========================
 
