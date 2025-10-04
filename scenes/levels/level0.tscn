@@ -319,6 +319,7 @@ position = Vector2(1664, -64)
 
 [node name="Enemy3" parent="." instance=ExtResource("5_ry65h")]
 position = Vector2(688, 80)
+max_hp = 10
 
 [node name="Enemy4" parent="." instance=ExtResource("5_ry65h")]
 position = Vector2(1800, -64)

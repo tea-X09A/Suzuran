@@ -35,6 +35,10 @@ func initialize_state() -> void:
 	# ダメージ値の取得
 	damage = PlayerParameters.get_parameter(player.condition, "fighting_damage")
 
+	# run状態の場合はfighting_hitboxにフラグを設定
+	if fighting_hitbox:
+		fighting_hitbox.set_meta("is_running", is_running_state())
+
 	# FightingHitboxのarea_enteredシグナルを接続（重複接続を防止）
 	if fighting_hitbox and not fighting_hitbox.area_entered.is_connected(_on_fighting_hitbox_area_entered):
 		fighting_hitbox.area_entered.connect(_on_fighting_hitbox_area_entered)
@@ -57,6 +61,10 @@ func cleanup_state() -> void:
 	# FightingHitboxのシグナル接続を解除（メモリリーク防止）
 	if fighting_hitbox and fighting_hitbox.area_entered.is_connected(_on_fighting_hitbox_area_entered):
 		fighting_hitbox.area_entered.disconnect(_on_fighting_hitbox_area_entered)
+
+	# run状態フラグをクリア
+	if fighting_hitbox:
+		fighting_hitbox.remove_meta("is_running")
 
 	end_fighting()
 	started_airborne = false

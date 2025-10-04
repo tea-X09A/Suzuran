@@ -26,6 +26,8 @@ var animation_state_machine: AnimationNodeStateMachinePlayback = null
 
 # 敵のID（アニメーション名に使用、エディタで設定）
 @export var enemy_id: String = ""
+# 最大HP
+@export var max_hp: int = 5
 
 # ======================== 状態管理変数 ========================
 
@@ -45,12 +47,8 @@ var vision_ray_count: int = 20
 var vision_distance: float = 509.0
 # 視界の角度（度数、片側）
 var vision_angle: float = 10.0
-# 最大HP
-var max_hp: int = 5
 # ノックバックの力
 var knockback_force: float = 300.0
-# ノックバックの持続時間（秒）
-var knockback_duration: float = 0.3
 # キャプチャ時の状態（アニメーション名に使用、初期値をnormalとする）
 var capture_condition: String = "normal"
 # 画面内にいるかどうかのフラグ
@@ -90,15 +88,17 @@ var vision_update_interval: int = 5
 # hitboxと重なっているプレイヤー（キャッシュ用）
 var overlapping_player: Node2D = null
 # 現在のHP
-var current_hp: int = 5
-# ノックバックタイマー
-var knockback_timer: float = 0.0
+var current_hp: int
 # ノックバック方向
 var knockback_velocity: Vector2 = Vector2.ZERO
 # ノックバック後に向くべき方向（0.0なら変更なし）
 var direction_to_face_after_knockback: float = 0.0
 # HPゲージへの参照
 var hp_gauge: Control = null
+# HPゲージのフェードタイマー
+var hp_gauge_fade_timer: float = 0.0
+# HPゲージの表示時間
+var hp_gauge_display_duration: float = 4.0
 
 # ======================== ステート管理システム ========================
 
@@ -213,6 +213,16 @@ func change_state(new_state_name: String) -> void:
 # ======================== 物理更新処理 ========================
 
 func _physics_process(delta: float) -> void:
+	# HPゲージのフェードアウト処理
+	if hp_gauge_fade_timer > 0.0:
+		hp_gauge_fade_timer -= delta
+		var alpha: float = hp_gauge_fade_timer / hp_gauge_display_duration
+		if hp_gauge:
+			hp_gauge.modulate.a = alpha
+			# タイマーが切れたら非表示
+			if hp_gauge_fade_timer <= 0.0:
+				hp_gauge.visible = false
+
 	# 画面内の場合のみプレイヤー検知処理を実行
 	if on_screen:
 		# hitboxと重なっているプレイヤーをチェック（1フレームに1回のみ）
@@ -595,14 +605,20 @@ func take_damage(damage: int, direction: Vector2, attacker: Node = null) -> void
 
 ## ノックバックを適用
 func _apply_knockback(direction: Vector2, attacker: Node = null) -> void:
-	# ノックバックタイマーを設定
-	knockback_timer = knockback_duration
-	# ノックバック速度を設定（水平方向のみ）
-	# FightingHitboxからの攻撃の場合は2倍の力
+	# ノックバック速度を設定
 	var current_knockback_force: float = knockback_force
+	var vertical_force: float = -100.0
+
+	# FightingHitboxからの攻撃の場合、run状態なら3倍、それ以外は2倍の力
 	if attacker and attacker.name == "FightingHitbox":
-		current_knockback_force *= 2.0
-	knockback_velocity = Vector2(direction.x * current_knockback_force, -100.0)  # 少し浮く
+		if attacker.has_meta("is_running") and attacker.get_meta("is_running"):
+			current_knockback_force *= 3.0  # run状態の場合は3倍
+			vertical_force = -250.0  # 高く浮かせる
+		else:
+			current_knockback_force *= 2.0  # それ以外は2倍
+			vertical_force = -150.0  # 通常より少し高く
+
+	knockback_velocity = Vector2(direction.x * current_knockback_force, vertical_force)
 
 	# ノックバック状態に遷移
 	change_state("KNOCKBACK")
@@ -629,10 +645,10 @@ func _create_hp_gauge() -> void:
 	hp_gauge.name = "HPGauge"
 	# Sprite2Dの上に配置（Y座標はマイナスで上方向）
 	hp_gauge.position = Vector2(0, -80)
+	# 初期状態では非表示
+	hp_gauge.visible = false
+	hp_gauge.modulate.a = 0.0
 	add_child(hp_gauge)
-
-	# HPゲージを更新
-	_update_hp_gauge()
 
 ## HPゲージを更新
 func _update_hp_gauge() -> void:
@@ -645,8 +661,8 @@ func _update_hp_gauge() -> void:
 
 	# ドット1つのサイズ
 	var dot_size: int = 4
-	# ドット間の間隔
-	var dot_spacing: int = 1
+	# ドット間の間隔（0で継ぎ目なし）
+	var dot_spacing: int = 0
 	# ゲージの開始位置（中央揃え）
 	var total_width: int = (dot_size + dot_spacing) * max_hp - dot_spacing
 	var start_x: float = -total_width / 2.0
@@ -662,3 +678,8 @@ func _update_hp_gauge() -> void:
 		else:
 			dot.color = Color(0.2, 0.2, 0.2)  # 暗い色
 		hp_gauge.add_child(dot)
+
+	# HPゲージを表示してフェードタイマーを開始
+	hp_gauge.visible = true
+	hp_gauge.modulate.a = 1.0
+	hp_gauge_fade_timer = hp_gauge_display_duration

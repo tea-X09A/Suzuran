@@ -24,10 +24,8 @@ func cleanup_state() -> void:
 
 ## 入力処理
 func handle_input(_delta: float) -> void:
-	# shooting_02のアニメーション中は、squat以外でキャンセル不可
+	# shooting_02のアニメーション中は、入力でキャンセル不可
 	if is_shooting_02:
-		if can_transition_to_squat() and player.is_on_floor():
-			player.update_animation_state("SQUAT")
 		return
 
 	# 地上のみジャンプとしゃがみを受け付ける（shooting_01の場合）

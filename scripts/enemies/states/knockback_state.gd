@@ -1,8 +1,13 @@
 class_name EnemyKnockbackState
 extends BaseEnemyState
 
+# 一度空中に浮いたかどうかのフラグ
+var was_in_air: bool = false
+
 ## ステート開始時の処理
 func initialize_state() -> void:
+	# 空中フラグをリセット
+	was_in_air = false
 	# hitboxを無効化・非表示
 	if enemy.hitbox:
 		enemy.hitbox.set_deferred("monitoring", false)
@@ -47,14 +52,17 @@ func cleanup_state() -> void:
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:
-	# ノックバックタイマーを更新
-	enemy.knockback_timer -= delta
-
-	# ノックバック終了
-	if enemy.knockback_timer <= 0.0:
-		# IDLE状態へ遷移
-		enemy.change_state("IDLE")
-		return
+	# 重力を適用
+	enemy.knockback_velocity.y += enemy.GRAVITY * delta
 
 	# ノックバック速度を適用
 	enemy.velocity = enemy.knockback_velocity
+
+	# 一度空中に浮いたことを記録
+	if not enemy.is_on_floor():
+		was_in_air = true
+
+	# 空中に浮いた後、着地したらIDLE状態へ遷移
+	if was_in_air and enemy.is_on_floor():
+		enemy.change_state("IDLE")
+		return
