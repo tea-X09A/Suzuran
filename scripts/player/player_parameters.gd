@@ -35,6 +35,8 @@ static var PARAMETERS: Dictionary = {
 		"move_fighting_run_bonus": 150.0,      # 格闘の走行ボーナス速度（ピクセル/秒）
 		"move_fighting_duration": 0.5,         # 格闘アクションの持続時間（秒）
 		"fighting_enabled": true,              # 格闘アクションの有効性
+		"fighting_damage": 3,                  # 格闘攻撃のダメージ量
+		"shooting_damage": 1,                  # 射撃攻撃のダメージ量
 
 		# ======================== ダメージパラメータ ========================
 		"damage_duration": 0.6,                    # ダメージアニメーションの継続時間（秒）
@@ -75,6 +77,8 @@ static var PARAMETERS: Dictionary = {
 		"move_fighting_run_bonus": 187.5,      # 戦闘時の走行ボーナス速度（150.0 * 1.25）（ピクセル/秒）
 		"move_fighting_duration": 0.4,         # 戦闘アクションの持続時間（0.5 * 0.8）（秒）
 		"fighting_enabled": false,             # 戦闘アクションの有効性（EXPANSION時は無効）
+		"fighting_damage": 3,                  # 格闘攻撃のダメージ量
+		"shooting_damage": 1,                  # 射撃攻撃のダメージ量
 
 		# ======================== ダメージパラメータ（強化版） ========================
 		"damage_duration": 0.8,                    # ダメージアニメーションの継続時間（0.6 * 1.33）（秒）

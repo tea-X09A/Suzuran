@@ -116,7 +116,8 @@ func spawn_kunai() -> void:
 	kunai_instance.global_position = sprite_2d.global_position + spawn_offset
 
 	if kunai_instance.has_method("initialize"):
-		kunai_instance.initialize(shooting_direction, get_parameter("shooting_kunai_speed"), player)
+		var damage_value: int = get_parameter("shooting_damage")
+		kunai_instance.initialize(shooting_direction, get_parameter("shooting_kunai_speed"), player, damage_value)
 
 # ======================== 射撃状態制御 ========================
 

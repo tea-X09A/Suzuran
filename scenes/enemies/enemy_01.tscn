@@ -6,8 +6,9 @@
 [sub_resource type="CircleShape2D" id="CircleShape2D_5dx81"]
 radius = 35.1283
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_3maxn"]
-radius = 58.7131
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_uavjf"]
+radius = 48.3333
+height = 266.667
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_uavjf"]
 radius = 58.3333
@@ -28,13 +29,13 @@ shape = SubResource("CircleShape2D_5dx81")
 
 [node name="Hurtbox" type="Area2D" parent="."]
 position = Vector2(-4, 9)
-collision_layer = 0
-collision_mask = 8
+collision_layer = 64
+collision_mask = 0
 
 [node name="HurtboxCollision" type="CollisionShape2D" parent="Hurtbox"]
-position = Vector2(-2.38419e-06, 0)
+position = Vector2(-4.3201e-12, -40)
 scale = Vector2(0.6, 0.6)
-shape = SubResource("CircleShape2D_3maxn")
+shape = SubResource("CapsuleShape2D_uavjf")
 
 [node name="Hitbox" type="Area2D" parent="."]
 position = Vector2(-4, 9)
