@@ -55,20 +55,6 @@ func _build_pause_menu() -> void:
 	menu_container.process_mode = Node.PROCESS_MODE_ALWAYS
 	center_container.add_child(menu_container)
 
-	# タイトルラベル
-	var title_label: Label = Label.new()
-	title_label.text = "PAUSE MENU"
-	title_label.add_theme_font_size_override("font_size", 48)
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.process_mode = Node.PROCESS_MODE_ALWAYS
-	menu_container.add_child(title_label)
-
-	# スペーサー
-	var spacer: Control = Control.new()
-	spacer.custom_minimum_size = Vector2(0, 40)
-	spacer.process_mode = Node.PROCESS_MODE_ALWAYS
-	menu_container.add_child(spacer)
-
 	# メニューボタンを作成
 	_create_menu_button("セーブ", _on_save_pressed)
 	_create_menu_button("ロード", _on_load_pressed)
@@ -122,13 +108,32 @@ func _update_button_selection() -> void:
 	# 全てのボタンをリセット
 	for i in range(buttons.size()):
 		if i == current_selection:
-			# 選択中のボタンを強調表示
-			buttons[i].modulate = Color(1.5, 1.5, 0.5)
-			buttons[i].add_theme_font_size_override("font_size", 36)
+			# 選択中のボタンのスタイルを設定（白背景、白枠）
+			var selected_style: StyleBoxFlat = StyleBoxFlat.new()
+			selected_style.bg_color = Color(1.0, 1.0, 1.0, 0.3)  # 白背景
+			selected_style.border_width_left = 3
+			selected_style.border_width_top = 3
+			selected_style.border_width_right = 3
+			selected_style.border_width_bottom = 3
+			selected_style.border_color = Color(1.0, 1.0, 1.0, 1.0)  # 白枠
+			selected_style.corner_radius_top_left = 8
+			selected_style.corner_radius_top_right = 8
+			selected_style.corner_radius_bottom_left = 8
+			selected_style.corner_radius_bottom_right = 8
+			buttons[i].add_theme_stylebox_override("normal", selected_style)
+			buttons[i].add_theme_stylebox_override("hover", selected_style)
+			buttons[i].add_theme_stylebox_override("pressed", selected_style)
 		else:
-			# 非選択ボタンは通常表示
-			buttons[i].modulate = Color(1.0, 1.0, 1.0)
-			buttons[i].add_theme_font_size_override("font_size", 32)
+			# 非選択ボタンは通常スタイル（透明背景）
+			var normal_style: StyleBoxFlat = StyleBoxFlat.new()
+			normal_style.bg_color = Color(0.0, 0.0, 0.0, 0.0)  # 透明
+			normal_style.border_width_left = 0
+			normal_style.border_width_top = 0
+			normal_style.border_width_right = 0
+			normal_style.border_width_bottom = 0
+			buttons[i].add_theme_stylebox_override("normal", normal_style)
+			buttons[i].add_theme_stylebox_override("hover", normal_style)
+			buttons[i].add_theme_stylebox_override("pressed", normal_style)
 
 func toggle_pause() -> void:
 	is_paused = not is_paused
