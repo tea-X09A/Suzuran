@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bv4rppjog0al6" path="res://scripts/global/camera.gd" id="1_follow_camera"]
 
-[node name="camera" type="Camera2D"]
+[node name="camera" type="Camera2D" groups=["camera"]]
 offset = Vector2(0, -90)
 zoom = Vector2(1.5, 1.5)
 script = ExtResource("1_follow_camera")

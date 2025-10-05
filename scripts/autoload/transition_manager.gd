@@ -36,6 +36,11 @@ func change_scene(target_scene_path: String, direction: String = "") -> void:
 	# シーン切り替え完了を待つ
 	await get_tree().process_frame
 
+	# カメラ位置をプレイヤーに即座に合わせる（カメラ側で確実に待機処理を実施）
+	var camera: Camera2D = get_tree().get_first_node_in_group("camera") as Camera2D
+	if camera and camera.has_method("reset_to_target"):
+		await camera.reset_to_target()
+
 	# フェードイン
 	await fade_in()
 

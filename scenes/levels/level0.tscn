@@ -290,6 +290,8 @@ sources/0 = SubResource("TileSetAtlasSource_ry65h")
 [node name="Level0" type="Node2D"]
 
 [node name="camera" parent="." instance=ExtResource("1_o8kyb")]
+limit_left = -768
+limit_right = 3392
 target_path = NodePath("../Player")
 
 [node name="Player" parent="." instance=ExtResource("3_hghvf")]
