@@ -295,7 +295,7 @@ limit_right = 3392
 target_path = NodePath("../Player")
 
 [node name="Player" parent="." instance=ExtResource("3_hghvf")]
-position = Vector2(3208, -95)
+position = Vector2(2816, -94)
 
 [node name="Background" parent="." instance=ExtResource("4_1nvli")]
 offset = Vector2(0, -570)

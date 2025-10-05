@@ -293,7 +293,7 @@ sources/0 = SubResource("TileSetAtlasSource_ry65h")
 target_path = NodePath("../Player")
 
 [node name="Player" parent="." instance=ExtResource("2_8a7m2")]
-position = Vector2(-400, -32)
+position = Vector2(-184, 32)
 
 [node name="Background" parent="." instance=ExtResource("3_plydf")]
 offset = Vector2(0, -570)
@@ -337,5 +337,5 @@ position = Vector2(3320, -256)
 next_level = "level0"
 
 [node name="TransitionAreaStart" parent="." instance=ExtResource("8_transition")]
-position = Vector2(-576, -256)
+position = Vector2(-768, -256)
 prev_level = "level0"
