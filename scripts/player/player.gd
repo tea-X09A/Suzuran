@@ -65,6 +65,8 @@ var current_hp: float = 32.0
 var hp_gauge: Control = null
 # ダメージ表記への参照
 var damage_number: DamageNumber = null
+# 自動移動モード（遷移時の自動歩行用）
+var auto_move_mode: bool = false
 
 # ======================== ステート管理システム ========================
 
@@ -165,9 +167,15 @@ func _physics_process(delta: float) -> void:
 	# 無敵エフェクトを更新
 	invincibility_effect.update_invincibility_effect(delta)
 
-	# 現在のステートに入力処理を移譲
-	current_state.handle_input(delta)
-	current_state.physics_update(delta)
+	# 自動移動モードでない場合のみ入力処理を実行
+	if not auto_move_mode:
+		# 現在のステートに入力処理を移譲
+		current_state.handle_input(delta)
+		current_state.physics_update(delta)
+	else:
+		# 自動移動モード時は重力のみ適用
+		if not is_on_floor():
+			velocity.y += GRAVITY * delta
 
 	# Godot物理エンジンによる移動実行
 	move_and_slide()

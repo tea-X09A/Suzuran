@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3 uid="uid://121vk2eph22s"]
+
+[ext_resource type="Script" path="res://scripts/levels/start_area.gd" id="1_start"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_4a262"]
+size = Vector2(64, 256)
+
+[node name="StartArea" type="Area2D"]
+collision_layer = 0
+collision_mask = 4
+script = ExtResource("1_start")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(32, 128)
+shape = SubResource("RectangleShape2D_4a262")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+offset_right = 64.0
+offset_bottom = 256.0
+color = Color(0, 0.8, 1, 0.3)
