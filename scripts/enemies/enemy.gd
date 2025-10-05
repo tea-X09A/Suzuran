@@ -226,10 +226,11 @@ func _physics_process(delta: float) -> void:
 
 	# 画面内の場合のみキャプチャ処理を実行
 	if on_screen and overlapping_player:
+		# hitboxがplayerを検知した場合、動きを止める
+		velocity.x = 0.0
 		_try_capture_player(overlapping_player)
-
-	# 現在のステートに処理を移譲
-	if current_state:
+	elif current_state:
+		# プレイヤーと重なっていない場合のみステート処理を実行
 		current_state.physics_update(delta)
 
 	# Godot物理エンジンによる移動実行
