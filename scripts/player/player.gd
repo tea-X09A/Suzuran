@@ -201,6 +201,10 @@ func _update_current_state(state_name: String) -> void:
 
 ## スプライト方向制御
 func update_sprite_direction(input_direction_x: float) -> void:
+	# 自動移動モード中は向き変更を無視（遷移時の向き保持）
+	if auto_move_mode:
+		return
+
 	if input_direction_x != 0.0:
 		sprite_2d.flip_h = input_direction_x > 0.0
 		direction_x = input_direction_x
