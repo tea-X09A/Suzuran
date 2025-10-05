@@ -342,3 +342,23 @@ func show_damage_number(damage: int) -> void:
 	damage_number.position = Vector2(0, -(sprite_height / 2.0 + offset_from_top))
 
 	add_child(damage_number)
+
+# ======================== 回復処理 ========================
+
+## HP回復処理
+func heal_hp(amount: float) -> void:
+	# HPを回復（最大値32.0を超えないように）
+	current_hp = min(current_hp + amount, 32.0)
+
+	# UIを更新
+	if hp_gauge:
+		hp_gauge.progress = current_hp / 32.0
+
+## シールド回復処理
+func heal_shield(amount: int) -> void:
+	# シールドを回復（最大値3を超えないように）
+	shield_count = min(shield_count + amount, 3)
+
+	# UIを更新
+	if hp_gauge:
+		hp_gauge.hp_value = shield_count
