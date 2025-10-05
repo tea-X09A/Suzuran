@@ -84,6 +84,7 @@ func _ready() -> void:
 	GRAVITY = ProjectSettings.get_setting("physics/2d/default_gravity")
 	_initialize_systems()
 	_initialize_ui()
+	_connect_debug_signals()
 
 ## システムコンポーネントの初期化
 func _initialize_systems() -> void:
@@ -275,6 +276,11 @@ func get_animation_tree() -> AnimationTree:
 
 ## 無敵状態の確認（trapから呼び出される）
 func is_invincible() -> bool:
+	# invincibility_effectによる無敵状態をチェック
+	if invincibility_effect and invincibility_effect.is_invincible:
+		return true
+
+	# down_stateによる無敵状態をチェック
 	var down_state: DownState = state_instances.get("DOWN") as DownState
 	if down_state:
 		return down_state.is_in_invincible_state()
@@ -282,6 +288,10 @@ func is_invincible() -> bool:
 
 ## トラップからのダメージ処理
 func handle_trap_damage(effect_type: String, direction: Vector2, force: float) -> void:
+	# 無敵状態の場合は何もしない
+	if is_invincible():
+		return
+
 	var down_state: DownState = state_instances.get("DOWN") as DownState
 	if down_state:
 		# ダメージ適用（ダメージ量は現在使用していないため0）
@@ -362,3 +372,31 @@ func heal_shield(amount: int) -> void:
 	# UIを更新
 	if hp_gauge:
 		hp_gauge.hp_value = shield_count
+
+# ======================== デバッグ機能 ========================
+
+## デバッグマネージャーのシグナルに接続
+func _connect_debug_signals() -> void:
+	if DebugManager:
+		DebugManager.debug_value_changed.connect(_on_debug_value_changed)
+
+## デバッグ値が変更された時の処理
+func _on_debug_value_changed(key: String, value: Variant) -> void:
+	match key:
+		"condition":
+			# コンディションを変更
+			var new_condition: PLAYER_CONDITION = value as PLAYER_CONDITION
+			if new_condition != condition:
+				condition = new_condition
+				print("Debug: Condition changed to ", "NORMAL" if condition == PLAYER_CONDITION.NORMAL else "EXPANSION")
+
+		"invincible":
+			# 無敵状態の切り替え（invincibility_effectを使用）
+			var enable_invincible: bool = value as bool
+			if enable_invincible:
+				# 無敵状態を有効化（十分に長い時間を設定）
+				invincibility_effect.set_invincible(9999.0)
+			else:
+				# 無敵状態を解除
+				invincibility_effect.clear_invincible()
+			print("Debug: Invincible ", "enabled" if enable_invincible else "disabled")
