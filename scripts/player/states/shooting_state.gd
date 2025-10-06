@@ -83,6 +83,11 @@ func _transition_on_landing() -> void:
 
 ## 射撃初期化処理
 func handle_shooting() -> void:
+	# 弾数チェック（弾がない場合は射撃をキャンセル）
+	if not player.has_ammo():
+		handle_action_end_transition()
+		return
+
 	shooting_timer = get_parameter("shooting_animation_duration")
 
 	# 空中の場合はshooting_02を使用
@@ -101,9 +106,18 @@ func handle_shooting() -> void:
 
 ## 苦無生成処理
 func spawn_kunai() -> void:
+	# 弾数を消費
+	if not player.consume_ammo():
+		return
+
+	# 現在の移動入力を取得
+	var current_input: float = get_movement_input()
+
 	var shooting_direction: float
-	if player.direction_x != 0.0:
-		shooting_direction = player.direction_x
+	# 移動入力がある場合はその方向に発射
+	if current_input != 0.0:
+		shooting_direction = current_input
+	# 移動入力がない場合はSprite2Dの向きに発射
 	else:
 		shooting_direction = 1.0 if sprite_2d.flip_h else -1.0
 

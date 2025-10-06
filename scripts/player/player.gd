@@ -67,6 +67,10 @@ var hp_gauge: Control = null
 var damage_number: DamageNumber = null
 # 自動移動モード（遷移時の自動歩行用）
 var auto_move_mode: bool = false
+# 投擲物弾数（-1で無限）
+var ammo_count: int = -1
+# UI 弾倉ゲージへの参照
+var ammo_gauge: Control = null
 
 # ======================== ステート管理システム ========================
 
@@ -143,14 +147,22 @@ func _initialize_box_positions() -> void:
 
 ## UIシステムの初期化
 func _initialize_ui() -> void:
-	# CanvasLayerからHPGaugeノードを探す
+	# CanvasLayerからHPGaugeノードを探す（Level0またはLevel1）
 	var canvas_layer: CanvasLayer = get_tree().root.get_node_or_null("Level0/CanvasLayer")
+	if not canvas_layer:
+		canvas_layer = get_tree().root.get_node_or_null("Level1/CanvasLayer")
+
 	if canvas_layer:
 		hp_gauge = canvas_layer.get_node_or_null("HPGauge")
 		if hp_gauge:
 			# シールド値とHP値を初期化
 			hp_gauge.hp_value = shield_count
 			hp_gauge.progress = current_hp / 32.0
+
+		ammo_gauge = canvas_layer.get_node_or_null("AmmoGauge")
+		if ammo_gauge:
+			# 弾数を初期化
+			ammo_gauge.ammo_count = ammo_count
 
 # ======================== メイン処理ループ ========================
 
@@ -372,6 +384,31 @@ func heal_shield(amount: int) -> void:
 	# UIを更新
 	if hp_gauge:
 		hp_gauge.hp_value = shield_count
+
+# ======================== 弾数管理 ========================
+
+## 弾数消費処理
+func consume_ammo() -> bool:
+	# 無限弾の場合は常に成功
+	if ammo_count < 0:
+		return true
+
+	# 弾数が足りない場合は失敗
+	if ammo_count <= 0:
+		return false
+
+	# 弾数を1減らす
+	ammo_count -= 1
+
+	# UIを更新
+	if ammo_gauge:
+		ammo_gauge.ammo_count = ammo_count
+
+	return true
+
+## 弾数を確認
+func has_ammo() -> bool:
+	return ammo_count < 0 or ammo_count > 0
 
 # ======================== デバッグ機能 ========================
 
