@@ -5,15 +5,15 @@ extends Control
 		progress = clamp(value, 0.0, 1.0)
 		queue_redraw()
 
-@export var hp_value: int = 3:
+@export var ep_value: int = 3:
 	set(value):
-		hp_value = value
+		ep_value = value
 		queue_redraw()
 
 @export var radius: float = 75.0
 @export var thickness: float = 12.0
-@export var gauge_color: Color = Color(1.0, 0.4, 0.7, 1.0)  # ピンク色
-@export var background_color: Color = Color(0.2, 0.2, 0.2, 0.3)
+@export var gauge_color: Color = Color(0.2, 0.2, 0.2, 1.0)  # グレー
+@export var background_color: Color = Color(1.0, 0.4, 0.7, 1.0)  # ピンク色
 @export var heart_color: Color = Color(1.0, 0.2, 0.2, 1.0)  # 赤色
 @export var dot_color: Color = Color.WHITE
 
@@ -140,29 +140,29 @@ func _draw() -> void:
 	_draw_heart(center)
 
 	# ドット数字の描画
-	_draw_dot_number(center, hp_value)
+	_draw_dot_number(center, ep_value)
 
 func _draw_dotted_gauge(center: Vector2, start_angle: float) -> void:
 	var dot_count: int = 32  # 円周上に配置するドットの総数
 	var dot_size: float = 15.0  # ドットのサイズ（ピクセル）
 	var angle_step: float = TAU / float(dot_count)
 
-	# 背景のドット（薄いグレー）- 正方形
+	# 背景のドット（グレー）- 正方形
 	for i in range(dot_count):
 		var angle: float = float(i) * angle_step
 		var pos: Vector2 = center + Vector2(cos(angle), sin(angle)) * radius
 		var rect: Rect2 = Rect2(pos - Vector2(dot_size / 2.0, dot_size / 2.0), Vector2(dot_size, dot_size))
-		draw_rect(rect, background_color)
+		draw_rect(rect, gauge_color)
 
 	# プログレスのドット（ピンク）- 正方形（時計回りに描画）
 	if progress > 0.0:
 		var progress_dot_count: int = roundi(float(dot_count) * progress)
 		for i in range(progress_dot_count):
-			# 時計回りにするため angle_step を引く
-			var angle: float = start_angle - float(i) * angle_step
+			# 時計回りにするため angle_step を足す
+			var angle: float = start_angle + float(i) * angle_step
 			var pos: Vector2 = center + Vector2(cos(angle), sin(angle)) * radius
 			var rect: Rect2 = Rect2(pos - Vector2(dot_size / 2.0, dot_size / 2.0), Vector2(dot_size, dot_size))
-			draw_rect(rect, gauge_color)
+			draw_rect(rect, background_color)
 
 func _draw_heart(center: Vector2) -> void:
 	var dot_size: float = 7.5  # 各ドットのサイズ

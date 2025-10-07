@@ -57,12 +57,12 @@ var squat_was_cancelled: bool = false
 var original_box_positions: Dictionary = {}
 # CAPTURE状態時に使用するアニメーション名
 var capture_animation_name: String = "enemy_01_normal_idle"
-# シールド残量（初期値3）
-var shield_count: int = 3
-# 現在のHP（初期値32）
-var current_hp: float = 32.0
-# UI HPゲージへの参照
-var hp_gauge: Control = null
+# HP残量（初期値3）
+var hp_count: int = 3
+# 現在のEP（初期値0、最大32）
+var current_ep: float = 0.0
+# UI EPゲージへの参照
+var ep_gauge: Control = null
 # ダメージ表記への参照
 var damage_number: DamageNumber = null
 # 自動移動モード（遷移時の自動歩行用）
@@ -147,17 +147,17 @@ func _initialize_box_positions() -> void:
 
 ## UIシステムの初期化
 func _initialize_ui() -> void:
-	# CanvasLayerからHPGaugeノードを探す（Level0またはLevel1）
+	# CanvasLayerからEPGaugeノードを探す（Level0またはLevel1）
 	var canvas_layer: CanvasLayer = get_tree().root.get_node_or_null("Level0/CanvasLayer")
 	if not canvas_layer:
 		canvas_layer = get_tree().root.get_node_or_null("Level1/CanvasLayer")
 
 	if canvas_layer:
-		hp_gauge = canvas_layer.get_node_or_null("HPGauge")
-		if hp_gauge:
-			# シールド値とHP値を初期化
-			hp_gauge.hp_value = shield_count
-			hp_gauge.progress = current_hp / 32.0
+		ep_gauge = canvas_layer.get_node_or_null("EPGauge")
+		if ep_gauge:
+			# HP値とEP値を初期化
+			ep_gauge.ep_value = hp_count
+			ep_gauge.progress = current_ep / 32.0
 
 		ammo_gauge = canvas_layer.get_node_or_null("AmmoGauge")
 		if ammo_gauge:
@@ -322,13 +322,13 @@ func handle_enemy_hit(enemy_direction: Vector2) -> bool:
 		velocity = Vector2.ZERO
 		return false  # CAPTUREは敵側で処理する
 
-	# シールドが残っている場合
-	if shield_count > 0:
-		# シールドを1減らす
-		shield_count -= 1
+	# HPが残っている場合
+	if hp_count > 0:
+		# HPを1減らす
+		hp_count -= 1
 		# UIを更新
-		if hp_gauge:
-			hp_gauge.hp_value = shield_count
+		if ep_gauge:
+			ep_gauge.ep_value = hp_count
 
 		# ダメージ表記を表示
 		show_damage_number(-1)
@@ -340,7 +340,7 @@ func handle_enemy_hit(enemy_direction: Vector2) -> bool:
 
 		return true
 
-	# シールドが0の場合はCAPTURE状態へ
+	# HPが0の場合はCAPTURE状態へ
 	else:
 		# 速度を完全に停止
 		velocity = Vector2.ZERO
@@ -367,23 +367,23 @@ func show_damage_number(damage: int) -> void:
 
 # ======================== 回復処理 ========================
 
+## EP回復処理（負の値を渡すとEPを減少させる）
+func heal_ep(amount: float) -> void:
+	# EPを増減（0.0～32.0の範囲に制限）
+	current_ep = clamp(current_ep + amount, 0.0, 32.0)
+
+	# UIを更新
+	if ep_gauge:
+		ep_gauge.progress = current_ep / 32.0
+
 ## HP回復処理
-func heal_hp(amount: float) -> void:
-	# HPを回復（最大値32.0を超えないように）
-	current_hp = min(current_hp + amount, 32.0)
+func heal_hp(amount: int) -> void:
+	# HPを回復（最大値3を超えないように）
+	hp_count = min(hp_count + amount, 3)
 
 	# UIを更新
-	if hp_gauge:
-		hp_gauge.progress = current_hp / 32.0
-
-## シールド回復処理
-func heal_shield(amount: int) -> void:
-	# シールドを回復（最大値3を超えないように）
-	shield_count = min(shield_count + amount, 3)
-
-	# UIを更新
-	if hp_gauge:
-		hp_gauge.hp_value = shield_count
+	if ep_gauge:
+		ep_gauge.ep_value = hp_count
 
 # ======================== 弾数管理 ========================
 

@@ -308,7 +308,7 @@ transform = Transform2D(0.7, 0, 0, 0.7, 0, -570)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
-[node name="HPGauge" type="Control" parent="CanvasLayer"]
+[node name="EPGauge" type="Control" parent="CanvasLayer"]
 layout_mode = 3
 anchors_preset = 0
 offset_left = 50.0

@@ -3,11 +3,11 @@ extends Area2D
 
 # ======================== エクスポート設定 ========================
 
-## HP回復量（インスペクタで設定可能）
-@export var hp_heal_amount: float = 20.0
+## EP減少量（インスペクタで設定可能、負の値でEPを減少させ回復に使用）
+@export var ep_heal_amount: float = -20.0
 
-## シールド回復量（インスペクタで設定可能）
-@export var shield_heal_amount: int = 3
+## HP回復量（インスペクタで設定可能）
+@export var hp_heal_amount: int = 3
 
 # ======================== 初期化処理 ========================
 
@@ -24,9 +24,9 @@ func _on_body_entered(body: Node2D) -> void:
 	if body is Player:
 		var player: Player = body as Player
 
-		# HP・シールド回復
+		# EP消費とHP回復
+		player.heal_ep(ep_heal_amount)
 		player.heal_hp(hp_heal_amount)
-		player.heal_shield(shield_heal_amount)
 
 		# アイテムを削除
 		queue_free()

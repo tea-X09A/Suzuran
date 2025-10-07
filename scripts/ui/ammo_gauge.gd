@@ -163,7 +163,7 @@ func _draw_two_digit_number(pos: Vector2, number: int) -> void:
 	# 0-99の範囲に制限
 	number = clampi(number, 0, 99)
 
-	var tens: int = number / 10
+	var tens: int = floori(number / 10.0)
 	var ones: int = number % 10
 
 	var dot_size: float = 4.0

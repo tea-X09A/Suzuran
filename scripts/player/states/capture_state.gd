@@ -161,15 +161,15 @@ func _apply_recovery_invincibility() -> void:
 
 # ======================== HP減少処理 ========================
 
-## CAPTURE状態時のHP減少処理
+## CAPTURE状態時のEP増加処理
 func _update_hp_depletion(delta: float) -> void:
-	# 2秒ごとに1ずつHP減少
-	player.current_hp -= delta * 0.5
+	# 2秒ごとに1ずつEP増加
+	player.current_ep += delta * 0.5
 
-	# HPが0未満にならないようにクランプ
-	if player.current_hp < 0.0:
-		player.current_hp = 0.0
+	# EPが32を超えないようにクランプ
+	if player.current_ep > 32.0:
+		player.current_ep = 32.0
 
-	# UIのHPゲージを更新
-	if player.hp_gauge:
-		player.hp_gauge.progress = player.current_hp / 32.0
+	# UIのEPゲージを更新
+	if player.ep_gauge:
+		player.ep_gauge.progress = player.current_ep / 32.0
