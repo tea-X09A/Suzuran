@@ -5,3 +5,6 @@
 # Godot auto-generated files
 *.uid
 *.tmp
+
+# macOS system files
+.DS_Store
