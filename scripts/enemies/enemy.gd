@@ -53,6 +53,8 @@ var knockback_force: float = 300.0
 var capture_condition: String = "normal"
 # 画面内にいるかどうかのフラグ
 var on_screen: bool = false
+# CAPTURE状態中かどうかのフラグ
+var is_in_capture_mode: bool = false
 # プレイヤーノードへの参照
 var player: Node2D = null
 # 重力加速度
@@ -196,6 +198,10 @@ func change_state(new_state_name: String) -> void:
 # ======================== 物理更新処理 ========================
 
 func _physics_process(delta: float) -> void:
+	# CAPTURE状態中は処理をスキップ
+	if is_in_capture_mode:
+		return
+
 	# HPゲージのフェードアウト処理
 	if hp_gauge_fade_timer > 0.0:
 		hp_gauge_fade_timer -= delta
@@ -521,6 +527,8 @@ func _on_player_lost(_body: Node2D) -> void:
 
 ## CAPTURE状態開始時の処理
 func enter_capture_state() -> void:
+	# CAPTURE状態フラグを立てる
+	is_in_capture_mode = true
 	# 移動を停止
 	velocity = Vector2.ZERO
 	# 現在の状態を待機に変更
@@ -535,6 +543,8 @@ func enter_capture_state() -> void:
 
 ## CAPTURE状態終了時の処理
 func exit_capture_state() -> void:
+	# CAPTURE状態フラグを解除
+	is_in_capture_mode = false
 	# 表示する
 	visible = true
 	# 画面内の場合はhitbox、hurtbox、detection_areaを有効化

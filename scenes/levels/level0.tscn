@@ -335,7 +335,6 @@ tile_set = SubResource("TileSet_d0grl")
 position = Vector2(2632, -33)
 
 [node name="trap_01" parent="." instance=ExtResource("4_5kr0j")]
-visible = false
 position = Vector2(-499, -73)
 
 [node name="Enemy" parent="." instance=ExtResource("5_ry65h")]

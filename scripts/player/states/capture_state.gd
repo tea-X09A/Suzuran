@@ -28,6 +28,8 @@ func initialize_state() -> void:
 	_stop_all_enemies()
 	# 全てのhitboxとhurtboxを無効化
 	player.set_all_collision_boxes_enabled(false)
+	# カメラをズームイン
+	_set_camera_zoom(true)
 
 ## CAPTURE状態終了時のクリーンアップ
 func cleanup_state() -> void:
@@ -38,6 +40,8 @@ func cleanup_state() -> void:
 	_resume_all_enemies()
 	# 全てのhitboxとhurtboxを再度有効化
 	player.set_all_collision_boxes_enabled(true)
+	# カメラをズームアウト
+	_set_camera_zoom(false)
 
 # ======================== 物理更新処理 ========================
 
@@ -173,3 +177,22 @@ func _update_hp_depletion(delta: float) -> void:
 	# UIのEPゲージを更新
 	if player.ep_gauge:
 		player.ep_gauge.progress = player.current_ep / 32.0
+
+# ======================== カメラ制御処理 ========================
+
+## カメラのズーム設定
+func _set_camera_zoom(zoom_in: bool) -> void:
+	# カメラを取得（groupsから検索）
+	var cameras: Array = player.get_tree().get_nodes_in_group("camera")
+	if cameras.is_empty():
+		return
+
+	var camera: Camera2D = cameras[0] as Camera2D
+	if not camera:
+		return
+
+	# ズーム設定
+	if zoom_in and camera.has_method("set_capture_zoom"):
+		camera.set_capture_zoom()
+	elif not zoom_in and camera.has_method("reset_zoom"):
+		camera.reset_zoom()
