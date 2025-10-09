@@ -119,7 +119,7 @@ func fade_in() -> void:
 	await animation_player.animation_finished
 
 ## 指定した型のノードをシーンツリーから探す汎用関数
-func _find_node_of_type(node_type) -> Node:
+func _find_node_of_type(node_type: Variant) -> Node:
 	var scene_root: Node = _get_scene_root()
 	return _find_nodes_by_type(scene_root, node_type, false) as Node
 
@@ -200,7 +200,7 @@ func _get_scene_root() -> Node:
 ## @param node_type 検索する型
 ## @param find_all trueの場合は全て収集、falseの場合は最初の1つのみ
 ## @return find_all=trueの場合はArray[Node]、falseの場合はNode or null
-func _find_nodes_by_type(start_node: Node, node_type, find_all: bool = false) -> Variant:
+func _find_nodes_by_type(start_node: Node, node_type: Variant, find_all: bool = false) -> Variant:
 	if not start_node:
 		if find_all:
 			return []
@@ -216,7 +216,7 @@ func _find_nodes_by_type(start_node: Node, node_type, find_all: bool = false) ->
 		return results[0] if results.size() > 0 else null
 
 ## 再帰的にノードを収集する内部ヘルパー
-func _collect_nodes_recursive(node: Node, node_type, results: Array[Node], find_all: bool) -> bool:
+func _collect_nodes_recursive(node: Node, node_type: Variant, results: Array[Node], find_all: bool) -> bool:
 	# 型チェック（is_instance_of を使用して汎用性を保つ）
 	if is_instance_of(node, node_type):
 		results.append(node)

@@ -55,8 +55,8 @@ var capture_condition: String = "normal"
 var on_screen: bool = false
 # CAPTURE状態中かどうかのフラグ
 var is_in_capture_mode: bool = false
-# プレイヤーノードへの参照
-var player: Node2D = null
+# プレイヤーノードへの弱参照（メモリリーク防止）
+var player_ref: WeakRef = null
 # 重力加速度
 var GRAVITY: float
 # 現在の目標位置
@@ -179,6 +179,16 @@ func _initialize_state_system() -> void:
 	current_state = state_instances["IDLE"]
 	current_state.initialize_state()
 
+# ======================== プレイヤー参照管理 ========================
+
+## プレイヤー参照を取得（弱参照から実体を取得）
+func get_player() -> Node2D:
+	if player_ref:
+		var player_instance = player_ref.get_ref()
+		if player_instance:
+			return player_instance as Node2D
+	return null
+
 ## 状態遷移
 func change_state(new_state_name: String) -> void:
 	if not state_instances.has(new_state_name):
@@ -218,6 +228,7 @@ func _physics_process(delta: float) -> void:
 		overlapping_player = _get_overlapping_player()
 
 		# プレイヤーが範囲外にいる時間のカウント
+		var player: Node2D = get_player()
 		if player_out_of_range and player:
 			time_out_of_range += delta
 			# 遅延時間を超えたらプレイヤーを見失う
@@ -296,7 +307,7 @@ func _update_vision() -> void:
 	vision_shape.polygon = new_polygon
 	detection_collision.polygon = new_polygon
 	# 検知中の場合は色を変更（HitboxCollisionと同じ色）
-	vision_shape.color = Color(0.858824, 0.305882, 0.501961, 0.419608) if player != null else Color(0.309804, 0.65098, 0.835294, 0.2)
+	vision_shape.color = Color(0.858824, 0.305882, 0.501961, 0.419608) if get_player() != null else Color(0.309804, 0.65098, 0.835294, 0.2)
 
 ## hitboxと重なっているプレイヤーを取得
 func _get_overlapping_player() -> Node2D:
@@ -328,8 +339,8 @@ func _reset_state_flags() -> void:
 ## プレイヤーを見失う処理
 func _lose_player() -> void:
 	# プレイヤー参照をnullにする前に保存
-	var lost_player: Node2D = player
-	player = null
+	var lost_player: Node2D = get_player()
+	player_ref = null
 	velocity.x = 0.0
 	# 待機状態へ移行
 	change_state("IDLE")
@@ -480,8 +491,8 @@ func _on_screen_exited() -> void:
 	if detection_area:
 		detection_area.monitoring = false
 	# プレイヤー追跡を解除
-	if player:
-		player = null
+	if get_player():
+		player_ref = null
 		# 追跡中だった場合はIDLE状態に戻る
 		change_state("IDLE")
 		# 範囲外フラグをリセット
@@ -496,7 +507,7 @@ func _on_screen_exited() -> void:
 func _on_detection_area_body_entered(body: Node2D) -> void:
 	# プレイヤーグループのボディのみ処理
 	if body.is_in_group("player"):
-		player = body
+		player_ref = weakref(body)
 		change_state("CHASE")
 		wait_timer = 0.0  # 待機タイマーをリセット
 		# 範囲外フラグをリセット
@@ -674,3 +685,24 @@ func _update_hp_gauge() -> void:
 	hp_gauge.visible = true
 	hp_gauge.modulate.a = 1.0
 	hp_gauge_fade_timer = hp_gauge_display_duration
+
+# ======================== クリーンアップ処理 ========================
+
+## シーンツリーから削除される際の処理（メモリリーク防止）
+func _exit_tree() -> void:
+	# シグナルの切断
+	if visibility_notifier:
+		if visibility_notifier.screen_entered.is_connected(_on_screen_entered):
+			visibility_notifier.screen_entered.disconnect(_on_screen_entered)
+		if visibility_notifier.screen_exited.is_connected(_on_screen_exited):
+			visibility_notifier.screen_exited.disconnect(_on_screen_exited)
+
+	if detection_area:
+		if detection_area.body_entered.is_connected(_on_detection_area_body_entered):
+			detection_area.body_entered.disconnect(_on_detection_area_body_entered)
+		if detection_area.body_exited.is_connected(_on_detection_area_body_exited):
+			detection_area.body_exited.disconnect(_on_detection_area_body_exited)
+
+	# 参照のクリア
+	player_ref = null
+	overlapping_player = null

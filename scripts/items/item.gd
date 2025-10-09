@@ -16,6 +16,12 @@ func _ready() -> void:
 	# プレイヤーとの衝突を検出
 	body_entered.connect(_on_body_entered)
 
+## クリーンアップ処理
+func _exit_tree() -> void:
+	# シグナル切断（メモリリーク防止）
+	if body_entered.is_connected(_on_body_entered):
+		body_entered.disconnect(_on_body_entered)
+
 # ======================== 衝突処理 ========================
 
 ## Bodyとの衝突時処理

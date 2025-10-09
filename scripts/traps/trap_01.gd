@@ -26,6 +26,15 @@ func _ready() -> void:
 		visibility_enabler.screen_entered.connect(_on_screen_entered)
 		visibility_enabler.screen_exited.connect(_on_screen_exited)
 
+## クリーンアップ処理
+func _exit_tree() -> void:
+	# シグナル切断（メモリリーク防止）
+	if visibility_enabler:
+		if visibility_enabler.screen_entered.is_connected(_on_screen_entered):
+			visibility_enabler.screen_entered.disconnect(_on_screen_entered)
+		if visibility_enabler.screen_exited.is_connected(_on_screen_exited):
+			visibility_enabler.screen_exited.disconnect(_on_screen_exited)
+
 func _physics_process(_delta: float) -> void:
 	if not processing_enabled:
 		return

@@ -374,7 +374,7 @@ center_container.add_child(menu_container)
 
 ### 🔴 重要な問題（高優先度）
 
-#### 2.1 メモリリーク: シグナル切断の欠落
+#### 2.1 メモリリーク: シグナル切断の欠落 **修正済み**
 
 **場所**: `scripts/bullets/kunai.gd` (全体)
 
@@ -401,30 +401,60 @@ func _exit_tree() -> void:
 
 ---
 
-#### 2.2 循環参照の潜在的リスク
+#### 2.2 循環参照の潜在的リスク ✅ **修正済み**
 
-**場所**: `scripts/player/capture_target.gd`（存在する場合）
+**場所**:
+- `scripts/enemies/enemy.gd:58`
+- `scripts/player/invincibility_effect.gd:5`
 
-**問題**: `player`への強参照が行われており、`player`側からこのノードへの参照が存在する場合、循環参照が発生。
+**問題**:
+1. **enemy.gd**: プレイヤーへの強参照が保存され、`_exit_tree()`でのクリーンアップ処理がない
+2. **invincibility_effect.gd**: プレイヤーへの強参照（RefCountedなので低リスクだが堅牢性向上のため修正）
 
-**リスク**: プレイヤーとキャプチャーターゲット間で循環参照が発生し、メモリリークの原因となる可能性。
+**リスク**: 無効な参照が残り、メモリリークの原因となる可能性。
 
-**推奨修正**:
+**実施した修正**:
+
+1. **enemy.gd**:
+   - `var player: Node2D = null` → `var player_ref: WeakRef = null`
+   - `get_player()` ヘルパーメソッドを追加
+   - 全ての `player` 使用箇所を `get_player()` に変更
+   - `_exit_tree()` を実装してシグナル切断と参照クリア
+
+2. **enemy states** (chase_state.gd, idle_state.gd):
+   - `enemy.player` を `enemy.get_player()` に変更
+
+3. **invincibility_effect.gd**:
+   - `var player: CharacterBody2D` → `var player_ref: WeakRef`
+   - 全メソッドで `player_ref.get_ref()` を使用
+
+**実装コード**:
 ```gdscript
-var player_ref: WeakRef
+# enemy.gd
+var player_ref: WeakRef = null
 
-func _ready() -> void:
-    player_ref = weakref(get_parent())
+func get_player() -> Node2D:
+    if player_ref:
+        var player_instance = player_ref.get_ref()
+        if player_instance:
+            return player_instance as Node2D
+    return null
 
-func _physics_process(delta: float) -> void:
-    var player = player_ref.get_ref() as CharacterBody2D
-    if not player:
-        return
-    # ...残りの処理
+func _exit_tree() -> void:
+    # シグナル切断
+    if visibility_notifier:
+        if visibility_notifier.screen_entered.is_connected(_on_screen_entered):
+            visibility_notifier.screen_entered.disconnect(_on_screen_entered)
+        # ...他のシグナルも同様に切断
+
+    # 参照クリア
+    player_ref = null
+    overlapping_player = null
 ```
 
-**リファクタリング努力**: 中
-**パフォーマンス影響**: 高（メモリリーク）
+**リファクタリング努力**: 中（実施済み）
+**パフォーマンス影響**: 高（メモリリーク防止）
+**CLAUDE.md準拠**: ✅ 「循環参照を避ける」「シグナル切断」原則に完全準拠
 
 ---
 

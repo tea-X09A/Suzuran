@@ -6,6 +6,11 @@ extends BaseState
 # CAPTURE状態から復帰時の無敵時間（秒）
 const CAPTURE_RECOVERY_INVINCIBILITY_DURATION: float = 2.0
 
+# ======================== キャッシュされた参照 ========================
+
+# カメラへの参照（initialize_state()でキャッシュ）
+var camera: Camera2D = null
+
 # ======================== 状態初期化 ========================
 
 ## CAPTURE状態開始時の初期化
@@ -27,6 +32,8 @@ func initialize_state() -> void:
 	_stop_all_enemies()
 	# 全てのhitboxとhurtboxを無効化
 	player.disable_all_collision_boxes()
+	# カメラ参照を取得してキャッシュ
+	_cache_camera_reference()
 	# カメラをズームイン
 	_set_camera_zoom(true)
 
@@ -41,6 +48,8 @@ func cleanup_state() -> void:
 	player.enable_all_collision_boxes()
 	# カメラをズームアウト
 	_set_camera_zoom(false)
+	# カメラ参照をクリア
+	camera = null
 
 # ======================== 物理更新処理 ========================
 
@@ -178,15 +187,16 @@ func _update_hp_depletion(delta: float) -> void:
 
 # ======================== カメラ制御処理 ========================
 
+## カメラ参照をキャッシュ
+func _cache_camera_reference() -> void:
+	var cameras: Array = player.get_tree().get_nodes_in_group("camera")
+	if not cameras.is_empty():
+		camera = cameras[0] as Camera2D
+
 ## カメラのズーム設定
 func _set_camera_zoom(zoom_in: bool) -> void:
-	# カメラを取得（groupsから検索）
-	var cameras: Array = player.get_tree().get_nodes_in_group("camera")
-	if cameras.is_empty():
-		return
-
-	var camera: Camera2D = cameras[0] as Camera2D
-	if not camera:
+	# キャッシュされたカメラが有効かチェック
+	if not camera or not is_instance_valid(camera):
 		return
 
 	# ズーム設定

@@ -32,7 +32,7 @@ func _ready() -> void:
 	await _wait_for_target_ready()
 	reset_to_target()
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	# 早期リターンチェックを統合
 	if not target or not target.sprite_2d:
 		return

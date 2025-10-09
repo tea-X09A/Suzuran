@@ -92,6 +92,12 @@ func _ready() -> void:
 	_initialize_ui()
 	_connect_debug_signals()
 
+## クリーンアップ処理
+func _exit_tree() -> void:
+	# DebugManagerのシグナル切断（メモリリーク防止）
+	if DebugManager and DebugManager.debug_value_changed.is_connected(_on_debug_value_changed):
+		DebugManager.debug_value_changed.disconnect(_on_debug_value_changed)
+
 ## システムコンポーネントの初期化
 func _initialize_systems() -> void:
 	# 無敵エフェクトシステムを生成

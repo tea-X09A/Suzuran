@@ -14,7 +14,7 @@ func physics_update(delta: float) -> void:
 	apply_gravity(delta)
 
 	# プレイヤーが検知されている場合は待機をスキップして追跡状態に移行
-	if enemy.player:
+	if enemy.get_player():
 		enemy.change_state("CHASE")
 		return
 

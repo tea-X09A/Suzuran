@@ -1,8 +1,8 @@
 class_name InvincibilityEffect
 extends RefCounted
 
-# プレイヤー参照
-var player: CharacterBody2D
+# プレイヤーへの弱参照（メモリリーク防止）
+var player_ref: WeakRef
 
 # 無敵エフェクト管理変数
 var is_invincible: bool = false
@@ -12,7 +12,7 @@ var blink_interval: float = 0.1
 var is_visible: bool = true
 
 func _init(player_instance: CharacterBody2D) -> void:
-	player = player_instance
+	player_ref = weakref(player_instance)
 
 ## 無敵状態の設定
 func set_invincible(duration: float) -> void:
@@ -48,11 +48,15 @@ func update_invincibility_effect(delta: float) -> void:
 
 ## スプライトの可視性を更新（点滅エフェクト用）
 func _update_sprite_visibility() -> void:
-	if player.sprite_2d:
-		# 半透明にすることで点滅効果を実現
-		player.sprite_2d.modulate.a = 0.3 if not is_visible else 1.0
+	var player: CharacterBody2D = player_ref.get_ref() as CharacterBody2D
+	if not player or not player.sprite_2d:
+		return
+	# 半透明にすることで点滅効果を実現
+	player.sprite_2d.modulate.a = 0.3 if not is_visible else 1.0
 
 ## スプライトの可視性を完全に復元
 func _restore_sprite_visibility() -> void:
-	if player.sprite_2d:
-		player.sprite_2d.modulate.a = 1.0
+	var player: CharacterBody2D = player_ref.get_ref() as CharacterBody2D
+	if not player or not player.sprite_2d:
+		return
+	player.sprite_2d.modulate.a = 1.0
