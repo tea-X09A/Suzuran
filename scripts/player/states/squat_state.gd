@@ -44,6 +44,6 @@ func physics_update(delta: float) -> void:
 		return
 
 	# 地面にいない場合は重力を適用
-	if not player.is_on_floor():
+	if not player.is_grounded:
 		apply_gravity(delta)
 		return

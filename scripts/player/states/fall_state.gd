@@ -26,7 +26,7 @@ func physics_update(delta: float) -> void:
 	apply_gravity(delta)
 
 	# 地面に着地した場合の状態遷移
-	if player.is_on_floor():
+	if player.is_grounded:
 		handle_landing_transition()
 		return
 

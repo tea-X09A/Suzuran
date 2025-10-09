@@ -59,7 +59,7 @@ func physics_update(delta: float) -> void:
 	player.velocity.x = 0.0
 
 	# 地面にいない場合のみ重力を適用（地面に着地させた後は落下させない）
-	if not player.is_on_floor():
+	if not player.is_grounded:
 		apply_gravity(delta)
 	else:
 		player.velocity.y = 0.0
@@ -77,7 +77,7 @@ func handle_input(_delta: float) -> void:
 		_apply_recovery_invincibility()
 
 		# 地面にいる場合はジャンプ実行
-		if player.is_on_floor():
+		if player.is_grounded:
 			perform_jump()
 		else:
 			# 空中の場合はFALL状態に遷移
@@ -88,7 +88,7 @@ func handle_input(_delta: float) -> void:
 ## プレイヤーを地面に着地させる
 func _land_on_ground() -> void:
 	# すでに地面にいる場合は何もしない
-	if player.is_on_floor():
+	if player.is_grounded:
 		player.velocity.y = 0.0
 		return
 

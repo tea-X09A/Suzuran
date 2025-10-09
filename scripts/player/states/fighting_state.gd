@@ -27,7 +27,7 @@ func initialize_state() -> void:
 	# 戦闘状態初期化
 	is_fighting_active = true
 	fighting_timer = get_parameter("move_fighting_duration")
-	started_airborne = not player.is_on_floor()  # 開始時の空中状態を記録
+	started_airborne = not player.is_grounded  # 開始時の空中状態を記録
 
 	# ヒットフラグをリセット
 	has_hit = false
@@ -83,17 +83,17 @@ func handle_input(_delta: float) -> void:
 ## 物理演算処理
 func physics_update(delta: float) -> void:
 	# 重力適用
-	if not player.is_on_floor():
+	if not player.is_grounded:
 		apply_gravity(delta)
 
 	# 空中攻撃中に着地した場合、キャンセルして遷移
-	if started_airborne and player.is_on_floor():
+	if started_airborne and player.is_grounded:
 		end_fighting()
 		handle_landing_transition()
 		return
 
 	# 地上fighting時に壁に衝突した場合、アニメーションをキャンセル
-	if not started_airborne and player.is_on_floor() and player.is_on_wall():
+	if not started_airborne and player.is_grounded and player.is_on_wall():
 		end_fighting()
 		handle_action_end_transition()
 		return
@@ -158,6 +158,6 @@ func _on_fighting_hitbox_area_entered(area: Area2D) -> void:
 			print("[FightingState] 敵にダメージ: %d, ノックバック方向: %v" % [damage, knockback_direction])
 
 			# プレイヤーが地上にいた場合、壁衝突時と同じようにfightingをキャンセル
-			if not started_airborne and player.is_on_floor():
+			if not started_airborne and player.is_grounded:
 				end_fighting()
 				handle_action_end_transition()

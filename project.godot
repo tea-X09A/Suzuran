@@ -21,6 +21,7 @@ FPSDisplay="*res://scripts/autoload/fps_display.gd"
 PauseManager="*res://scripts/autoload/pause_manager.gd"
 TransitionManager="*res://scenes/ui/transition_manager.tscn"
 DebugManager="*res://scripts/autoload/debug_manager.gd"
+KunaiPoolManager="*res://scripts/autoload/kunai_pool_manager.gd"
 
 [display]
 

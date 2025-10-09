@@ -48,14 +48,14 @@ func physics_update(delta: float) -> void:
 	# ダウン状態更新
 	if not update_down_state(delta):
 		# ダウン終了時の状態遷移
-		if not player.is_on_floor():
+		if not player.is_grounded:
 			player.update_animation_state("FALL")
 		else:
 			handle_landing_transition()
 			return
 
 	# 重力適用
-	if not player.is_on_floor():
+	if not player.is_grounded:
 		apply_gravity(delta)
 
 

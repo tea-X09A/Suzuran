@@ -48,7 +48,7 @@ func handle_input(_delta: float) -> void:
 
 ## ジャンプ入力チェック（基本実装、各ステートでオーバーライド可能）
 func can_jump() -> bool:
-	return player.is_on_floor() and Input.is_action_just_pressed("jump")
+	return player.is_grounded and Input.is_action_just_pressed("jump")
 
 ## しゃがみ入力チェック（継続用）
 func is_squat_input() -> bool:
@@ -60,7 +60,7 @@ func is_squat_just_pressed() -> bool:
 
 ## squat状態への遷移可否チェック（キャンセルフラグを考慮）
 func can_transition_to_squat() -> bool:
-	if not player.is_on_floor():
+	if not player.is_grounded:
 		return false
 
 	# squat状態からキャンセルされていない場合、通常通りjust_pressedで遷移
@@ -138,7 +138,7 @@ func update_sprite_direction(direction: float) -> void:
 
 ## 重力の適用
 func apply_gravity(delta: float) -> void:
-	if not player.is_on_floor():
+	if not player.is_grounded:
 		var effective_gravity: float = player.GRAVITY * get_parameter("jump_gravity_scale")
 		player.velocity.y = min(player.velocity.y + effective_gravity * delta, get_parameter("jump_max_fall_speed"))
 
@@ -164,7 +164,7 @@ func perform_jump() -> void:
 ## 地面チェック処理（idle, walk, run状態で共通）
 func handle_ground_physics(delta: float) -> bool:
 	# 地面にいない場合はFALL状態に遷移
-	if not player.is_on_floor():
+	if not player.is_grounded:
 		apply_gravity(delta)
 		player.update_animation_state("FALL")
 		return true
@@ -196,7 +196,7 @@ func handle_common_inputs() -> bool:
 
 ## アクション終了時の状態遷移処理（fighting, shooting状態で共通）
 func handle_action_end_transition() -> void:
-	if not player.is_on_floor():
+	if not player.is_grounded:
 		player.update_animation_state("FALL")
 	else:
 		# アニメーション終了時、squatボタンが押されていればsquat状態へ遷移

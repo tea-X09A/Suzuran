@@ -2,7 +2,7 @@ class_name ShootingState
 extends BaseState
 
 # ======================== 射撃パラメータ定義 ========================
-const KUNAI_SCENE = preload("res://scenes/bullets/kunai.tscn")
+# KunaiPoolManagerから取得するため、定数は不要
 
 # 射撃状態管理
 var shooting_timer: float = 0.0
@@ -40,15 +40,15 @@ func handle_input(_delta: float) -> void:
 ## 物理演算処理
 func physics_update(delta: float) -> void:
 	# 地上shooting_01の場合は慣性を止める（その場で足を止めて攻撃）
-	if player.is_on_floor() and not is_shooting_02:
+	if player.is_grounded and not is_shooting_02:
 		player.velocity.x = 0.0
 
 	# 重力適用
-	if not player.is_on_floor():
+	if not player.is_grounded:
 		apply_gravity(delta)
 
 	# shooting_02中に着地した場合、キャンセルして遷移
-	if is_shooting_02 and player.is_on_floor():
+	if is_shooting_02 and player.is_grounded:
 		shooting_timer = 0.0
 		is_shooting_02 = false
 		handle_landing_transition()
@@ -75,7 +75,7 @@ func handle_shooting() -> void:
 	shooting_timer = get_parameter("shooting_animation_duration")
 
 	# 空中の場合はshooting_02を使用
-	if not player.is_on_floor():
+	if not player.is_grounded:
 		is_shooting_02 = true
 		_set_shooting_animation("normal_shooting_02")
 	else:
@@ -105,15 +105,15 @@ func spawn_kunai() -> void:
 	else:
 		shooting_direction = 1.0 if sprite_2d.flip_h else -1.0
 
-	var kunai_instance: Area2D = KUNAI_SCENE.instantiate()
-	player.get_tree().current_scene.add_child(kunai_instance)
+	# オブジェクトプールからクナイを取得
+	var kunai_instance: Kunai = KunaiPoolManager.get_kunai()
 
 	var spawn_offset: Vector2 = Vector2(shooting_direction * get_parameter("shooting_offset_x"), 0.0)
 	kunai_instance.global_position = sprite_2d.global_position + spawn_offset
 
-	if kunai_instance.has_method("initialize"):
-		var damage_value: int = get_parameter("shooting_damage")
-		kunai_instance.initialize(shooting_direction, get_parameter("shooting_kunai_speed"), player, damage_value)
+	# クナイを初期化（initialize内でactivate()が呼ばれる）
+	var damage_value: int = get_parameter("shooting_damage")
+	kunai_instance.initialize(shooting_direction, get_parameter("shooting_kunai_speed"), player, damage_value)
 
 # ======================== 射撃状態制御 ========================
 

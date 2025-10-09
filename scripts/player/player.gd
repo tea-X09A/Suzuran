@@ -49,6 +49,8 @@ var GRAVITY: float
 
 # 現在の向き（1.0: 右、-1.0: 左）
 var direction_x: float = 1.0
+# 接地状態のキャッシュ（毎フレーム更新、パフォーマンス最適化）
+var is_grounded: bool = false
 # ジャンプ時の水平速度を無視するフラグ
 var ignore_jump_horizontal_velocity: bool = false
 # squat状態からキャンセルされたフラグ（squat遷移制限用）
@@ -179,6 +181,9 @@ func _initialize_ui() -> void:
 
 ## 物理演算ステップごとの更新処理（移動・物理系）
 func _physics_process(delta: float) -> void:
+	# フレーム開始時に一度だけ接地状態をキャッシュ（パフォーマンス最適化）
+	is_grounded = is_on_floor()
+
 	# squat状態キャンセルフラグの管理（squatボタンが離されたらフラグをクリア）
 	if squat_was_cancelled and not Input.is_action_pressed("squat"):
 		squat_was_cancelled = false
@@ -197,7 +202,7 @@ func _physics_process(delta: float) -> void:
 		current_state.physics_update(delta)
 	else:
 		# 自動移動モード時は重力のみ適用
-		if not is_on_floor():
+		if not is_grounded:
 			velocity.y += GRAVITY * delta
 
 	# Godot物理エンジンによる移動実行

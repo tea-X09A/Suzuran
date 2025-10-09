@@ -20,7 +20,7 @@ func physics_update(delta: float) -> void:
 	player.down_state.update_down_state(delta)
 
 	# 空中処理
-	if not player.is_on_floor():
+	if not player.is_grounded:
 		player.down_state.was_in_air = true
 		apply_gravity(delta)
 	# 着地判定（一度でも空中にいた場合のみ）
