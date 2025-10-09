@@ -51,7 +51,7 @@ func physics_update(delta: float) -> void:
 	if is_shooting_02 and player.is_on_floor():
 		shooting_timer = 0.0
 		is_shooting_02 = false
-		_transition_on_landing()
+		handle_landing_transition()
 		return
 
 	# shooting_02の場合は、着地するまでアニメーションを維持（タイマー無視）
@@ -61,22 +61,6 @@ func physics_update(delta: float) -> void:
 	# 通常の射撃終了処理（shooting_01のみ）
 	if not update_shooting_state(delta):
 		handle_action_end_transition()
-
-## 着地時の状態遷移処理
-func _transition_on_landing() -> void:
-	if is_squat_input():
-		player.squat_was_cancelled = false
-		player.update_animation_state("SQUAT")
-		return
-
-	var movement_input: float = get_movement_input()
-	if movement_input != 0.0:
-		if is_dash_input():
-			player.update_animation_state("RUN")
-		else:
-			player.update_animation_state("WALK")
-	else:
-		player.update_animation_state("IDLE")
 
 
 # ======================== 射撃処理 ========================

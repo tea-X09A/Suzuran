@@ -9,6 +9,10 @@ var animation_tree: AnimationTree
 var state_machine: AnimationNodeStateMachinePlayback
 var condition: Player.PLAYER_CONDITION
 
+# ======================== 空中慣性保持用変数 ========================
+## 空中での慣性保持用の水平速度（jump/fall状態で使用）
+var initial_horizontal_speed: float = 0.0
+
 # ======================== 初期化処理 ========================
 func _init(player_instance: CharacterBody2D) -> void:
 	player = player_instance
@@ -210,6 +214,57 @@ func handle_action_end_transition() -> void:
 				player.update_animation_state("WALK")
 		else:
 			player.update_animation_state("IDLE")
+
+## 着地時の状態遷移処理（共通ヘルパー）
+func handle_landing_transition() -> void:
+	# squatボタンが押されていればsquat状態へ遷移
+	if is_squat_input():
+		player.squat_was_cancelled = false
+		player.update_animation_state("SQUAT")
+		return
+
+	# 移動入力チェック
+	var movement_input: float = get_movement_input()
+	if movement_input != 0.0:
+		if is_dash_input():
+			player.update_animation_state("RUN")
+		else:
+			player.update_animation_state("WALK")
+	else:
+		player.update_animation_state("IDLE")
+
+## 空中でのアクション入力処理（攻撃・射撃）
+func handle_air_action_input() -> bool:
+	# 攻撃入力チェック（空中攻撃）
+	if is_fight_input():
+		player.update_animation_state("FIGHTING")
+		return true
+
+	# 射撃入力チェック（空中射撃）
+	if is_shooting_input():
+		player.update_animation_state("SHOOTING")
+		return true
+
+	return false
+
+## 慣性保持の初期化（空中状態開始時に呼び出し）
+func initialize_airborne_inertia() -> void:
+	initial_horizontal_speed = abs(player.velocity.x)
+
+## 慣性保持のクリーンアップ（空中状態終了時に呼び出し）
+func cleanup_airborne_inertia() -> void:
+	initial_horizontal_speed = 0.0
+
+## 空中での移動入力処理（慣性保持考慮）
+func handle_airborne_movement_input() -> void:
+	var movement_input: float = get_movement_input()
+	if movement_input != 0.0:
+		# 入力方向への速度を計算（基本は歩行速度）
+		var input_speed: float = get_parameter("move_walk_speed")
+		# 空中開始時の速度（jump/run/walkの慣性）と入力速度の大きい方を使用
+		var target_speed: float = max(input_speed, initial_horizontal_speed)
+		apply_movement(movement_input, target_speed)
+	# 入力がない場合は現在の速度を維持（慣性保持）
 
 ## 共通移動入力処理（walk, run状態で共通）
 func handle_movement_input_common(current_state: String, delta: float) -> void:

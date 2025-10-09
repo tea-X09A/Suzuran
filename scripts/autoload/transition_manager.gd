@@ -38,9 +38,8 @@ func change_scene(target_scene_path: String, direction: String = "") -> void:
 	var camera: Camera2D = null
 	for i in range(60):
 		await get_tree().process_frame
-		var player_nodes: Array[Node] = get_tree().get_nodes_in_group("player")
-		if player_nodes.size() > 0:
-			player = player_nodes[0] as Player
+		player = _get_player()
+		if player:
 			camera = _find_node_of_type(Camera2D) as Camera2D
 			break
 
@@ -121,27 +120,12 @@ func fade_in() -> void:
 
 ## 指定した型のノードをシーンツリーから探す汎用関数
 func _find_node_of_type(node_type) -> Node:
-	var scene_root: Node = get_tree().current_scene
-	if not scene_root:
-		return null
-	return _find_node_recursive(scene_root, node_type)
-
-func _find_node_recursive(node: Node, node_type) -> Node:
-	# 現在のノードが指定された型か確認
-	if is_instance_of(node, node_type):
-		return node
-
-	# 子ノードを再帰的に探索
-	for child in node.get_children():
-		var result: Node = _find_node_recursive(child, node_type)
-		if result:
-			return result
-	return null
+	var scene_root: Node = _get_scene_root()
+	return _find_nodes_by_type(scene_root, node_type, false) as Node
 
 func _set_player_walk_animation_if_grounded(move_direction: float) -> void:
 	# グループからPlayerを取得（再帰探索より高速）
-	var player_nodes: Array[Node] = get_tree().get_nodes_in_group("player")
-	var player: Player = player_nodes[0] as Player if player_nodes.size() > 0 else null
+	var player: Player = _get_player()
 
 	if not player:
 		return
@@ -157,13 +141,8 @@ func _set_player_walk_animation_if_grounded(move_direction: float) -> void:
 
 ## 方向に応じた対応するtransition_areaを見つける
 func _find_target_transition_area(direction: String) -> Area2D:
-	var scene_root: Node = get_tree().current_scene
-	if not scene_root:
-		return null
-
-	# 全てのArea2Dを探索
-	var areas: Array[Node] = []
-	_find_all_areas_recursive(scene_root, areas)
+	var scene_root: Node = _get_scene_root()
+	var areas: Array[Node] = _find_nodes_by_type(scene_root, Area2D, true) as Array[Node]
 
 	# transition_areaスクリプトを持つArea2Dを検索
 	for area in areas:
@@ -178,14 +157,6 @@ func _find_target_transition_area(direction: String) -> Area2D:
 					# nextの場合：prev_levelが設定されているエリア（左側）
 					return area
 	return null
-
-## 全てのArea2Dノードを再帰的に収集
-func _find_all_areas_recursive(node: Node, areas: Array[Node]) -> void:
-	if node is Area2D:
-		areas.append(node)
-
-	for child in node.get_children():
-		_find_all_areas_recursive(child, areas)
 
 ## Area2Dの最下部のY座標を取得
 func _get_area_bottom_position(area: Area2D) -> float:
@@ -209,3 +180,53 @@ func _get_area_bottom_position(area: Area2D) -> float:
 
 	# CollisionShape2Dが見つからない場合はArea2Dの位置を返す
 	return area.global_position.y
+
+
+## ===== 共通ヘルパー関数群 =====
+
+## Playerノードを取得
+## @return Player型のノード、見つからない場合はnull
+func _get_player() -> Player:
+	var player_nodes: Array[Node] = get_tree().get_nodes_in_group("player")
+	return player_nodes[0] as Player if player_nodes.size() > 0 else null
+
+## 現在のシーンルートを取得
+## @return 現在のシーンのルートノード、存在しない場合はnull
+func _get_scene_root() -> Node:
+	return get_tree().current_scene
+
+## 指定された型のノードを再帰的に検索
+## @param start_node 検索開始ノード（通常はcurrent_scene）
+## @param node_type 検索する型
+## @param find_all trueの場合は全て収集、falseの場合は最初の1つのみ
+## @return find_all=trueの場合はArray[Node]、falseの場合はNode or null
+func _find_nodes_by_type(start_node: Node, node_type, find_all: bool = false) -> Variant:
+	if not start_node:
+		if find_all:
+			return []
+		else:
+			return null
+
+	var results: Array[Node] = []
+	_collect_nodes_recursive(start_node, node_type, results, find_all)
+
+	if find_all:
+		return results
+	else:
+		return results[0] if results.size() > 0 else null
+
+## 再帰的にノードを収集する内部ヘルパー
+func _collect_nodes_recursive(node: Node, node_type, results: Array[Node], find_all: bool) -> bool:
+	# 型チェック（is_instance_of を使用して汎用性を保つ）
+	if is_instance_of(node, node_type):
+		results.append(node)
+		if not find_all:
+			return true  # 最初の1つで終了
+
+	# 子ノードを再帰的に探索
+	for child in node.get_children():
+		if _collect_nodes_recursive(child, node_type, results, find_all):
+			if not find_all:
+				return true  # 見つかったら早期終了
+
+	return false

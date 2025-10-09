@@ -3,41 +3,27 @@ extends BaseState
 
 # ジャンプ開始時刻
 var jump_start_time: float = 0.0
-# ジャンプ開始時の水平速度（慣性を保持するため）
-var initial_horizontal_speed: float = 0.0
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
 	jump_start_time = Time.get_ticks_msec() / 1000.0
-	# ジャンプ開始時の水平速度を記憶（run/walkの速度を維持）
-	initial_horizontal_speed = abs(player.velocity.x)
+	# 慣性保持の初期化（BaseStateの共通メソッド使用）
+	initialize_airborne_inertia()
 
 ## AnimationTree状態終了時の処理
 func cleanup_state() -> void:
 	jump_start_time = 0.0
-	initial_horizontal_speed = 0.0
+	# 慣性保持のクリーンアップ（BaseStateの共通メソッド使用）
+	cleanup_airborne_inertia()
 
 ## 入力処理
 func handle_input(_delta: float) -> void:
-	# 攻撃入力チェック（空中攻撃）
-	if is_fight_input():
-		player.update_animation_state("FIGHTING")
+	# 空中でのアクション入力（攻撃・射撃）
+	if handle_air_action_input():
 		return
 
-	# 射撃入力チェック（空中射撃）
-	if is_shooting_input():
-		player.update_animation_state("SHOOTING")
-		return
-
-	# 水平移動入力を処理
-	var movement_input: float = get_movement_input()
-	if movement_input != 0.0:
-		# 入力方向への速度を計算（基本は歩行速度）
-		var input_speed: float = get_parameter("move_walk_speed")
-		# ジャンプ開始時の速度（run/walkの慣性）と入力速度の大きい方を使用
-		var target_speed: float = max(input_speed, initial_horizontal_speed)
-		apply_movement(movement_input, target_speed)
-	# 入力がない場合は現在の速度を維持（慣性保持）
+	# 空中での移動入力処理（慣性保持考慮 - BaseStateの共通メソッド使用）
+	handle_airborne_movement_input()
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:

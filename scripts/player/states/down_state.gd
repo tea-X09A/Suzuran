@@ -51,21 +51,8 @@ func physics_update(delta: float) -> void:
 		if not player.is_on_floor():
 			player.update_animation_state("FALL")
 		else:
-			# squatボタンが押されていればsquat状態へ遷移
-			if is_squat_input():
-				player.squat_was_cancelled = false  # フラグをクリア
-				player.update_animation_state("SQUAT")
-				return
-
-			# 地上での状態判定（移動入力に応じて遷移）
-			var movement_input: float = get_movement_input()
-			if movement_input != 0.0:
-				if is_dash_input():
-					player.update_animation_state("RUN")
-				else:
-					player.update_animation_state("WALK")
-			else:
-				player.update_animation_state("IDLE")
+			handle_landing_transition()
+			return
 
 	# 重力適用
 	if not player.is_on_floor():

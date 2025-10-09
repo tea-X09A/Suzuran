@@ -11,10 +11,9 @@ const CAPTURE_RECOVERY_INVINCIBILITY_DURATION: float = 2.0
 ## CAPTURE状態開始時の初期化
 func initialize_state() -> void:
 	# down_stateをクリア（knockback/down判定を解除）
-	var down_state: DownState = player.state_instances.get("DOWN") as DownState
-	if down_state:
+	if player.down_state:
 		# DownStateの状態をリセット（無敵付与なし）
-		down_state.finish_down(false)
+		player.down_state.finish_down(false)
 
 	# プレイヤーを地面に着地させる
 	_land_on_ground()
@@ -27,7 +26,7 @@ func initialize_state() -> void:
 	# 全てのenemyの移動をキャンセルし、その場で立ち止まらせる
 	_stop_all_enemies()
 	# 全てのhitboxとhurtboxを無効化
-	player.set_all_collision_boxes_enabled(false)
+	player.disable_all_collision_boxes()
 	# カメラをズームイン
 	_set_camera_zoom(true)
 
@@ -39,7 +38,7 @@ func cleanup_state() -> void:
 	# 全てのenemyを表示し、通常のパトロールを再開させる
 	_resume_all_enemies()
 	# 全てのhitboxとhurtboxを再度有効化
-	player.set_all_collision_boxes_enabled(true)
+	player.enable_all_collision_boxes()
 	# カメラをズームアウト
 	_set_camera_zoom(false)
 
@@ -155,11 +154,10 @@ func _play_capture_animation() -> void:
 
 ## CAPTURE状態復帰時の無敵状態を付与
 func _apply_recovery_invincibility() -> void:
-	var down_state: DownState = player.state_instances.get("DOWN") as DownState
-	if down_state:
+	if player.down_state:
 		# DownStateの復帰無敵フラグを有効化
-		down_state.is_recovery_invincible = true
-		down_state.recovery_invincibility_timer = CAPTURE_RECOVERY_INVINCIBILITY_DURATION
+		player.down_state.is_recovery_invincible = true
+		player.down_state.recovery_invincibility_timer = CAPTURE_RECOVERY_INVINCIBILITY_DURATION
 		# 視覚効果を設定
 		player.invincibility_effect.set_invincible(CAPTURE_RECOVERY_INVINCIBILITY_DURATION)
 

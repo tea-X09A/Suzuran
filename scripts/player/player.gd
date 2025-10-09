@@ -78,6 +78,8 @@ var ammo_gauge: Control = null
 var state_instances: Dictionary = {}
 # 現在のアクティブステート
 var current_state: BaseState
+# DownStateへの参照（頻繁にアクセスするためキャッシュ）
+var down_state: DownState
 
 # ======================== 初期化処理 ========================
 
@@ -124,6 +126,9 @@ func _initialize_state_system() -> void:
 	state_instances["KNOCKBACK"] = KnockbackState.new(self)
 	state_instances["DOWN"] = DownState.new(self)
 	state_instances["CAPTURE"] = CaptureState.new(self)
+
+	# 頻繁にアクセスするDownStateの参照をキャッシュ
+	down_state = state_instances["DOWN"] as DownState
 
 	# 初期状態をIDLEに設定
 	current_state = state_instances["IDLE"]
@@ -173,7 +178,6 @@ func _physics_process(delta: float) -> void:
 		squat_was_cancelled = false
 
 	# ダウン状態の復帰無敵時間を常に更新（全ステートで有効）
-	var down_state: DownState = state_instances.get("DOWN") as DownState
 	if down_state:
 		down_state.update_recovery_invincibility_timer(delta)
 
@@ -262,6 +266,14 @@ func set_all_collision_boxes_enabled(enabled: bool) -> void:
 	walk_hurtbox_collision.disabled = not enabled
 	fighting_hitbox_collision.disabled = not enabled
 
+## 全てのCollision boxを有効化
+func enable_all_collision_boxes() -> void:
+	set_all_collision_boxes_enabled(true)
+
+## 全てのCollision boxを無効化
+func disable_all_collision_boxes() -> void:
+	set_all_collision_boxes_enabled(false)
+
 # ======================== プロパティアクセサ ========================
 
 ## 現在の状態を取得
@@ -293,7 +305,6 @@ func is_invincible() -> bool:
 		return true
 
 	# down_stateによる無敵状態をチェック
-	var down_state: DownState = state_instances.get("DOWN") as DownState
 	if down_state:
 		return down_state.is_in_invincible_state()
 	return false
@@ -304,7 +315,6 @@ func handle_trap_damage(effect_type: String, direction: Vector2, force: float) -
 	if is_invincible():
 		return
 
-	var down_state: DownState = state_instances.get("DOWN") as DownState
 	if down_state:
 		# ダメージ適用（ダメージ量は現在使用していないため0）
 		down_state.handle_damage(0, effect_type, direction, force)
@@ -314,8 +324,6 @@ func handle_enemy_hit(enemy_direction: Vector2) -> bool:
 	# 無敵状態の場合は何もしない
 	if is_invincible():
 		return false
-
-	var down_state: DownState = state_instances.get("DOWN") as DownState
 
 	# knockback/down状態中の場合は無条件でCAPTURE状態へ
 	if down_state and (down_state.is_in_knockback_state() or down_state.is_in_knockback_landing_state()):

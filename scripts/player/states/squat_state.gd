@@ -47,13 +47,3 @@ func physics_update(delta: float) -> void:
 	if not player.is_on_floor():
 		apply_gravity(delta)
 		return
-
-## 重力の適用
-func apply_gravity(delta: float) -> void:
-	var effective_gravity: float = player.GRAVITY * get_parameter("jump_gravity_scale")
-	player.velocity.y = min(player.velocity.y + effective_gravity * delta, get_parameter("jump_max_fall_speed"))
-
-## 摩擦の適用
-func apply_friction(delta: float) -> void:
-	var friction: float = 1000.0
-	player.velocity.x = move_toward(player.velocity.x, 0, friction * delta)

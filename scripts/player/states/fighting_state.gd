@@ -89,7 +89,7 @@ func physics_update(delta: float) -> void:
 	# 空中攻撃中に着地した場合、キャンセルして遷移
 	if started_airborne and player.is_on_floor():
 		end_fighting()
-		_transition_on_landing()
+		handle_landing_transition()
 		return
 
 	# 地上fighting時に壁に衝突した場合、アニメーションをキャンセル
@@ -101,22 +101,6 @@ func physics_update(delta: float) -> void:
 	# 通常の攻撃終了処理
 	if not update_fighting_timer(delta):
 		handle_action_end_transition()
-
-## 着地時の状態遷移処理
-func _transition_on_landing() -> void:
-	if is_squat_input():
-		player.squat_was_cancelled = false
-		player.update_animation_state("SQUAT")
-		return
-
-	var movement_input: float = get_movement_input()
-	if movement_input != 0.0:
-		if is_dash_input():
-			player.update_animation_state("RUN")
-		else:
-			player.update_animation_state("WALK")
-	else:
-		player.update_animation_state("IDLE")
 
 
 # ======================== 戦闘状態制御メソッド ========================
