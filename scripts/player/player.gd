@@ -429,6 +429,46 @@ func consume_ammo() -> bool:
 func has_ammo() -> bool:
 	return ammo_count < 0 or ammo_count > 0
 
+# ======================== 状態の保存・復元 ========================
+
+## プレイヤーの現在の状態を取得（シーン遷移時に使用）
+## @return Dictionary 現在の状態を含む辞書
+func get_player_state() -> Dictionary:
+	return {
+		"hp_count": hp_count,
+		"current_ep": current_ep,
+		"ammo_count": ammo_count,
+		"condition": condition
+	}
+
+## プレイヤーの状態を復元（シーン遷移後に使用）
+## @param state Dictionary 復元する状態の辞書
+func restore_player_state(state: Dictionary) -> void:
+	if state.is_empty():
+		return
+
+	# HPを復元
+	if state.has("hp_count"):
+		hp_count = state["hp_count"]
+		if ep_gauge:
+			ep_gauge.ep_value = hp_count
+
+	# EPを復元
+	if state.has("current_ep"):
+		current_ep = state["current_ep"]
+		if ep_gauge:
+			ep_gauge.progress = current_ep / 32.0
+
+	# 弾数を復元
+	if state.has("ammo_count"):
+		ammo_count = state["ammo_count"]
+		if ammo_gauge:
+			ammo_gauge.ammo_count = ammo_count
+
+	# 変身状態を復元
+	if state.has("condition"):
+		condition = state["condition"]
+
 # ======================== デバッグ機能 ========================
 
 ## デバッグマネージャーのシグナルに接続

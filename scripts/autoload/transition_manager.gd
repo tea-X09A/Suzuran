@@ -19,6 +19,12 @@ func change_scene(target_scene_path: String, direction: String = "") -> void:
 	is_transitioning = true
 	color_rect.mouse_filter = Control.MOUSE_FILTER_STOP
 
+	# シーン遷移前にプレイヤーの状態を保存（一時的に保持）
+	var saved_player_state: Dictionary = {}
+	var current_player: Player = _get_player()
+	if current_player:
+		saved_player_state = current_player.get_player_state()
+
 	# フェードアウト（方向を指定）
 	await fade_out(direction)
 
@@ -46,6 +52,18 @@ func change_scene(target_scene_path: String, direction: String = "") -> void:
 	# Playerが見つからない場合はエラー
 	if not player:
 		push_error("Player not found in scene: " + target_scene_path)
+		# 状態データをクリア（メモリ解放）
+		saved_player_state.clear()
+	else:
+		# UIの初期化を待つために1フレーム待機
+		# （Player._ready()内の_initialize_ui()が完了していることを保証）
+		await get_tree().process_frame
+
+		# 新しいシーンのプレイヤーに状態を復元
+		player.restore_player_state(saved_player_state)
+
+		# 状態データをクリア（メモリ解放と意図の明示化）
+		saved_player_state.clear()
 
 	# transition_areaを見つけてプレイヤーを配置
 	if player and direction in ["prev", "next"]:
