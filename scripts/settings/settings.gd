@@ -36,14 +36,14 @@ func build_menu(parent_container: Control) -> void:
 	parent_container.add_child(menu_container)
 
 	# 各設定項目のボタンを作成（初期テキストは空、後で更新）
+	_create_setting_button("game", _on_game_pressed)
+	_create_setting_button("gamepad", _on_gamepad_pressed)
+	_create_setting_button("keyboard", _on_keyboard_pressed)
 	_create_setting_button("volume", _on_volume_pressed)
 	_create_setting_button("display", _on_display_pressed)
 	var language_button = _create_setting_button("language", _on_language_pressed)
 	# 言語設定は固定表記なので直接設定
-	language_button.text = "言語設定/Language"
-	_create_setting_button("gamepad", _on_gamepad_pressed)
-	_create_setting_button("keyboard", _on_keyboard_pressed)
-	_create_setting_button("game", _on_game_pressed)
+	language_button.text = "言語設定 / Language Settings"
 
 	# スペーサー
 	_create_spacer()
