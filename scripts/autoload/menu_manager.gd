@@ -73,9 +73,14 @@ func _ready() -> void:
 	PauseManager.pause_state_changed.connect(_on_pause_state_changed)
 
 func _process(_delta: float) -> void:
-	# メニューが表示されていない場合は処理しない
+	# メニューが表示されていない場合
 	if not pause_menu.visible:
-		menu_just_opened = false
+		# ESCキーでメニューを開く
+		if Input.is_action_just_pressed("pause"):
+			PauseManager.toggle_pause()
+			pause_menu.visible = true
+			menu_just_opened = true
+			show_main_menu()
 		return
 
 	# メニューが開いたばかりのフレームでは入力を処理しない
@@ -383,12 +388,7 @@ func _on_language_changed(_new_language: String) -> void:
 
 func _on_pause_state_changed(is_paused: bool) -> void:
 	"""ポーズ状態が変更されたときに呼ばれるコールバック"""
-	if is_paused:
-		# ゲームが一時停止したらメニューを表示
-		pause_menu.visible = true
-		menu_just_opened = true  # メニューが開いたばかりのフラグを設定
-		show_main_menu()
-	else:
+	if not is_paused:
 		# ゲームが再開したらメニューを非表示
 		pause_menu.visible = false
 		menu_just_opened = false

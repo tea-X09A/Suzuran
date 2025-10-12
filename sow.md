@@ -14,13 +14,17 @@
 - **EventManager (AutoLoad)**: イベント実行の中央管理
   - イベントキューの管理
   - プレイヤー操作の制御（イベント中は移動不可）
+  - **pause_managerとの連携**（イベント実行中のゲーム停止）:
+    - イベント開始時に`PauseManager.pause_game()`を呼び出してゲーム全体を停止
+    - イベント終了時に`PauseManager.resume_game()`を呼び出してゲームを再開
+    - これにより、イベント中は背景のゲームプレイ（敵の動き、タイマーなど）が完全に停止する
   - 任意のタイミングでイベントを開始する公開API
   - 複数の発火方法に対応：
     - EventAreaからの自動発火（one_shot活用）
     - NPCやトラップからの手動発火（何度でも可能）
 
 - **EventState (プレイヤー制御)**: イベント中のプレイヤー状態管理
-  - **採用方式**: C案（新ステートEventStateを追加）※event_questions.md項目2参照
+  - **採用方式**: C案（新ステートEventStateを追加）
   - BaseStateを継承したステートクラス
   - イベント中の動作：
     - 全ての入力を無視（移動、ジャンプ、攻撃、射撃など）
@@ -115,35 +119,30 @@
 #### EventArea（共通スクリプト）
 - **共通スクリプト**: 全てのEventAreaは`event_area.gd`を共有
 - **event_id駆動**: `@export var event_id: String`でイベント識別子を指定
-- **個別スクリプト参照**: `event_id`に基づいて個別イベントスクリプトをロード
-  - 例: `event_id = "001"` → `res://scripts/events/area/event_001.gd`をロード
+- **EventConfigData参照**: `event_id`に基づいてEventConfigDataリソースからイベント設定を取得
+  - 例: `event_id = "001"` → event_config.tres内の"001"設定を参照
 - **`one_shot`機能**: 一度だけ発火するか、何度でも発火するかを制御
 
-#### BaseEventAreaScript（個別イベントスクリプトの基底クラス）
-- 各イベント固有のロジックを定義する基底クラス
+#### EventConfigData（イベント設定リソース）
+- 全イベントの設定を一つのtresファイルで一括管理
 - **主な機能**:
-  - **条件判定**: `can_trigger() -> bool` - プレイヤー状態に基づくイベント発火条件のチェック
-  - **リソース選択**: `get_dialogue_resource() -> String` - 実行回数に基づくリソースパス取得
-  - **実行回数管理**: 自動的にGameProgressと連携してイベント実行回数を追跡
+  - **条件判定**: `can_trigger(event_id, player_state) -> bool` - プレイヤー状態に基づくイベント発火条件のチェック
+  - **リソース選択**: `get_dialogue_resource(event_id, count) -> String` - 実行回数に基づくリソースパス取得
+  - **設定取得**: `get_event_config(event_id) -> EventConfig` - イベントIDから設定を取得
 
-- **プロパティ**:
+- **EventConfig構造**:
+  - `event_id: String` - イベント識別子（"001", "002"など）
+  - `conditions: Array[ConditionConfig]` - 条件とリソースのペアの配列
+    - 複数の条件を持つことで、同じevent_idでもプレイヤー状態に応じて異なる会話を表示可能
+    - 配列の上から順に評価され、最初にマッチした条件のリソースが使用される
+    - 空文字列("")のrequired_player_stateは「状態不問」として最後に配置すること
+
+- **ConditionConfig構造**:
   - `required_player_state: String` - 必要なプレイヤー状態（"normal", "expansion"など、空文字列=""は状態不問）
   - `dialogue_resources: Array[String]` - DialogueDataリソースパスの配列（実行回数順: [01, 02, 03, ...]）
-    - 例: `["res://data/dialogues/event_001_01.tres", "res://data/dialogues/event_001_02.tres"]`
+    - 例: `["res://data/dialogues/event_001_normal_01.tres", "res://data/dialogues/event_001_normal_02.tres"]`
     - インデックス0が初回、1が2回目、2が3回目...
     - 配列の範囲外の場合は最後の要素を返す（リピート用）
-
-- **メソッド**:
-  ```gdscript
-  # 継承先でオーバーライド可能
-  func can_trigger(player_state: String) -> bool:
-      # デフォルト実装: プレイヤー状態のチェック
-      pass
-
-  func get_dialogue_resource() -> String:
-      # 実行回数に基づいてリソースパスを返す
-      pass
-  ```
 
 #### 任意オブジェクトからの発火
 - **NPC**: 接触やインタラクトキーで会話開始（何度でも可能）
@@ -160,11 +159,9 @@ scripts/
 │   ├── dialogue_event.gd              # 会話イベント
 │   ├── animation_event.gd             # アニメーションイベント
 │   ├── cutscene_event.gd              # カットシーンイベント
-│   ├── base_event_area_script.gd      # EventArea個別スクリプトの基底クラス（新規）
-│   └── area/                          # EventArea個別スクリプト格納フォルダ（新規）
-│       ├── event_001.gd               # イベント001の固有ロジック
-│       ├── event_002.gd               # イベント002の固有ロジック
-│       └── ...                        # 他のイベントスクリプト
+│   ├── condition_config.gd            # 条件設定リソースクラス（新規）
+│   ├── event_config.gd                # イベント個別設定リソースクラス（新規）
+│   └── event_config_data.gd           # イベント設定データリソースクラス（新規）
 │
 ├── dialogue/
 │   ├── dialogue_box.gd                # 会話UIコントローラー
@@ -202,16 +199,19 @@ assets/
         └── npcs/               # NPC立ち絵
 
 data/
+├── event_config.tres           # 全イベント設定を管理するリソース（新規）
 └── dialogues/                  # DialogueDataリソース格納フォルダ（新規）
-    ├── event_001_01.tres       # イベント001・1回目の会話データ
-    ├── event_001_02.tres       # イベント001・2回目以降の会話データ
-    ├── event_002_01.tres       # イベント002・1回目の会話データ
-    ├── event_002_02.tres       # イベント002・2回目以降の会話データ
-    ├── event_003_01.tres       # イベント003・1回目の会話データ
-    ├── event_003_02.tres       # イベント003・2回目の会話データ
-    ├── event_003_03.tres       # イベント003・3回目の会話データ
-    ├── event_003_04.tres       # イベント003・4回目以降の会話データ
-    └── ...                     # 他の会話データ
+    ├── event_001_normal_01.tres      # イベント001・normal状態・1回目
+    ├── event_001_normal_02.tres      # イベント001・normal状態・2回目以降
+    ├── event_001_expansion_01.tres   # イベント001・expansion状態・1回目
+    ├── event_001_expansion_02.tres   # イベント001・expansion状態・2回目以降
+    ├── event_002_normal_01.tres      # イベント002・normal状態・1回目
+    ├── event_002_normal_02.tres      # イベント002・normal状態・2回目以降
+    ├── event_003_normal_01.tres      # イベント003・normal状態・1回目
+    ├── event_003_normal_02.tres      # イベント003・normal状態・2回目
+    ├── event_003_normal_03.tres      # イベント003・normal状態・3回目
+    ├── event_003_normal_04.tres      # イベント003・normal状態・4回目以降
+    └── ...                           # 他の会話データ
 ```
 
 ## 実装順序
@@ -229,10 +229,12 @@ data/
        - `end_event()` メソッド追加
        - `get_current_state()` メソッド追加（プレイヤー状態を返す）
 
-2. **EventArea個別スクリプトシステム**
-   - BaseEventAreaScript 基底クラス実装
-   - EventArea共通スクリプト拡張（event_id駆動化）
-   - サンプル個別スクリプト作成（event_001.gd）
+2. **イベント設定システム**
+   - ConditionConfig リソースクラス実装（`scripts/events/condition_config.gd`）
+   - EventConfig リソースクラス実装（`scripts/events/event_config.gd`）
+   - EventConfigData リソースクラス実装（`scripts/events/event_config_data.gd`）
+   - event_config.tres リソースファイル作成（Godotエディタで視覚的に作成）
+   - EventArea共通スクリプト拡張（EventConfigData使用）
 
 3. **会話システム**
    - DialogueData リソース（多言語対応）
@@ -262,11 +264,12 @@ data/
 - **メモリリーク防止**: weakref、queue_free、disconnect徹底
 - **拡張性**: 新イベントタイプを容易に追加可能
 - **再利用性**: イベントデータはResourceとして外部定義
+- **pause_managerとの統合**: イベント実行中はゲーム全体を停止し、プレイヤーに集中した体験を提供
 - **event_id駆動設計**:
   - EventAreaは共通スクリプトを使用し、コードの重複を防止
   - 各EventAreaは`event_id`でイベントを識別
-  - イベント固有のロジックは個別スクリプト（BaseEventAreaScript継承）に分離
-  - 条件判定やリソース選択などの複雑なロジックを柔軟に実装可能
+  - イベント固有の設定はEventConfigDataリソースに集約
+  - 一つのtresファイルで全イベントの設定を一括管理
 
 ## EventState実装詳細
 
@@ -330,157 +333,242 @@ func get_current_state() -> String:
 @export var event_id: String = ""  # イベント識別子（例: "001", "002"）
 @export var one_shot: bool = true  # 一度だけ発火するか
 
-var event_script: BaseEventAreaScript = null
+var event_config: EventConfigData
 
 func _ready() -> void:
-	# event_idに基づいて個別スクリプトをロード
-	if event_id != "":
-		var script_path: String = "res://scripts/events/area/event_%s.gd" % event_id
-		if ResourceLoader.exists(script_path):
-			var EventScriptClass = load(script_path)
-			event_script = EventScriptClass.new()
+	# イベント設定リソースを読み込み
+	event_config = load("res://data/event_config.tres")
 
 func _on_body_entered(body: Node2D) -> void:
-	if body.is_in_group("player") and event_script != null:
+	if body.is_in_group("player") and event_config != null:
 		var player = body as Player
 
 		# プレイヤーの現在の状態を取得
 		var player_state: String = player.get_current_state()  # "normal", "expansion"など
 
-		# 発火条件チェック（プレイヤー状態を渡す）
-		if not event_script.can_trigger(player_state):
+		# 発火条件チェック（EventConfigDataを使用）
+		if not event_config.can_trigger(event_id, player_state):
 			return
 
-		# リソースパス取得
-		var dialogue_resource: String = event_script.get_dialogue_resource()
+		# 実行回数を取得してリソースパスを決定
+		var count: int = GameProgress.get_event_count(event_id)
+		var dialogue_resource: String = event_config.get_dialogue_resource(event_id, player_state, count)
 		if dialogue_resource == "":
 			return
+
+		# ゲーム全体を停止（背景のゲームプレイを停止）
+		PauseManager.pause_game()
 
 		# イベント開始
 		player.start_event()
 		# ダイアログ表示
 		EventManager.start_dialogue(dialogue_resource)
 
+		# イベント終了を待機（シグナル接続で処理）
+		# EventManager.event_finished.connect(_on_event_finished)
+
 		# one_shotの場合、発火後にエリアを無効化
 		if one_shot:
 			monitoring = false
+
+# イベント終了時の処理
+func _on_event_finished() -> void:
+	# ゲームを再開
+	PauseManager.resume_game()
 ```
 
-### 個別イベントスクリプトの実装例
+### イベント設定リソースの実装
+
+全イベントの設定を一つのtresファイルで一括管理します。これにより、個別のスクリプトファイルを作成せず、データリソースとして視覚的に管理できます。
+
+#### Resource形式での実装
+
+**重要**: Godotのtresファイルで内部クラスを扱うため、各クラスを独立したResourceとして定義する必要があります。
+
 ```gdscript
-# scripts/events/area/event_001.gd
-extends BaseEventAreaScript
+# scripts/events/condition_config.gd
+# 条件と会話リソースのペア
+class_name ConditionConfig
+extends Resource
 
-# イベント001: 商人との会話
-# 条件: プレイヤー状態不問（normalでもexpansionでも可）
-# 01回目: 丁寧な挨拶と商品紹介
-# 02回目: 簡易的な挨拶
-# 03回目以降: 簡易的な挨拶（02と同じ）
-
-func _init():
-	required_player_state = ""  # 状態不問（空文字列）
-	dialogue_resources = [
-		"res://data/dialogues/event_001_01.tres",  # 初回
-		"res://data/dialogues/event_001_02.tres"   # 2回目以降（リピート用）
-	]
-
-# 必要に応じてオーバーライド
-func can_trigger(player_state: String) -> bool:
-	# デフォルト実装を使用（状態不問）
-	return super.can_trigger(player_state)
+@export var required_player_state: String = ""       # 必要なプレイヤー状態（"normal", "expansion"など、空文字列=""は状態不問）
+@export var dialogue_resources: Array[String] = []   # 実行回数順のDialogueDataパス配列
 ```
 
-### プレイヤー状態を条件とするイベントの実装例
 ```gdscript
-# scripts/events/area/event_002.gd
-extends BaseEventAreaScript
+# scripts/events/event_config.gd
+# イベント個別設定
+class_name EventConfig
+extends Resource
 
-# イベント002: 特殊な商人との会話
-# 条件: プレイヤーが"expansion"状態である必要がある
-# 01回目: expansion状態専用の会話
-# 02回目以降: リピート用の会話
-
-func _init():
-	required_player_state = "expansion"  # expansion状態が必要
-	dialogue_resources = [
-		"res://data/dialogues/event_002_01.tres",  # 初回
-		"res://data/dialogues/event_002_02.tres"   # 2回目以降
-	]
-
-# デフォルト実装で十分なのでオーバーライド不要
-# （required_player_stateが自動的にチェックされる）
+@export var event_id: String = ""                    # イベント識別子（"001", "002"など）
+@export var conditions: Array[ConditionConfig] = []  # 条件とリソースのペアの配列
 ```
 
-### 複数回の異なる会話を持つイベントの実装例
 ```gdscript
-# scripts/events/area/event_003.gd
-extends BaseEventAreaScript
+# scripts/events/event_config_data.gd
+# 全イベント設定を管理するメインリソース
+class_name EventConfigData
+extends Resource
 
-# イベント003: ストーリー進行に応じた会話
-# 条件: プレイヤー状態不問
-# 01回目: 初回会話
-# 02回目: 2回目専用の会話
-# 03回目: 3回目専用の会話
-# 04回目以降: リピート用の会話
+@export var events: Array[EventConfig] = []          # 全イベント設定の配列
 
-func _init():
-	required_player_state = ""  # 状態不問
-	dialogue_resources = [
-		"res://data/dialogues/event_003_01.tres",  # 初回
-		"res://data/dialogues/event_003_02.tres",  # 2回目
-		"res://data/dialogues/event_003_03.tres",  # 3回目
-		"res://data/dialogues/event_003_04.tres"   # 4回目以降（リピート）
-	]
-```
+# イベントIDから設定を取得
+func get_event_config(event_id: String) -> EventConfig:
+	for event in events:
+		if event.event_id == event_id:
+			return event
+	return null
 
-### BaseEventAreaScript実装詳細
+# プレイヤー状態に一致する条件設定を取得
+func get_matching_condition(event_id: String, player_state: String) -> ConditionConfig:
+	var config: EventConfig = get_event_config(event_id)
+	if config == null or config.conditions.is_empty():
+		return null
 
-#### 基底クラスの構造
-```gdscript
-# scripts/events/base_event_area_script.gd
-class_name BaseEventAreaScript
-extends RefCounted
+	# 配列の上から順に評価し、最初にマッチした条件を返す
+	for condition in config.conditions:
+		# 具体的な状態指定がある場合、プレイヤー状態と一致するかチェック
+		if condition.required_player_state != "" and condition.required_player_state == player_state:
+			return condition
 
-# イベント固有のプロパティ
-var required_player_state: String = ""       # 必要なプレイヤー状態（""は状態不問）
-var dialogue_resources: Array[String] = []   # DialogueDataリソースパスの配列（実行回数順）
+	# 一致する具体的な条件がない場合、状態不問（""）の条件を探す
+	for condition in config.conditions:
+		if condition.required_player_state == "":
+			return condition
+
+	return null
 
 # イベント発火条件チェック
-# 継承先でオーバーライド可能
-# @param player_state: プレイヤーの現在の状態（"normal", "expansion"など）
-# @return: イベントが発火可能かどうか
-func can_trigger(player_state: String) -> bool:
-	# required_player_stateが空文字列の場合は状態不問（常に発火可能）
-	if required_player_state == "":
-		return true
+func can_trigger(event_id: String, player_state: String) -> bool:
+	var condition: ConditionConfig = get_matching_condition(event_id, player_state)
+	return condition != null
 
-	# プレイヤーの状態がrequired_player_stateと一致するかチェック
-	return player_state == required_player_state
-
-# 表示するDialogueDataリソースパスを取得
-# 継承先でオーバーライド可能
-# @return: DialogueDataリソースのパス
-func get_dialogue_resource() -> String:
-	# dialogue_resourcesが空の場合はエラー
-	if dialogue_resources.is_empty():
-		push_error("dialogue_resources is empty for event: %s" % _get_event_id_from_path())
+# 実行回数に基づいてDialogueDataリソースパスを取得
+func get_dialogue_resource(event_id: String, player_state: String, count: int) -> String:
+	var condition: ConditionConfig = get_matching_condition(event_id, player_state)
+	if condition == null or condition.dialogue_resources.is_empty():
+		push_error("No matching condition or dialogue_resources is empty for event: %s, player_state: %s" % [event_id, player_state])
 		return ""
-
-	# イベントの実行回数を取得
-	var event_id: String = _get_event_id_from_path()
-	var count: int = GameProgress.get_event_count(event_id)
 
 	# countに対応するリソースを取得
 	# 配列の範囲外の場合は最後の要素を返す（リピート用）
-	var index: int = min(count, dialogue_resources.size() - 1)
-	return dialogue_resources[index]
+	var index: int = min(count, condition.dialogue_resources.size() - 1)
+	return condition.dialogue_resources[index]
+```
 
-# イベントIDをスクリプトパスから抽出（内部用）
-func _get_event_id_from_path() -> String:
-	var script_path: String = get_script().resource_path
-	var file_name: String = script_path.get_file().get_basename()
-	# "event_001.gd" -> "001"
-	return file_name.replace("event_", "")
+#### イベント設定リソースファイルの作成方法
+
+**Godotエディタでの作成手順**:
+1. Godotエディタで `res://data/event_config.tres` を新規作成
+2. インスペクタで `EventConfigData` スクリプトをアタッチ
+3. `events` 配列に `EventConfig` リソースを追加
+4. 各 `EventConfig` の `conditions` 配列に `ConditionConfig` リソースを追加
+5. 各 `ConditionConfig` に対して:
+   - `required_player_state` を設定（"normal", "expansion"など）
+   - `dialogue_resources` 配列にDialogueDataのパスを追加
+
+**tres ファイルの実例**:
+```
+# data/event_config.tres
+[gd_resource type="Resource" script_class="EventConfigData" load_steps=10 format=3 uid="uid://xxxxx"]
+
+[ext_resource type="Script" path="res://scripts/events/event_config_data.gd" id="1_xxxxx"]
+[ext_resource type="Script" path="res://scripts/events/event_config.gd" id="2_xxxxx"]
+[ext_resource type="Script" path="res://scripts/events/condition_config.gd" id="3_xxxxx"]
+
+[sub_resource type="Resource" id="ConditionConfig_event001_normal"]
+script = ExtResource("3_xxxxx")
+required_player_state = "normal"
+dialogue_resources = Array[String](["res://data/dialogues/event_001_normal_01.tres", "res://data/dialogues/event_001_normal_02.tres"])
+
+[sub_resource type="Resource" id="ConditionConfig_event001_expansion"]
+script = ExtResource("3_xxxxx")
+required_player_state = "expansion"
+dialogue_resources = Array[String](["res://data/dialogues/event_001_expansion_01.tres", "res://data/dialogues/event_001_expansion_02.tres"])
+
+[sub_resource type="Resource" id="EventConfig_001"]
+script = ExtResource("2_xxxxx")
+event_id = "001"
+conditions = Array[ConditionConfig]([SubResource("ConditionConfig_event001_normal"), SubResource("ConditionConfig_event001_expansion")])
+
+[sub_resource type="Resource" id="ConditionConfig_event002_normal"]
+script = ExtResource("3_xxxxx")
+required_player_state = "normal"
+dialogue_resources = Array[String](["res://data/dialogues/event_002_normal_01.tres", "res://data/dialogues/event_002_normal_02.tres"])
+
+[sub_resource type="Resource" id="EventConfig_002"]
+script = ExtResource("2_xxxxx")
+event_id = "002"
+conditions = Array[ConditionConfig]([SubResource("ConditionConfig_event002_normal")])
+
+[sub_resource type="Resource" id="ConditionConfig_event003_normal"]
+script = ExtResource("3_xxxxx")
+required_player_state = "normal"
+dialogue_resources = Array[String](["res://data/dialogues/event_003_normal_01.tres", "res://data/dialogues/event_003_normal_02.tres", "res://data/dialogues/event_003_normal_03.tres", "res://data/dialogues/event_003_normal_04.tres"])
+
+[sub_resource type="Resource" id="EventConfig_003"]
+script = ExtResource("2_xxxxx")
+event_id = "003"
+conditions = Array[ConditionConfig]([SubResource("ConditionConfig_event003_normal")])
+
+[resource]
+script = ExtResource("1_xxxxx")
+events = Array[EventConfig]([SubResource("EventConfig_001"), SubResource("EventConfig_002"), SubResource("EventConfig_003")])
+```
+
+**重要な注意点**:
+- **すべてのイベントは必ず `required_player_state` を指定すること**（"normal", "expansion"など）
+- 状態不問（""）のイベントは作成しない方針
+- tres ファイルは手動で編集するのではなく、**Godotエディタのインスペクタで視覚的に作成・編集すること**
+- 各サブリソースにはユニークなIDを付与（GodotエディタWASが自動生成）
+
+#### EventAreaからの使用例
+```gdscript
+# scripts/levels/event_area.gd
+@export var event_id: String = ""
+@export var one_shot: bool = true
+
+# イベント設定リソース（AutoLoadで管理するか、exportで設定）
+var event_config: EventConfigData
+
+func _ready() -> void:
+	# イベント設定リソースを読み込み
+	event_config = load("res://data/event_config.tres")
+
+func _on_body_entered(body: Node2D) -> void:
+	if body.is_in_group("player") and event_config != null:
+		var player = body as Player
+		var player_state: String = player.get_current_state()
+
+		# 発火条件チェック
+		if not event_config.can_trigger(event_id, player_state):
+			return
+
+		# 実行回数を取得してリソースパスを決定
+		var count: int = GameProgress.get_event_count(event_id)
+		var dialogue_resource: String = event_config.get_dialogue_resource(event_id, player_state, count)
+		if dialogue_resource == "":
+			return
+
+		# ゲーム全体を停止
+		PauseManager.pause_game()
+
+		# イベント開始
+		player.start_event()
+		EventManager.start_dialogue(dialogue_resource)
+
+		# イベント終了を待機（シグナル接続で処理）
+		# EventManager.event_finished.connect(_on_event_finished)
+
+		# one_shotの場合、発火後にエリアを無効化
+		if one_shot:
+			monitoring = false
+
+# イベント終了時の処理
+func _on_event_finished() -> void:
+	# ゲームを再開
+	PauseManager.resume_game()
 ```
 
 #### GameProgressの主要メソッド（実装予定）
@@ -545,17 +633,17 @@ func set_flag(flag_name: String, value: bool) -> void:
 ## イベント発火の仕様
 
 ### 1. EventArea経由（自動発火）
-- **event_id駆動**: 各EventAreaは`event_id`で個別スクリプトを識別
+- **event_id駆動**: 各EventAreaは`event_id`でEventConfigDataからイベント設定を識別
 - プレイヤーがエリアに侵入すると自動的にイベント開始
 - **プレイヤー状態による条件判定**:
   - `player.get_current_state()`で現在の状態を取得
-  - `event_script.can_trigger(player_state)`で発火可否を判定
+  - `event_config.can_trigger(event_id, player_state)`で発火可否を判定
   - 例: expansion状態でのみ発火するイベント
 - **`one_shot = true`**: 一度だけ発火（デフォルト）
   - 発火後、`monitoring = false`でエリアを無効化
   - GameProgressにイベント実行回数を記録
 - **`one_shot = false`**: 何度でも発火
-  - 毎回、個別スクリプトの`can_trigger()`で条件判定
+  - 毎回、EventConfigDataで条件判定
   - 実行回数に応じたリソースを自動選択（dialogue_resources配列から）
 - 用途: ストーリーイベント、チュートリアル、NPCとの会話
 
@@ -570,25 +658,37 @@ func set_flag(flag_name: String, value: bool) -> void:
 ```
 1. プレイヤーがEventAreaに侵入
    ↓
-2. event_idから個別スクリプト（event_XXX.gd）をロード
+2. EventConfigDataリソース（event_config.tres）を読み込み
    ↓
 3. プレイヤーの現在の状態（normal/expansionなど）を取得
    ↓
-4. event_script.can_trigger(player_state) で条件判定
-   ├─ false → イベント不発火（プレイヤー状態が条件を満たさない）
+4. event_config.can_trigger(event_id, player_state) で条件判定
+   ├─ false → イベント不発火（プレイヤー状態に合致する条件が存在しない）
    └─ true → 次へ
    ↓
-5. event_script.get_dialogue_resource() でリソースパス取得
-   ├─ 初回（count=0） → dialogue_resources[0]（例: event_001_01.tres）
-   ├─ 2回目（count=1） → dialogue_resources[1]（例: event_001_02.tres）
-   ├─ 3回目（count=2） → dialogue_resources[2]（例: event_001_03.tres）
+5. GameProgress.get_event_count(event_id) で実行回数を取得
+   ↓
+6. event_config.get_dialogue_resource(event_id, player_state, count) でリソースパス取得
+   ├─ プレイヤー状態に一致するConditionConfigを検索
+   ├─ 該当するConditionConfig内のdialogue_resourcesから実行回数に応じたリソースを選択
+   ├─ 初回（count=0） → dialogue_resources[0]（例: event_001_normal_01.tres）
+   ├─ 2回目（count=1） → dialogue_resources[1]（例: event_001_normal_02.tres）
+   ├─ 3回目（count=2） → dialogue_resources[2]（例: event_001_normal_03.tres）
    └─ N回目以降 → dialogue_resources[last]（配列の最後の要素をリピート）
    ↓
-6. EventManager.start_dialogue(resource_path) でイベント実行
+7. PauseManager.pause_game() でゲーム全体を停止（背景のゲームプレイを停止）
    ↓
-7. GameProgress.increment_event_count(event_id) で実行回数を記録
+8. player.start_event() でプレイヤーをEVENT状態に遷移
    ↓
-8. one_shot=true の場合、EventAreaを無効化
+9. EventManager.start_dialogue(resource_path) でイベント実行
+   ↓
+10. イベント終了後、player.end_event() でIDLE状態に復帰
+   ↓
+11. PauseManager.resume_game() でゲームを再開
+   ↓
+12. GameProgress.increment_event_count(event_id) で実行回数を記録
+   ↓
+13. one_shot=true の場合、EventAreaを無効化
 ```
 
 ## UI詳細仕様
@@ -619,13 +719,13 @@ func set_flag(flag_name: String, value: bool) -> void:
 - **配置**: 画面中央に縦並び
 - **スタイル**: 半透明背景のボタン
 - **操作**:
-  - ↑↓/WSキーで選択移動
-  - Zキー/Enterキーで決定
+  - ↑↓ / WSキーで選択移動
+  - Zキー / Enterキーで決定
 - **最大数**: 2つまで
 
 ### 入力操作
 - **Zキー / Enterキー**: テキスト送り、選択肢決定
-- **↑↓キー**: 選択肢の移動
+- **↑↓ / WSキー**: 選択肢の移動
 - **Shiftキー（長押し）**: 会話・カットシーンの高速スキップ
 
 ## 選択肢システムの仕様
@@ -718,120 +818,70 @@ messages = [
 
 ### UI配置
 - 画面中央に選択肢ボタンを縦並び表示
-- 最大4つまでの選択肢に対応
+- 最大2つまでの選択肢に対応
 - 選択後はボタンを非表示にして会話を続行
 
 ## event_id駆動設計の利点
 
 ### 1. コードの再利用性と保守性
 - **共通ロジックの一元管理**: EventArea.gdに共通処理を集約
-- **個別ロジックの分離**: イベント固有のロジックは個別スクリプトに分離
-- **変更の局所化**: 共通処理の修正は一箇所で済む
+- **設定のリソース化**: イベント固有の設定はEventConfigDataリソースに集約
+- **変更の局所化**: 共通処理の修正は一箇所で済み、設定変更はエディタで直感的に編集可能
 
 ### 2. 拡張性と柔軟性
-- **新イベントの追加が容易**: 新しい`event_XXX.gd`を作成するだけ
-- **条件判定の柔軟性**: 各イベントで独自の条件ロジックを実装可能
-- **リソース選択の柔軟性**: 初回/リピート以外の複雑な分岐も実装可能
+- **新イベントの追加が容易**: event_config.tresに新しいイベント設定を追加するだけ
+- **コードファイル不要**: 個別スクリプトファイルを作成する必要がない
+- **視覚的な編集**: Godotエディタのインスペクタで設定を編集可能
 
 ### 3. データ駆動開発
 - **シーンエディタで管理**: EventAreaインスタンスごとに`event_id`を設定
-- **視覚的な管理**: どのエリアがどのイベントに対応するか一目瞭然
-- **デザイナーフレンドリー**: プログラマでなくても新イベントを追加可能
+- **一括管理**: 全イベント設定を一つのtresファイルで管理
+- **デザイナーフレンドリー**: プログラマでなくてもイベント設定を追加・編集可能
 
 ## event_id駆動設計のベストプラクティス
 
-### 1. イベントID命名規則
-- **3桁のゼロパディング**: `001`, `002`, `003`...
+### 1. リソースファイルの命名規則
 
-### 2. 個別スクリプトの実装パターン
-
-#### パターンA: シンプルな会話イベント（状態不問）
-```gdscript
-# プレイヤー状態不問、初回とリピートの2パターン
-extends BaseEventAreaScript
-
-func _init():
-    required_player_state = ""  # 状態不問
-    dialogue_resources = [
-        "res://data/dialogues/event_XXX_01.tres",  # 初回
-        "res://data/dialogues/event_XXX_02.tres"   # 2回目以降
-    ]
-```
-
-#### パターンB: プレイヤー状態が条件のイベント
-```gdscript
-# expansion状態でのみ発火する会話イベント
-extends BaseEventAreaScript
-
-func _init():
-    required_player_state = "expansion"  # expansion状態が必要
-    dialogue_resources = [
-        "res://data/dialogues/event_XXX_01.tres",  # 初回
-        "res://data/dialogues/event_XXX_02.tres"   # 2回目以降
-    ]
-
-# デフォルト実装で十分（required_player_stateが自動チェックされる）
-```
-
-#### パターンC: 複数回の異なる会話
-```gdscript
-# 実行回数に応じて異なる会話を複数回用意
-extends BaseEventAreaScript
-
-func _init():
-    required_player_state = ""  # 状態不問
-    dialogue_resources = [
-        "res://data/dialogues/event_XXX_01.tres",  # 初回
-        "res://data/dialogues/event_XXX_02.tres",  # 2回目
-        "res://data/dialogues/event_XXX_03.tres",  # 3回目
-        "res://data/dialogues/event_XXX_04.tres"   # 4回目以降（リピート）
-    ]
-```
-
-#### パターンD: カスタム条件判定
-```gdscript
-# フラグなど複雑な条件を持つイベント
-extends BaseEventAreaScript
-
-func _init():
-    required_player_state = ""
-    dialogue_resources = [
-        "res://data/dialogues/event_XXX_01.tres",
-        "res://data/dialogues/event_XXX_02.tres"
-    ]
-
-func can_trigger(player_state: String) -> bool:
-    # デフォルトの状態チェック
-    if not super.can_trigger(player_state):
-        return false
-
-    # カスタム条件: フラグチェック
-    if not GameProgress.get_flag("door_opened"):
-        return false
-
-    return true
-```
-
-### 3. リソースファイルの命名規則
-- **基本形式**: `event_[ID]_[回数].tres`
-  - 例: `event_001_01.tres`, `event_001_02.tres`, `event_001_03.tres`
+#### 基本命名パターン
+- **状態不問の場合**: `event_[ID]_[回数].tres`
+  - 例: `event_001_01.tres`, `event_001_02.tres`
+- **プレイヤー状態が条件の場合**: `event_[ID]_[状態]_[回数].tres`
+  - 例: `event_001_normal_01.tres`, `event_001_expansion_01.tres`
 - **IDは3桁のゼロパディング**: `001`, `002`, `003`...
 - **回数は2桁のゼロパディング**: `01`, `02`, `03`...
+- **状態名**: `normal`, `expansion`, `default`など（小文字）
 - **配列順序と一致**: dialogue_resources配列のインデックス順にファイル番号を付与
-- **リピート用リソース**: 配列の最後の要素（例: `event_001_02.tres`が2回目以降すべてに使用される）
+- **リピート用リソース**: 配列の最後の要素が2回目以降すべてに使用される
 - **一貫性の維持**: プロジェクト全体で統一されたルールを適用
 
 #### 命名例
+
+**パターン1: 状態不問のシンプルなイベント**
 ```
-# シンプルなイベント（2パターン）
 event_001_01.tres  # 初回
 event_001_02.tres  # 2回目以降（リピート）
+```
 
-# 複数回異なる会話を持つイベント（4パターン）
+**パターン2: 複数回異なる会話（状態不問）**
+```
 event_003_01.tres  # 1回目
 event_003_02.tres  # 2回目
 event_003_03.tres  # 3回目
 event_003_04.tres  # 4回目以降（リピート）
+```
+
+**パターン3: 同じevent_idで複数のプレイヤー状態に対応**
+```
+# normal状態のとき
+event_004_normal_01.tres   # 初回
+event_004_normal_02.tres   # 2回目以降（リピート）
+
+# expansion状態のとき
+event_004_expansion_01.tres   # 初回
+event_004_expansion_02.tres   # 2回目以降（リピート）
+
+# フォールバック（状態不問）
+event_004_default_01.tres
 ```
 
 ### 4. GameProgressとの連携
@@ -839,20 +889,17 @@ event_003_04.tres  # 4回目以降（リピート）
 - **フラグ管理**: イベント中でフラグを設定し、他のイベントの条件に使用
 - **セーブ/ロード**: GameProgressの状態をセーブデータに保存
 
-### 5. デバッグとテスト
-- **イベントIDの表示**: デバッグモードで画面にevent_idを表示
-- **条件の可視化**: can_trigger()の結果をログ出力
-- **リソースパスの確認**: 読み込まれたDialogueDataのパスを記録
-
 ## まとめ
 
-event_id駆動設計により、以下を実現：
+event_id駆動設計とEventConfigDataリソースにより、以下を実現：
 
-1. **共通スクリプト + 個別ロジック**: コードの重複を防ぎつつ、柔軟性を維持
+1. **リソースベースの設計**: 全イベント設定を一つのtresファイルで一括管理
 2. **データ駆動開発**: シーンエディタでイベントを管理し、視覚的に配置
-3. **拡張性**: 新イベントの追加が容易で、既存コードへの影響を最小化
-4. **保守性**: 共通処理の変更が一箇所で済み、バグ修正も効率的
-5. **テスト容易性**: 各イベントスクリプトを独立してテスト可能
+3. **拡張性**: 新イベントの追加はevent_config.tresに設定を追加するだけ
+4. **保守性**: 共通処理の変更が一箇所で済み、設定変更もエディタで簡単
+5. **コードの削減**: 個別スクリプトファイルが不要で、プロジェクト構造がシンプル
 6. **プレイヤー状態連動**: normalやexpansionなどのプレイヤー状態に応じたイベント発火
 7. **柔軟なリソース管理**: 実行回数に応じた複数パターンの会話を配列で管理
-8. **シンプルな命名規則**: `event_XXX_YY.tres`形式で一貫性を保持
+8. **複数条件対応**: 同じevent_idで複数のプレイヤー状態に対応する会話を定義可能
+9. **優先順位制御**: 条件配列の順序で評価優先度を制御し、フォールバック処理を実現
+10. **シンプルな命名規則**: `event_XXX_[状態]_YY.tres`形式で一貫性を保持

@@ -13,11 +13,6 @@ func _ready() -> void:
 	# プロセスモードを常に実行に設定（ポーズ中でも動作）
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
-func _process(_delta: float) -> void:
-	# ESCキーでメニューを開く（メニューが表示されていない時のみ）
-	if Input.is_action_just_pressed("pause") and not is_paused:
-		toggle_pause()
-
 func toggle_pause() -> void:
 	"""ポーズ状態を切り替え"""
 	is_paused = not is_paused
