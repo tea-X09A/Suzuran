@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bkxvwgj77n4ql"
-path="res://.godot/imported/normal_01.png-6b26366b5b182b800043a1bab43c7f5d.ctex"
+path="res://.godot/imported/normal_01.png-94d881d7e174f094f5c67696b787acd2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/images/player/tachi-e/normal_01.png"
-dest_files=["res://.godot/imported/normal_01.png-6b26366b5b182b800043a1bab43c7f5d.ctex"]
+source_file="res://assets/images/portrait/normal_01.png"
+dest_files=["res://.godot/imported/normal_01.png-94d881d7e174f094f5c67696b787acd2.ctex"]
 
 [params]
 
