@@ -1,0 +1,391 @@
+extends Node
+
+## メニュー表示を管理するマネージャー
+## ゲームの一時停止自体はPauseManagerが担当
+
+# メニューUI要素
+var pause_menu: CanvasLayer = null
+var center_container: CenterContainer = null
+var menu_container: VBoxContainer = null
+var buttons: Array[Button] = []
+var current_selection: int = 0
+
+# サブメニュー管理
+var settings_menu: SettingsMenu = null
+var volume_menu: VolumeSettingsMenu = null
+var display_menu: DisplaySettingsMenu = null
+var language_menu: LanguageSettingsMenu = null
+var gamepad_menu: GamepadSettingsMenu = null
+var keyboard_menu: KeyboardSettingsMenu = null
+var game_menu: GameSettingsMenu = null
+
+var current_menu_state: String = "main"  # "main", "settings", "volume", "display", "language", "gamepad", "keyboard", "game"
+var menu_just_opened: bool = false  # メニューが開いたばかりのフレームかどうか
+
+# メニューボタンのテキスト（多言語対応）
+const MENU_TEXTS: Dictionary = {
+	"save": {
+		"ja": "セーブ",
+		"en": "Save"
+	},
+	"load": {
+		"ja": "ロード",
+		"en": "Load"
+	},
+	"settings": {
+		"ja": "設定",
+		"en": "Settings"
+	},
+	"resume": {
+		"ja": "ゲームに戻る",
+		"en": "Resume"
+	},
+	"title": {
+		"ja": "タイトルに戻る",
+		"en": "Back to Title"
+	}
+}
+
+func _ready() -> void:
+	# メニューUIを構築
+	_build_menu_ui()
+	_build_main_menu()
+
+	# サブメニューを構築
+	_build_submenus()
+
+	# 最初は非表示
+	pause_menu.visible = false
+
+	# プロセスモードを常に実行に設定（ポーズ中でも動作）
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
+	# 言語変更シグナルに接続
+	GameSettings.language_changed.connect(_on_language_changed)
+
+	# 初期化時に現在の言語設定でUIを更新
+	_update_menu_button_texts()
+
+	# PauseManagerのシグナルに接続
+	PauseManager.pause_state_changed.connect(_on_pause_state_changed)
+
+func _process(_delta: float) -> void:
+	# メニューが表示されていない場合は処理しない
+	if not pause_menu.visible:
+		menu_just_opened = false
+		return
+
+	# メニューが開いたばかりのフレームでは入力を処理しない
+	if menu_just_opened:
+		menu_just_opened = false
+		return
+
+	# メニュー入力処理
+	_process_menu_input(_delta)
+
+func _build_menu_ui() -> void:
+	"""メニューUIの基本構造を構築"""
+	# CanvasLayerを作成（常に最前面に表示）
+	pause_menu = CanvasLayer.new()
+	pause_menu.layer = 100
+	pause_menu.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(pause_menu)
+
+	# 背景用の半透明ColorRect
+	var background: ColorRect = ColorRect.new()
+	background.color = Color(0.0, 0.0, 0.0, 0.7)
+	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	background.process_mode = Node.PROCESS_MODE_ALWAYS
+	pause_menu.add_child(background)
+
+	# 中央配置用のCenterContainer
+	center_container = CenterContainer.new()
+	center_container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center_container.process_mode = Node.PROCESS_MODE_ALWAYS
+	pause_menu.add_child(center_container)
+
+func _build_main_menu() -> void:
+	"""メインメニューを構築"""
+	# メニュー項目を縦に並べるVBoxContainer
+	menu_container = VBoxContainer.new()
+	menu_container.add_theme_constant_override("separation", 20)
+	menu_container.process_mode = Node.PROCESS_MODE_ALWAYS
+	center_container.add_child(menu_container)
+
+	# メニューボタンを作成
+	_create_menu_button("save", _on_save_pressed)
+	_create_menu_button("load", _on_load_pressed)
+	_create_menu_button("settings", _on_settings_pressed)
+	_create_menu_button("resume", _on_resume_pressed)
+	_create_menu_button("title", _on_title_pressed)
+
+	# 最初のボタンを選択状態にする
+	if buttons.size() > 0:
+		_update_button_selection()
+
+func _build_submenus() -> void:
+	"""サブメニューを構築"""
+	# 設定メニュー
+	settings_menu = SettingsMenu.new(weakref(self))
+	settings_menu.build_menu(center_container)
+
+	# 音量設定
+	volume_menu = VolumeSettingsMenu.new(weakref(self))
+	volume_menu.build_menu(center_container)
+
+	# 画面設定
+	display_menu = DisplaySettingsMenu.new(weakref(self))
+	display_menu.build_menu(center_container)
+
+	# 言語設定
+	language_menu = LanguageSettingsMenu.new(weakref(self))
+	language_menu.build_menu(center_container)
+
+	# パッド設定
+	gamepad_menu = GamepadSettingsMenu.new(weakref(self))
+	gamepad_menu.build_menu(center_container)
+
+	# キーボード設定
+	keyboard_menu = KeyboardSettingsMenu.new(weakref(self))
+	keyboard_menu.build_menu(center_container)
+
+	# ゲーム設定
+	game_menu = GameSettingsMenu.new(weakref(self))
+	game_menu.build_menu(center_container)
+
+func _create_menu_button(text_key: String, callback: Callable) -> void:
+	"""メニューボタンを作成（text_keyは多言語テキストのキー）"""
+	var button: Button = Button.new()
+	button.set_meta("text_key", text_key)  # ボタンに識別用のメタデータを保存
+	button.custom_minimum_size = Vector2(400, 60)
+	button.add_theme_font_size_override("font_size", 32)
+	button.focus_mode = Control.FOCUS_NONE  # キーボードフォーカスを無効化（手動管理）
+	button.process_mode = Node.PROCESS_MODE_ALWAYS
+	button.pressed.connect(callback)
+	menu_container.add_child(button)
+	buttons.append(button)
+	_set_button_text(button, text_key)
+
+func _process_menu_input(_delta: float) -> void:
+	# ESC/Xキーでキャンセル
+	if Input.is_action_just_pressed("ui_menu_cancel") or Input.is_action_just_pressed("pause"):
+		match current_menu_state:
+			"main":
+				# メインメニューからゲームに戻る
+				PauseManager.resume_game()
+			"settings":
+				# 設定メニューからメインメニューに戻る
+				show_main_menu()
+			_:
+				# サブメニュー（volume, display, language, gamepad, keyboard, game）から設定メニューに戻る
+				show_settings_menu()
+		return
+
+	# 現在のメニュー状態に応じて入力処理
+	if current_menu_state == "main":
+		_process_main_menu_input()
+	else:
+		_process_submenu_input()
+
+func _process_main_menu_input() -> void:
+	"""メインメニューの入力処理"""
+	if Input.is_action_just_pressed("ui_menu_up"):
+		current_selection -= 1
+		if current_selection < 0:
+			current_selection = buttons.size() - 1
+		_update_button_selection()
+
+	elif Input.is_action_just_pressed("ui_menu_down"):
+		current_selection += 1
+		if current_selection >= buttons.size():
+			current_selection = 0
+		_update_button_selection()
+
+	elif Input.is_action_just_pressed("ui_menu_accept"):
+		if current_selection >= 0 and current_selection < buttons.size():
+			buttons[current_selection].emit_signal("pressed")
+
+func _process_submenu_input() -> void:
+	"""サブメニューの入力処理"""
+	var current_submenu: BaseSettingsMenu = _get_current_submenu()
+	if current_submenu:
+		current_submenu.process_input(0.0)
+
+func _get_current_submenu() -> BaseSettingsMenu:
+	"""現在のサブメニューを取得"""
+	match current_menu_state:
+		"settings":
+			return settings_menu
+		"volume":
+			return volume_menu
+		"display":
+			return display_menu
+		"language":
+			return language_menu
+		"gamepad":
+			return gamepad_menu
+		"keyboard":
+			return keyboard_menu
+		"game":
+			return game_menu
+	return null
+
+func _update_button_selection() -> void:
+	"""ボタンの選択状態を更新"""
+	for i in range(buttons.size()):
+		if i == current_selection:
+			# 選択中のボタンのスタイルを設定（白背景、白枠）
+			var selected_style: StyleBoxFlat = StyleBoxFlat.new()
+			selected_style.bg_color = Color(1.0, 1.0, 1.0, 0.3)
+			selected_style.border_width_left = 3
+			selected_style.border_width_top = 3
+			selected_style.border_width_right = 3
+			selected_style.border_width_bottom = 3
+			selected_style.border_color = Color(1.0, 1.0, 1.0, 1.0)
+			selected_style.corner_radius_top_left = 8
+			selected_style.corner_radius_top_right = 8
+			selected_style.corner_radius_bottom_left = 8
+			selected_style.corner_radius_bottom_right = 8
+			buttons[i].add_theme_stylebox_override("normal", selected_style)
+			buttons[i].add_theme_stylebox_override("hover", selected_style)
+			buttons[i].add_theme_stylebox_override("pressed", selected_style)
+		else:
+			# 非選択ボタンは通常スタイル（透明背景）
+			var normal_style: StyleBoxFlat = StyleBoxFlat.new()
+			normal_style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
+			normal_style.border_width_left = 0
+			normal_style.border_width_top = 0
+			normal_style.border_width_right = 0
+			normal_style.border_width_bottom = 0
+			buttons[i].add_theme_stylebox_override("normal", normal_style)
+			buttons[i].add_theme_stylebox_override("hover", normal_style)
+			buttons[i].add_theme_stylebox_override("pressed", normal_style)
+
+func show_main_menu() -> void:
+	"""メインメニューを表示"""
+	# すべてのサブメニューを非表示
+	_hide_all_submenus()
+
+	# メインメニューを表示
+	if menu_container:
+		menu_container.visible = true
+	current_menu_state = "main"
+	current_selection = 0
+	_update_button_selection()
+
+func show_settings_menu() -> void:
+	"""設定メニューを表示"""
+	# メインメニューを非表示
+	if menu_container:
+		menu_container.visible = false
+
+	# すべてのサブメニューを非表示
+	_hide_all_submenus()
+
+	# 設定メニューを表示
+	if settings_menu:
+		settings_menu.show_menu()
+	current_menu_state = "settings"
+
+func show_submenu(submenu_name: String) -> void:
+	"""指定されたサブメニューを表示"""
+	# すべてのメニューを非表示
+	if menu_container:
+		menu_container.visible = false
+	_hide_all_submenus()
+
+	# 指定されたサブメニューを表示
+	var submenu: BaseSettingsMenu = null
+	match submenu_name:
+		"volume":
+			submenu = volume_menu
+			current_menu_state = "volume"
+		"display":
+			submenu = display_menu
+			current_menu_state = "display"
+		"language":
+			submenu = language_menu
+			current_menu_state = "language"
+		"gamepad":
+			submenu = gamepad_menu
+			current_menu_state = "gamepad"
+		"keyboard":
+			submenu = keyboard_menu
+			current_menu_state = "keyboard"
+		"game":
+			submenu = game_menu
+			current_menu_state = "game"
+
+	if submenu:
+		submenu.show_menu()
+
+func _hide_all_submenus() -> void:
+	"""すべてのサブメニューを非表示"""
+	if settings_menu:
+		settings_menu.hide_menu()
+	if volume_menu:
+		volume_menu.hide_menu()
+	if display_menu:
+		display_menu.hide_menu()
+	if language_menu:
+		language_menu.hide_menu()
+	if gamepad_menu:
+		gamepad_menu.hide_menu()
+	if keyboard_menu:
+		keyboard_menu.hide_menu()
+	if game_menu:
+		game_menu.hide_menu()
+
+# ボタンのコールバック関数
+func _on_save_pressed() -> void:
+	print("セーブ機能（未実装）")
+	# TODO: セーブ機能を実装
+
+func _on_load_pressed() -> void:
+	print("ロード機能（未実装）")
+	# TODO: ロード機能を実装
+
+func _on_settings_pressed() -> void:
+	"""設定メニューを表示"""
+	show_settings_menu()
+
+func _on_resume_pressed() -> void:
+	PauseManager.resume_game()
+
+func _on_title_pressed() -> void:
+	print("タイトルに戻る（未実装）")
+	# TODO: タイトルシーンへの遷移を実装
+	# get_tree().paused = false
+	# get_tree().change_scene_to_file("res://scenes/title.tscn")
+
+func _set_button_text(button: Button, text_key: String) -> void:
+	"""ボタンのテキストを現在の言語に応じて設定"""
+	var lang_code: String = "ja" if GameSettings.current_language == GameSettings.Language.JAPANESE else "en"
+
+	if text_key in MENU_TEXTS and lang_code in MENU_TEXTS[text_key]:
+		button.text = MENU_TEXTS[text_key][lang_code]
+	else:
+		push_error("Invalid text_key or language code: " + text_key + ", " + lang_code)
+
+func _update_menu_button_texts() -> void:
+	"""全てのメインメニューボタンのテキストを現在の言語に応じて更新"""
+	for button in buttons:
+		if button.has_meta("text_key"):
+			var text_key: String = button.get_meta("text_key")
+			_set_button_text(button, text_key)
+
+func _on_language_changed(_new_language: String) -> void:
+	"""言語が変更されたときに呼ばれるコールバック"""
+	_update_menu_button_texts()
+
+func _on_pause_state_changed(is_paused: bool) -> void:
+	"""ポーズ状態が変更されたときに呼ばれるコールバック"""
+	if is_paused:
+		# ゲームが一時停止したらメニューを表示
+		pause_menu.visible = true
+		menu_just_opened = true  # メニューが開いたばかりのフラグを設定
+		show_main_menu()
+	else:
+		# ゲームが再開したらメニューを非表示
+		pause_menu.visible = false
+		menu_just_opened = false
