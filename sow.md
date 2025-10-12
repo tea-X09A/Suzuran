@@ -529,9 +529,18 @@ func set_flag(flag_name: String, value: bool) -> void:
 - **型安全性**: CharacterInfo、DialogueMessage、DialogueChoiceは全てtyped配列で管理
 - **多言語対応**:
   - `speaker_name`と`text`は辞書形式: `{"ja": "日本語", "en": "English"}`
-  - 実行時に`current_language`変数に基づいて適切な言語を取得
-  - 例: `speaker_name[current_language]` または `text[current_language]`
-  - 言語設定はEventManagerまたはGameSettings（AutoLoad）で管理
+  - 実行時に`GameSettings.current_language`に基づいて適切な言語を取得
+  - 言語キーの取得方法:
+    - `GameSettings.get_language_name().to_lower().substr(0, 2)` で言語コード（"ja", "en"）を取得
+    - または、DialogueData側で`Language.JAPANESE`の場合は"ja"、`Language.ENGLISH`の場合は"en"にマッピング
+  - 例: `speaker_name[language_code]` または `text[language_code]`
+  - 言語設定はGameSettings（AutoLoad: `scripts/autoload/game_settings.gd`）で管理
+  - **GameSettingsの主要API**:
+    - `GameSettings.current_language`: 現在の言語（Language.JAPANESE または Language.ENGLISH）
+    - `GameSettings.get_language_name()`: 言語名を取得（"Japanese" または "English"）
+    - `GameSettings.set_language(language: Language)`: 言語を設定
+    - `GameSettings.toggle_language()`: 言語を切り替え（Japanese ⇔ English）
+    - `GameSettings.language_changed` シグナル: 言語変更時に発信される
 
 ## イベント発火の仕様
 
