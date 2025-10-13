@@ -66,6 +66,58 @@ func _init_disabled_style() -> void:
 	_disabled_style.corner_radius_bottom_left = 8
 	_disabled_style.corner_radius_bottom_right = 8
 
+## ボタンに統一スタイルを適用
+func _apply_button_style(button: Button, style: StyleBoxFlat, include_disabled: bool = false) -> void:
+	button.add_theme_stylebox_override("normal", style)
+	button.add_theme_stylebox_override("hover", style)
+	button.add_theme_stylebox_override("pressed", style)
+	button.add_theme_stylebox_override("focus", style)
+	if include_disabled:
+		button.add_theme_stylebox_override("disabled", style)
+
+## 現在の言語コードを取得
+func _get_language_code() -> String:
+	return "ja" if GameSettings.current_language == GameSettings.Language.JAPANESE else "en"
+
+## disabledボタンをスキップして有効なボタンを探す
+## direction: 1=右/下, -1=左/上
+func _skip_disabled_buttons(row_buttons: Array, direction: int = 1) -> void:
+	var attempts: int = 0
+	var row_size: int = row_buttons.size()
+
+	while current_column < row_size and buttons[row_buttons[current_column]].disabled and attempts < row_size:
+		current_column += direction
+
+		# 範囲外チェックとラップアラウンド
+		if direction > 0:
+			if current_column >= row_size:
+				current_column = 0
+		else:
+			if current_column < 0:
+				current_column = row_size - 1
+
+		attempts += 1
+
+## 中央寄せのHBoxContainerを作成
+func _create_centered_hbox(separation: int = 20) -> HBoxContainer:
+	var container: HBoxContainer = HBoxContainer.new()
+	if separation > 0:
+		container.add_theme_constant_override("separation", separation)
+	container.alignment = BoxContainer.ALIGNMENT_CENTER
+	container.process_mode = Node.PROCESS_MODE_ALWAYS
+	menu_container.add_child(container)
+	return container
+
+## セクションラベルを作成
+func _create_section_label(text_key: String) -> Label:
+	var label: Label = Label.new()
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 40)
+	label.process_mode = Node.PROCESS_MODE_ALWAYS
+	menu_container.add_child(label)
+	_update_text(label, text_key)
+	return label
+
 func build_menu(parent_container: Control) -> void:
 	## 画面設定メニューを構築
 	# VBoxContainerを作成
@@ -77,19 +129,10 @@ func build_menu(parent_container: Control) -> void:
 
 
 	# 解像度セクション
-	resolution_section_label = Label.new()
-	resolution_section_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	resolution_section_label.add_theme_font_size_override("font_size", 40)
-	resolution_section_label.process_mode = Node.PROCESS_MODE_ALWAYS
-	menu_container.add_child(resolution_section_label)
-	_update_text(resolution_section_label, "resolution_section")
+	resolution_section_label = _create_section_label("resolution_section")
 
 	# 解像度ボタンコンテナ（横並び）
-	var resolution_container: HBoxContainer = HBoxContainer.new()
-	resolution_container.add_theme_constant_override("separation", 20)
-	resolution_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	resolution_container.process_mode = Node.PROCESS_MODE_ALWAYS
-	menu_container.add_child(resolution_container)
+	var resolution_container: HBoxContainer = _create_centered_hbox(20)
 
 	var resolution_row_indices: Array[int] = []
 
@@ -97,7 +140,7 @@ func build_menu(parent_container: Control) -> void:
 	var available_resolutions: Array[Vector2i] = GameSettings.get_available_resolutions()
 	for resolution in STANDARD_RESOLUTIONS:
 		var is_available: bool = resolution in available_resolutions
-		var button_text: String = "%dx%d" % [resolution.x, resolution.y]
+		var button_text: String = "%d×%d" % [resolution.x, resolution.y]
 		var button: Button = _create_horizontal_button(button_text, func(): _on_resolution_selected(resolution), resolution_container)
 
 		# 利用不可能な解像度はdisabled状態にする
@@ -113,19 +156,10 @@ func build_menu(parent_container: Control) -> void:
 	_create_spacer()
 
 	# フルスクリーンセクション
-	fullscreen_section_label = Label.new()
-	fullscreen_section_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	fullscreen_section_label.add_theme_font_size_override("font_size", 40)
-	fullscreen_section_label.process_mode = Node.PROCESS_MODE_ALWAYS
-	menu_container.add_child(fullscreen_section_label)
-	_update_text(fullscreen_section_label, "fullscreen_section")
+	fullscreen_section_label = _create_section_label("fullscreen_section")
 
 	# フルスクリーンボタンコンテナ（横並び）
-	var fullscreen_container: HBoxContainer = HBoxContainer.new()
-	fullscreen_container.add_theme_constant_override("separation", 20)
-	fullscreen_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	fullscreen_container.process_mode = Node.PROCESS_MODE_ALWAYS
-	menu_container.add_child(fullscreen_container)
+	var fullscreen_container: HBoxContainer = _create_centered_hbox(20)
 
 	# フルスクリーンボタンの位置を記録
 	fullscreen_button_index = buttons.size()
@@ -166,7 +200,7 @@ func _create_horizontal_button(label_text: String, callback: Callable, container
 
 func _update_text(label: Label, key: String) -> void:
 	## ラベルテキストを多言語対応で更新
-	var lang_code: String = "ja" if GameSettings.current_language == GameSettings.Language.JAPANESE else "en"
+	var lang_code: String = _get_language_code()
 	label.text = MENU_TEXTS[key][lang_code]
 
 func _update_fullscreen_button_text() -> void:
@@ -174,7 +208,7 @@ func _update_fullscreen_button_text() -> void:
 	if fullscreen_button_index >= buttons.size():
 		return
 
-	var lang_code: String = "ja" if GameSettings.current_language == GameSettings.Language.JAPANESE else "en"
+	var lang_code: String = _get_language_code()
 	# 現在の状態の逆を表示（WINDOWEDなら「ON」、FULLSCREENなら「OFF」）
 	if GameSettings.window_mode == GameSettings.WindowMode.WINDOWED:
 		buttons[fullscreen_button_index].text = MENU_TEXTS["fullscreen_on"][lang_code]
@@ -225,23 +259,13 @@ func _update_2d_selection() -> void:
 		var button: Button = buttons[i]
 		if button.disabled:
 			# 無効なボタンは専用スタイル
-			button.add_theme_stylebox_override("normal", _disabled_style)
-			button.add_theme_stylebox_override("hover", _disabled_style)
-			button.add_theme_stylebox_override("pressed", _disabled_style)
-			button.add_theme_stylebox_override("focus", _disabled_style)
-			button.add_theme_stylebox_override("disabled", _disabled_style)
+			_apply_button_style(button, _disabled_style, true)
 		elif i == current_selection:
 			# 選択中のスタイル
-			button.add_theme_stylebox_override("normal", _selected_style)
-			button.add_theme_stylebox_override("hover", _selected_style)
-			button.add_theme_stylebox_override("pressed", _selected_style)
-			button.add_theme_stylebox_override("focus", _selected_style)
+			_apply_button_style(button, _selected_style)
 		else:
 			# 通常のスタイル
-			button.add_theme_stylebox_override("normal", _normal_style)
-			button.add_theme_stylebox_override("hover", _normal_style)
-			button.add_theme_stylebox_override("pressed", _normal_style)
-			button.add_theme_stylebox_override("focus", _normal_style)
+			_apply_button_style(button, _normal_style)
 
 ## 入力処理（2D navigation対応）
 func process_input(_delta: float) -> void:
@@ -269,13 +293,7 @@ func process_input(_delta: float) -> void:
 		elif current_column >= new_row_buttons.size():
 			current_column = new_row_buttons.size() - 1
 
-		var attempts: int = 0
-		while current_column < new_row_buttons.size() and buttons[new_row_buttons[current_column]].disabled and attempts < new_row_buttons.size():
-			current_column += 1
-			if current_column >= new_row_buttons.size():
-				current_column = 0
-			attempts += 1
-
+		_skip_disabled_buttons(new_row_buttons, 1)
 		_update_2d_selection()
 
 	# 下キーで行を下に移動
@@ -294,13 +312,7 @@ func process_input(_delta: float) -> void:
 		elif current_column >= new_row_buttons.size():
 			current_column = new_row_buttons.size() - 1
 
-		var attempts: int = 0
-		while current_column < new_row_buttons.size() and buttons[new_row_buttons[current_column]].disabled and attempts < new_row_buttons.size():
-			current_column += 1
-			if current_column >= new_row_buttons.size():
-				current_column = 0
-			attempts += 1
-
+		_skip_disabled_buttons(new_row_buttons, 1)
 		_update_2d_selection()
 
 	# 左キー（A or ←）で列を左に移動
@@ -311,12 +323,7 @@ func process_input(_delta: float) -> void:
 			if current_column < 0:
 				current_column = row_buttons.size() - 1  # 右端へ
 			# disabledボタンをスキップ
-			var attempts: int = 0
-			while buttons[row_buttons[current_column]].disabled and attempts < row_buttons.size():
-				current_column -= 1
-				if current_column < 0:
-					current_column = row_buttons.size() - 1
-				attempts += 1
+			_skip_disabled_buttons(row_buttons, -1)
 			_update_2d_selection()
 
 	# 右キー（D or →）で列を右に移動
@@ -327,12 +334,7 @@ func process_input(_delta: float) -> void:
 			if current_column >= row_buttons.size():
 				current_column = 0  # 左端へ
 			# disabledボタンをスキップ
-			var attempts: int = 0
-			while buttons[row_buttons[current_column]].disabled and attempts < row_buttons.size():
-				current_column += 1
-				if current_column >= row_buttons.size():
-					current_column = 0
-				attempts += 1
+			_skip_disabled_buttons(row_buttons, 1)
 			_update_2d_selection()
 
 	# Z/Enterキーで決定
@@ -358,21 +360,10 @@ func _on_fullscreen_toggle() -> void:
 ## 戻るボタンを作成（幅を解像度ボタンと同じ350pxにする）
 func _create_back_button() -> void:
 	# HBoxContainerを作成して中央寄せ（解像度ボタンと同じレイアウト）
-	var back_container: HBoxContainer = HBoxContainer.new()
-	back_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	back_container.process_mode = Node.PROCESS_MODE_ALWAYS
-	if menu_container:
-		menu_container.add_child(back_container)
+	var back_container: HBoxContainer = _create_centered_hbox(0)
 
-	# backボタンを作成
-	back_button = Button.new()
-	back_button.custom_minimum_size = Vector2(350, 60)
-	back_button.add_theme_font_size_override("font_size", 32)
-	back_button.focus_mode = Control.FOCUS_NONE
-	back_button.process_mode = Node.PROCESS_MODE_ALWAYS
-	back_button.pressed.connect(_on_back_pressed)
-	back_container.add_child(back_button)
-	buttons.append(back_button)
+	# backボタンを作成（_create_horizontal_buttonを再利用）
+	back_button = _create_horizontal_button("", _on_back_pressed, back_container)
 	_update_back_button_text()
 
 func _on_language_changed(_new_language: String) -> void:

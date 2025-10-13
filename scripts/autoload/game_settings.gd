@@ -19,15 +19,13 @@ enum WindowMode {
 	FULLSCREEN
 }
 
-# 現在の言語設定
-var current_language: Language = Language.JAPANESE
-
-# ディスプレイ設定
-var window_mode: WindowMode = WindowMode.WINDOWED
-var current_resolution: Vector2i = Vector2i(1920, 1080)
-
 # 設定ファイルのパス
 const SETTINGS_PATH: String = "user://system.json"
+
+# デフォルト設定値（一箇所で管理）
+const DEFAULT_LANGUAGE: Language = Language.JAPANESE
+const DEFAULT_WINDOW_MODE: WindowMode = WindowMode.WINDOWED
+const DEFAULT_RESOLUTION: Vector2i = Vector2i(1920, 1080)
 
 # 言語名のマッピング
 const LANGUAGE_NAMES: Dictionary = {
@@ -35,15 +33,33 @@ const LANGUAGE_NAMES: Dictionary = {
 	Language.ENGLISH: "English"
 }
 
+# 現在の言語設定
+var current_language: Language = DEFAULT_LANGUAGE
+
+# ディスプレイ設定
+var window_mode: WindowMode = DEFAULT_WINDOW_MODE
+var current_resolution: Vector2i = DEFAULT_RESOLUTION
+
 func _ready() -> void:
 	load_settings()
 
+## 統一された設定変更メソッド（値が変更された場合のみシグナル発行と保存を実行）
+func _change_setting(current_value: Variant, new_value: Variant, setter: Callable, signal_emitter: Callable) -> bool:
+	if current_value != new_value:
+		setter.call(new_value)
+		save_settings()
+		signal_emitter.call()
+		return true
+	return false
+
 func set_language(language: Language) -> void:
 	## 言語を設定し、変更を保存する
-	if current_language != language:
-		current_language = language
-		save_settings()
-		language_changed.emit(get_language_name())
+	_change_setting(
+		current_language,
+		language,
+		func(val): current_language = val,
+		func(): language_changed.emit(get_language_name())
+	)
 
 func get_language_name() -> String:
 	## 現在の言語名を取得
@@ -83,19 +99,23 @@ func get_available_resolutions() -> Array[Vector2i]:
 
 func set_window_mode(mode: WindowMode) -> void:
 	## ウィンドウモードを設定する
-	if window_mode != mode:
-		window_mode = mode
+	if _change_setting(
+		window_mode,
+		mode,
+		func(val): window_mode = val,
+		func(): window_mode_changed.emit(mode == WindowMode.FULLSCREEN)
+	):
 		apply_window_mode()
-		save_settings()
-		window_mode_changed.emit(mode == WindowMode.FULLSCREEN)
 
 func set_resolution(resolution: Vector2i) -> void:
 	## 解像度を設定する
-	if current_resolution != resolution:
-		current_resolution = resolution
+	if _change_setting(
+		current_resolution,
+		resolution,
+		func(val): current_resolution = val,
+		func(): resolution_changed.emit(resolution)
+	):
 		apply_resolution()
-		save_settings()
-		resolution_changed.emit(resolution)
 
 func apply_window_mode() -> void:
 	## ウィンドウモードを適用する
@@ -116,6 +136,9 @@ func apply_resolution() -> void:
 	var window_position: Vector2i = (screen_size - current_resolution) / 2
 	DisplayServer.window_set_position(window_position)
 
+	# 解像度変更後、入力バッファをクリアして古い入力イベントを削除
+	Input.flush_buffered_events()
+
 func apply_all_display_settings() -> void:
 	## すべてのディスプレイ設定を適用する
 	apply_window_mode()
@@ -123,6 +146,14 @@ func apply_all_display_settings() -> void:
 
 func save_settings() -> void:
 	## 設定をファイルに保存
+	# ディレクトリの存在を確認し、必要なら作成
+	var dir_path: String = SETTINGS_PATH.get_base_dir()
+	if not DirAccess.dir_exists_absolute(dir_path):
+		var dir_result: Error = DirAccess.make_dir_recursive_absolute(dir_path)
+		if dir_result != OK:
+			push_error("Failed to create settings directory: %s (Error: %d)" % [dir_path, dir_result])
+			return
+
 	var settings_data: Dictionary = {
 		"language": current_language,
 		"window_mode": window_mode,
@@ -139,7 +170,7 @@ func save_settings() -> void:
 		file.store_string(json_string)
 		file.close()
 	else:
-		push_error("Failed to save settings to: " + SETTINGS_PATH)
+		push_error("Failed to save settings to: %s (Error: %d)" % [SETTINGS_PATH, FileAccess.get_open_error()])
 
 func load_settings() -> void:
 	## 設定をファイルから読み込む
@@ -152,7 +183,7 @@ func _load_from_json() -> void:
 	## JSON形式から設定を読み込む
 	var file: FileAccess = FileAccess.open(SETTINGS_PATH, FileAccess.READ)
 	if not file:
-		push_error("Failed to open settings file: " + SETTINGS_PATH)
+		push_error("Failed to open settings file: %s (Error: %d)" % [SETTINGS_PATH, FileAccess.get_open_error()])
 		save_settings()
 		return
 
@@ -162,26 +193,27 @@ func _load_from_json() -> void:
 	var json: JSON = JSON.new()
 	var error: Error = json.parse(json_string)
 	if error != OK:
-		push_error("Failed to parse settings JSON: " + json.get_error_message())
+		push_error("Failed to parse settings JSON at line %d: %s" % [json.get_error_line(), json.get_error_message()])
+		push_error("Using default settings and resaving")
 		save_settings()
 		return
 
 	var settings_data: Dictionary = json.data
 	if not settings_data is Dictionary:
-		push_error("Invalid settings data format")
+		push_error("Invalid settings data format (expected Dictionary)")
 		save_settings()
 		return
 
-	current_language = settings_data.get("language", Language.JAPANESE)
+	# 設定を読み込み（デフォルト値を使用）
+	current_language = settings_data.get("language", DEFAULT_LANGUAGE)
+	window_mode = settings_data.get("window_mode", DEFAULT_WINDOW_MODE)
 
-	# ディスプレイ設定を読み込み
-	window_mode = settings_data.get("window_mode", WindowMode.WINDOWED)
-
+	# 解像度の読み込み
 	var resolution_data: Dictionary = settings_data.get("resolution", {})
 	if resolution_data.has("width") and resolution_data.has("height"):
 		current_resolution = Vector2i(resolution_data["width"], resolution_data["height"])
 	else:
-		current_resolution = Vector2i(1920, 1080)
+		current_resolution = DEFAULT_RESOLUTION
 
 	# ディスプレイ設定を適用
 	apply_all_display_settings()
