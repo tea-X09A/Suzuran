@@ -88,11 +88,60 @@ var down_state: DownState
 ## プレイヤーの初期化（ノード準備完了時）
 func _ready() -> void:
 	add_to_group("player")
-	condition = initial_condition
+
+	# セーブデータからのロード時かどうかをチェック
+	var is_loading_from_save: bool = SaveLoadManager and not SaveLoadManager.pending_player_data.is_empty()
+
+	if is_loading_from_save:
+		# セーブデータから復元
+		_restore_from_pending_data()
+	else:
+		# 通常の初期化
+		condition = initial_condition
+
 	GRAVITY = ProjectSettings.get_setting("physics/2d/default_gravity")
 	_initialize_systems()
 	_initialize_ui()
 	_connect_debug_signals()
+
+	# ロード時の後処理
+	if is_loading_from_save:
+		# スプライトの向きを復元（システム初期化後に適用）
+		sprite_2d.flip_h = direction_x > 0.0
+		_update_box_positions(sprite_2d.flip_h)
+
+		# pending_player_dataをクリア
+		SaveLoadManager.pending_player_data.clear()
+		# フェードインを開始（完了を待つ）
+		await TransitionManager.fade_in()
+
+## pending_player_dataから状態を復元（_ready()で使用）
+func _restore_from_pending_data() -> void:
+	var state: Dictionary = SaveLoadManager.pending_player_data
+
+	# HPを復元
+	if state.has("hp_count"):
+		hp_count = state["hp_count"]
+
+	# EPを復元
+	if state.has("current_ep"):
+		current_ep = state["current_ep"]
+
+	# 弾数を復元
+	if state.has("ammo_count"):
+		ammo_count = state["ammo_count"]
+
+	# 変身状態を復元
+	if state.has("condition"):
+		condition = state["condition"]
+
+	# 座標を復元
+	if state.has("position_x") and state.has("position_y"):
+		position = Vector2(state["position_x"], state["position_y"])
+
+	# 向きを復元（@onready変数は_ready()後に利用可能なため、ここでは変数のみ保存）
+	if state.has("direction_x"):
+		direction_x = state["direction_x"]
 
 ## クリーンアップ処理
 func _exit_tree() -> void:
@@ -438,7 +487,10 @@ func get_player_state() -> Dictionary:
 		"hp_count": hp_count,
 		"current_ep": current_ep,
 		"ammo_count": ammo_count,
-		"condition": condition
+		"condition": condition,
+		"position_x": position.x,
+		"position_y": position.y,
+		"direction_x": direction_x
 	}
 
 ## プレイヤーの状態を復元（シーン遷移後に使用）
@@ -468,6 +520,16 @@ func restore_player_state(state: Dictionary) -> void:
 	# 変身状態を復元
 	if state.has("condition"):
 		condition = state["condition"]
+
+	# 座標を復元
+	if state.has("position_x") and state.has("position_y"):
+		position = Vector2(state["position_x"], state["position_y"])
+
+	# 向きを復元
+	if state.has("direction_x"):
+		direction_x = state["direction_x"]
+		sprite_2d.flip_h = direction_x > 0.0
+		_update_box_positions(sprite_2d.flip_h)
 
 # ======================== デバッグ機能 ========================
 

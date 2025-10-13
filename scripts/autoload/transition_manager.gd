@@ -8,6 +8,9 @@ extends CanvasLayer
 var is_transitioning: bool = false
 
 func _ready() -> void:
+	# ポーズ中でも動作するように設定
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
 	# 初期状態は完全に透明
 	color_rect.modulate.a = 0.0
 	color_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -15,9 +18,6 @@ func _ready() -> void:
 func change_scene(target_scene_path: String, direction: String = "") -> void:
 	if is_transitioning:
 		return
-
-	is_transitioning = true
-	color_rect.mouse_filter = Control.MOUSE_FILTER_STOP
 
 	# シーン遷移前にプレイヤーの状態を保存（一時的に保持）
 	var saved_player_state: Dictionary = {}
@@ -111,10 +111,11 @@ func change_scene(target_scene_path: String, direction: String = "") -> void:
 	if player:
 		player.auto_move_mode = false
 
-	color_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	is_transitioning = false
-
 func fade_out(direction: String = "") -> void:
+	# トランジション開始（入力を無効化）
+	is_transitioning = true
+	color_rect.mouse_filter = Control.MOUSE_FILTER_STOP
+
 	# 方向に応じてアニメーションを選択
 	var animation_name: String = "fade_out"
 
@@ -135,6 +136,10 @@ func fade_in() -> void:
 	color_rect.position = Vector2.ZERO
 	animation_player.play("fade_in")
 	await animation_player.animation_finished
+
+	# トランジション完了（入力を有効化）
+	color_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	is_transitioning = false
 
 ## 指定した型のノードをシーンツリーから探す汎用関数
 func _find_node_of_type(node_type: Variant) -> Node:

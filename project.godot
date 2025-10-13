@@ -24,6 +24,7 @@ MenuManager="*res://scripts/autoload/menu_manager.gd"
 TransitionManager="*res://scenes/ui/transition_manager.tscn"
 DebugManager="*res://scripts/autoload/debug_manager.gd"
 KunaiPoolManager="*res://scripts/autoload/kunai_pool_manager.gd"
+SaveLoadManager="*res://scripts/autoload/save_load_manager.gd"
 
 [display]
 

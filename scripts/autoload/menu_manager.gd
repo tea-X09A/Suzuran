@@ -21,8 +21,10 @@ var language_menu: LanguageSettingsMenu = null
 var gamepad_menu: GamepadSettingsMenu = null
 var keyboard_menu: KeyboardSettingsMenu = null
 var game_menu: GameSettingsMenu = null
+var save_menu: SaveLoadMenu = null
+var load_menu: SaveLoadMenu = null
 
-var current_menu_state: String = "main"  # "main", "settings", "volume", "display", "language", "gamepad", "keyboard", "game"
+var current_menu_state: String = "main"  # "main", "settings", "volume", "display", "language", "gamepad", "keyboard", "game", "save", "load"
 var menu_just_opened: bool = false  # メニューが開いたばかりのフレームかどうか
 
 # メニューボタンのテキスト（多言語対応）
@@ -73,6 +75,10 @@ func _ready() -> void:
 	PauseManager.pause_state_changed.connect(_on_pause_state_changed)
 
 func _process(_delta: float) -> void:
+	# トランジション中は入力を無効化
+	if TransitionManager and TransitionManager.is_transitioning:
+		return
+
 	# メニューが表示されていない場合
 	if not pause_menu.visible:
 		# ESCキーでメニューを開く
@@ -161,6 +167,14 @@ func _build_submenus() -> void:
 	game_menu = GameSettingsMenu.new(weakref(self))
 	game_menu.build_menu(center_container)
 
+	# セーブメニュー
+	save_menu = SaveLoadMenu.new(weakref(self), SaveLoadMenu.Mode.SAVE)
+	save_menu.build_menu(center_container)
+
+	# ロードメニュー
+	load_menu = SaveLoadMenu.new(weakref(self), SaveLoadMenu.Mode.LOAD)
+	load_menu.build_menu(center_container)
+
 func _create_menu_button(text_key: String, callback: Callable) -> void:
 	"""メニューボタンを作成（text_keyは多言語テキストのキー）"""
 	var button: Button = Button.new()
@@ -183,6 +197,9 @@ func _process_menu_input(_delta: float) -> void:
 				PauseManager.resume_game()
 			"settings":
 				# 設定メニューからメインメニューに戻る
+				show_main_menu()
+			"save", "load":
+				# セーブ/ロードメニューからメインメニューに戻る
 				show_main_menu()
 			_:
 				# サブメニュー（volume, display, language, gamepad, keyboard, game）から設定メニューに戻る
@@ -236,6 +253,10 @@ func _get_current_submenu() -> BaseSettingsMenu:
 			return keyboard_menu
 		"game":
 			return game_menu
+		"save":
+			return save_menu
+		"load":
+			return load_menu
 	return null
 
 func _update_button_selection() -> void:
@@ -323,6 +344,12 @@ func show_submenu(submenu_name: String) -> void:
 		"game":
 			submenu = game_menu
 			current_menu_state = "game"
+		"save":
+			submenu = save_menu
+			current_menu_state = "save"
+		"load":
+			submenu = load_menu
+			current_menu_state = "load"
 
 	if submenu:
 		submenu.show_menu()
@@ -343,15 +370,19 @@ func _hide_all_submenus() -> void:
 		keyboard_menu.hide_menu()
 	if game_menu:
 		game_menu.hide_menu()
+	if save_menu:
+		save_menu.hide_menu()
+	if load_menu:
+		load_menu.hide_menu()
 
 # ボタンのコールバック関数
 func _on_save_pressed() -> void:
-	print("セーブ機能（未実装）")
-	# TODO: セーブ機能を実装
+	"""セーブメニューを表示"""
+	show_submenu("save")
 
 func _on_load_pressed() -> void:
-	print("ロード機能（未実装）")
-	# TODO: ロード機能を実装
+	"""ロードメニューを表示"""
+	show_submenu("load")
 
 func _on_settings_pressed() -> void:
 	"""設定メニューを表示"""
@@ -392,3 +423,7 @@ func _on_pause_state_changed(is_paused: bool) -> void:
 		# ゲームが再開したらメニューを非表示
 		pause_menu.visible = false
 		menu_just_opened = false
+
+func get_parent_container() -> Control:
+	"""親コンテナを取得（サブメニューが確認ダイアログなどを配置する際に使用）"""
+	return center_container
