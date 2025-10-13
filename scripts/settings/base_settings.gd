@@ -70,6 +70,13 @@ func hide_menu() -> void:
 func is_handling_input() -> bool:
 	return false
 
+## MenuManagerが入力をスキップすべきかどうかをチェック
+func should_skip_input() -> bool:
+	var manager = menu_manager_ref.get_ref()
+	if manager and manager.window_mode_skip_frames > 0:
+		return true
+	return false
+
 ## 入力処理（サブクラスでオーバーライド可能）
 func process_input(_delta: float) -> void:
 	if not menu_container or not menu_container.visible:

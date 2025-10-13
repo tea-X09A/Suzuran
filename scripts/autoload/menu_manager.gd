@@ -26,6 +26,8 @@ var load_menu: SaveLoadMenu = null
 
 var current_menu_state: String = "main"  # "main", "settings", "volume", "display", "language", "gamepad", "keyboard", "game", "save", "load"
 var menu_just_opened: bool = false  # メニューが開いたばかりのフレームかどうか
+var window_mode_just_changed: bool = false  # ウィンドウモードが変更された直後かどうか
+var window_mode_skip_frames: int = 0  # ウィンドウモード変更後にスキップするフレーム数
 
 # メニューボタンのテキスト（多言語対応）
 const MENU_TEXTS: Dictionary = {
@@ -64,6 +66,9 @@ func _ready() -> void:
 	# 言語変更シグナルに接続
 	GameSettings.language_changed.connect(_on_language_changed)
 
+	# ウィンドウモード変更シグナルに接続
+	GameSettings.window_mode_changed.connect(_on_window_mode_changed)
+
 	# 初期化時に現在の言語設定でUIを更新
 	_update_menu_button_texts()
 
@@ -89,6 +94,14 @@ func _process(_delta: float) -> void:
 	if menu_just_opened:
 		menu_just_opened = false
 		return
+
+	# ウィンドウモードが変更された直後は、ui_menu_acceptのみをスキップ
+	# 方向キーやキャンセルは即座に処理できるようにする
+	if window_mode_skip_frames > 0:
+		window_mode_skip_frames -= 1
+		if Input.is_action_just_pressed("ui_menu_accept"):
+			return
+		# 他の入力（方向キー、キャンセル）は通常通り処理
 
 	# メニュー入力処理
 	_process_menu_input(_delta)
@@ -438,3 +451,7 @@ func _on_pause_state_changed(is_paused: bool) -> void:
 		# ゲームが再開したらメニューを非表示
 		pause_menu.visible = false
 		menu_just_opened = false
+
+func _on_window_mode_changed(_is_fullscreen: bool) -> void:
+	"""ウィンドウモードが変更されたときに呼ばれるコールバック"""
+	window_mode_skip_frames = 1  # 1フレームスキップで十分
