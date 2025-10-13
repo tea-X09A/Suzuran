@@ -13,7 +13,7 @@ enum Language {
 var current_language: Language = Language.JAPANESE
 
 # 設定ファイルのパス
-const SETTINGS_PATH: String = "user://game_settings.cfg"
+const SETTINGS_PATH: String = "user://system.json"
 
 # 言語名のマッピング
 const LANGUAGE_NAMES: Dictionary = {
@@ -22,7 +22,6 @@ const LANGUAGE_NAMES: Dictionary = {
 }
 
 func _ready() -> void:
-	# 設定を読み込む
 	load_settings()
 
 func set_language(language: Language) -> void:
@@ -49,21 +48,48 @@ func toggle_language() -> void:
 
 func save_settings() -> void:
 	"""設定をファイルに保存"""
-	var config: ConfigFile = ConfigFile.new()
-	config.set_value("settings", "language", current_language)
+	var settings_data: Dictionary = {
+		"language": current_language
+	}
 
-	var error: Error = config.save(SETTINGS_PATH)
-	if error != OK:
-		push_error("Failed to save settings: " + str(error))
+	var json_string: String = JSON.stringify(settings_data, "\t")
+
+	var file: FileAccess = FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
+	if file:
+		file.store_string(json_string)
+		file.close()
+	else:
+		push_error("Failed to save settings to: " + SETTINGS_PATH)
 
 func load_settings() -> void:
 	"""設定をファイルから読み込む"""
-	var config: ConfigFile = ConfigFile.new()
-	var error: Error = config.load(SETTINGS_PATH)
-
-	if error == OK:
-		# 設定ファイルが存在する場合、言語を読み込む
-		current_language = config.get_value("settings", "language", Language.JAPANESE)
+	if FileAccess.file_exists(SETTINGS_PATH):
+		_load_from_json()
 	else:
-		# 設定ファイルが存在しない場合、デフォルト設定で保存
 		save_settings()
+
+func _load_from_json() -> void:
+	"""JSON形式から設定を読み込む"""
+	var file: FileAccess = FileAccess.open(SETTINGS_PATH, FileAccess.READ)
+	if not file:
+		push_error("Failed to open settings file: " + SETTINGS_PATH)
+		save_settings()
+		return
+
+	var json_string: String = file.get_as_text()
+	file.close()
+
+	var json: JSON = JSON.new()
+	var error: Error = json.parse(json_string)
+	if error != OK:
+		push_error("Failed to parse settings JSON: " + json.get_error_message())
+		save_settings()
+		return
+
+	var settings_data: Dictionary = json.data
+	if not settings_data is Dictionary:
+		push_error("Invalid settings data format")
+		save_settings()
+		return
+
+	current_language = settings_data.get("language", Language.JAPANESE)

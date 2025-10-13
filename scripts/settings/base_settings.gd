@@ -39,10 +39,15 @@ func _init_styles() -> void:
 	# 非選択のスタイル
 	_normal_style = StyleBoxFlat.new()
 	_normal_style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
-	_normal_style.border_width_left = 0
-	_normal_style.border_width_top = 0
-	_normal_style.border_width_right = 0
-	_normal_style.border_width_bottom = 0
+	_normal_style.border_width_left = 3
+	_normal_style.border_width_top = 3
+	_normal_style.border_width_right = 3
+	_normal_style.border_width_bottom = 3
+	_normal_style.border_color = Color(1.0, 1.0, 1.0, 0.0)  # 透明の枠線（レイアウトずれ防止）
+	_normal_style.corner_radius_top_left = 8
+	_normal_style.corner_radius_top_right = 8
+	_normal_style.corner_radius_bottom_left = 8
+	_normal_style.corner_radius_bottom_right = 8
 
 ## メニューを構築（サブクラスでオーバーライド）
 func build_menu(_parent_container: Control) -> void:
@@ -59,6 +64,11 @@ func show_menu() -> void:
 func hide_menu() -> void:
 	if menu_container:
 		menu_container.visible = false
+
+## サブメニューが独自に入力を処理する必要があるかどうか
+## （例: 確認ダイアログ表示中など、親の入力処理をスキップしたい場合）
+func is_handling_input() -> bool:
+	return false
 
 ## 入力処理（サブクラスでオーバーライド可能）
 func process_input(_delta: float) -> void:
@@ -94,10 +104,13 @@ func _update_button_selection() -> void:
 			buttons[i].add_theme_stylebox_override("normal", _selected_style)
 			buttons[i].add_theme_stylebox_override("hover", _selected_style)
 			buttons[i].add_theme_stylebox_override("pressed", _selected_style)
+			buttons[i].add_theme_stylebox_override("focus", _selected_style)
 		else:
 			buttons[i].add_theme_stylebox_override("normal", _normal_style)
 			buttons[i].add_theme_stylebox_override("hover", _normal_style)
 			buttons[i].add_theme_stylebox_override("pressed", _normal_style)
+			buttons[i].add_theme_stylebox_override("focus", _normal_style)
+			buttons[i].add_theme_stylebox_override("disabled", _normal_style)
 
 ## ボタンを作成してコンテナに追加
 func _create_button(label_text: String, callback: Callable) -> Button:

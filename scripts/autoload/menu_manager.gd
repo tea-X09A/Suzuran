@@ -37,10 +37,6 @@ const MENU_TEXTS: Dictionary = {
 		"ja": "ロード",
 		"en": "Load"
 	},
-	"settings": {
-		"ja": "設定",
-		"en": "Settings"
-	},
 	"resume": {
 		"ja": "ゲームに戻る",
 		"en": "Resume"
@@ -129,7 +125,8 @@ func _build_main_menu() -> void:
 	# メニューボタンを作成
 	_create_menu_button("save", _on_save_pressed)
 	_create_menu_button("load", _on_load_pressed)
-	_create_menu_button("settings", _on_settings_pressed)
+	var settings_button = _create_menu_button("settings", _on_settings_pressed)
+	settings_button.text = "設定 / Settings"  # 設定は固定表記
 	_create_menu_button("resume", _on_resume_pressed)
 	_create_menu_button("title", _on_title_pressed)
 
@@ -175,7 +172,7 @@ func _build_submenus() -> void:
 	load_menu = SaveLoadMenu.new(weakref(self), SaveLoadMenu.Mode.LOAD)
 	load_menu.build_menu(center_container)
 
-func _create_menu_button(text_key: String, callback: Callable) -> void:
+func _create_menu_button(text_key: String, callback: Callable) -> Button:
 	"""メニューボタンを作成（text_keyは多言語テキストのキー）"""
 	var button: Button = Button.new()
 	button.set_meta("text_key", text_key)  # ボタンに識別用のメタデータを保存
@@ -186,9 +183,20 @@ func _create_menu_button(text_key: String, callback: Callable) -> void:
 	button.pressed.connect(callback)
 	menu_container.add_child(button)
 	buttons.append(button)
-	_set_button_text(button, text_key)
+	# 設定ボタンは固定表記なので、テキスト設定をスキップ
+	if text_key != "settings":
+		_set_button_text(button, text_key)
+	return button
 
 func _process_menu_input(_delta: float) -> void:
+	# サブメニューが独自に入力を処理する必要がある場合は、先に処理を委譲
+	# （例: 確認ダイアログ表示中など）
+	if current_menu_state != "main":
+		var current_submenu: BaseSettingsMenu = _get_current_submenu()
+		if current_submenu and current_submenu.is_handling_input():
+			_process_submenu_input()
+			return
+
 	# ESC/Xキーでキャンセル
 	if Input.is_action_just_pressed("ui_menu_cancel") or Input.is_action_just_pressed("pause"):
 		match current_menu_state:
@@ -279,13 +287,18 @@ func _update_button_selection() -> void:
 			buttons[i].add_theme_stylebox_override("hover", selected_style)
 			buttons[i].add_theme_stylebox_override("pressed", selected_style)
 		else:
-			# 非選択ボタンは通常スタイル（透明背景）
+			# 非選択ボタンは通常スタイル（透明背景、透明枠線でレイアウトずれ防止）
 			var normal_style: StyleBoxFlat = StyleBoxFlat.new()
 			normal_style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
-			normal_style.border_width_left = 0
-			normal_style.border_width_top = 0
-			normal_style.border_width_right = 0
-			normal_style.border_width_bottom = 0
+			normal_style.border_width_left = 3
+			normal_style.border_width_top = 3
+			normal_style.border_width_right = 3
+			normal_style.border_width_bottom = 3
+			normal_style.border_color = Color(1.0, 1.0, 1.0, 0.0)  # 透明の枠線
+			normal_style.corner_radius_top_left = 8
+			normal_style.corner_radius_top_right = 8
+			normal_style.corner_radius_bottom_left = 8
+			normal_style.corner_radius_bottom_right = 8
 			buttons[i].add_theme_stylebox_override("normal", normal_style)
 			buttons[i].add_theme_stylebox_override("hover", normal_style)
 			buttons[i].add_theme_stylebox_override("pressed", normal_style)
@@ -411,6 +424,8 @@ func _update_menu_button_texts() -> void:
 	for button in buttons:
 		if button.has_meta("text_key"):
 			var text_key: String = button.get_meta("text_key")
+			if text_key == "settings":
+				continue  # 設定ボタンは固定表記
 			_set_button_text(button, text_key)
 
 func _on_language_changed(_new_language: String) -> void:
@@ -423,7 +438,3 @@ func _on_pause_state_changed(is_paused: bool) -> void:
 		# ゲームが再開したらメニューを非表示
 		pause_menu.visible = false
 		menu_just_opened = false
-
-func get_parent_container() -> Control:
-	"""親コンテナを取得（サブメニューが確認ダイアログなどを配置する際に使用）"""
-	return center_container
