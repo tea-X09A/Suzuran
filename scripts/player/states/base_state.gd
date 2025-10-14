@@ -91,7 +91,16 @@ func _get_direction_keys() -> Dictionary:
 func is_dash_input() -> bool:
 	var shift_pressed: bool = Input.is_physical_key_pressed(KEY_SHIFT)
 	var keys: Dictionary = _get_direction_keys()
-	return shift_pressed and (keys.right or keys.left)
+	var has_movement: bool = keys.right or keys.left
+
+	# 常時ダッシュがONの場合：方向キーのみでrun、shift+方向キーでwalk
+	# 常時ダッシュがOFFの場合：方向キーのみでwalk、shift+方向キーでrun
+	if GameSettings.always_dash:
+		# 常時ダッシュON：shiftが押されていない場合にrunとして扱う
+		return not shift_pressed and has_movement
+	else:
+		# 常時ダッシュOFF：従来通り（shiftが押されている場合にrun）
+		return shift_pressed and has_movement
 ## パラメータ取得
 func get_parameter(key: String) -> Variant:
 	return PlayerParameters.get_parameter(condition, key)

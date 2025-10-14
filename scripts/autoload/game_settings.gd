@@ -7,6 +7,9 @@ signal language_changed(new_language: String)
 signal window_mode_changed(is_fullscreen: bool)
 signal resolution_changed(new_resolution: Vector2i)
 
+# ゲーム設定が変更された時に発信するシグナル
+signal always_dash_changed(is_enabled: bool)
+
 # サポートする言語
 enum Language {
 	JAPANESE,
@@ -26,6 +29,7 @@ const SETTINGS_PATH: String = "user://system.json"
 const DEFAULT_LANGUAGE: Language = Language.JAPANESE
 const DEFAULT_WINDOW_MODE: WindowMode = WindowMode.WINDOWED
 const DEFAULT_RESOLUTION: Vector2i = Vector2i(1920, 1080)
+const DEFAULT_ALWAYS_DASH: bool = false
 
 # 言語名のマッピング
 const LANGUAGE_NAMES: Dictionary = {
@@ -39,6 +43,9 @@ var current_language: Language = DEFAULT_LANGUAGE
 # ディスプレイ設定
 var window_mode: WindowMode = DEFAULT_WINDOW_MODE
 var current_resolution: Vector2i = DEFAULT_RESOLUTION
+
+# ゲーム設定
+var always_dash: bool = DEFAULT_ALWAYS_DASH
 
 func _ready() -> void:
 	load_settings()
@@ -144,6 +151,19 @@ func apply_all_display_settings() -> void:
 	apply_window_mode()
 	apply_resolution()
 
+func set_always_dash(enabled: bool) -> void:
+	## 常時ダッシュのON/OFFを設定する
+	_change_setting(
+		always_dash,
+		enabled,
+		func(val): always_dash = val,
+		func(): always_dash_changed.emit(enabled)
+	)
+
+func toggle_always_dash() -> void:
+	## 常時ダッシュを切り替える（ON <-> OFF）
+	set_always_dash(not always_dash)
+
 func save_settings() -> void:
 	## 設定をファイルに保存
 	# ディレクトリの存在を確認し、必要なら作成
@@ -160,7 +180,8 @@ func save_settings() -> void:
 		"resolution": {
 			"width": current_resolution.x,
 			"height": current_resolution.y
-		}
+		},
+		"always_dash": always_dash
 	}
 
 	var json_string: String = JSON.stringify(settings_data, "\t")
@@ -214,6 +235,9 @@ func _load_from_json() -> void:
 		current_resolution = Vector2i(resolution_data["width"], resolution_data["height"])
 	else:
 		current_resolution = DEFAULT_RESOLUTION
+
+	# ゲーム設定の読み込み
+	always_dash = settings_data.get("always_dash", DEFAULT_ALWAYS_DASH)
 
 	# ディスプレイ設定を適用
 	apply_all_display_settings()
