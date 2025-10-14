@@ -33,16 +33,17 @@ const STANDARD_RESOLUTIONS: Array[Vector2i] = [
 	Vector2i(3840, 2160)
 ]
 
-# 無効なボタンのスタイル（ロード画面の無効スロットと同じ色）
-var _disabled_style: StyleBoxFlat = null
+# 解像度管理
+var current_resolution_index: int = 0
+var left_arrow_label: Label = null
+var right_arrow_label: Label = null
+var resolution_button: Button = null
 
-# ナビゲーション管理（行と列）
-var navigation_rows: Array[Array] = []  # Array[Array[int]] - 各行のボタンインデックス
-var current_row: int = 0
-var current_column: int = 0
-
-# フルスクリーンボタンのインデックス
+# フルスクリーン管理
 var fullscreen_button_index: int = 0
+var fullscreen_left_arrow: Label = null
+var fullscreen_right_arrow: Label = null
+var fullscreen_button: Button = null
 
 # テキスト更新用の参照
 var resolution_section_label: Label = null
@@ -50,63 +51,11 @@ var fullscreen_section_label: Label = null
 
 func _init(manager_ref: WeakRef) -> void:
 	super._init(manager_ref)
-	_init_disabled_style()
-
-## 無効なボタン用のスタイルを初期化
-func _init_disabled_style() -> void:
-	_disabled_style = StyleBoxFlat.new()
-	_disabled_style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
-	_disabled_style.border_width_left = 3
-	_disabled_style.border_width_top = 3
-	_disabled_style.border_width_right = 3
-	_disabled_style.border_width_bottom = 3
-	_disabled_style.border_color = Color(1.0, 1.0, 1.0, 0.0)
-	_disabled_style.corner_radius_top_left = 8
-	_disabled_style.corner_radius_top_right = 8
-	_disabled_style.corner_radius_bottom_left = 8
-	_disabled_style.corner_radius_bottom_right = 8
-
-## ボタンに統一スタイルを適用
-func _apply_button_style(button: Button, style: StyleBoxFlat, include_disabled: bool = false) -> void:
-	button.add_theme_stylebox_override("normal", style)
-	button.add_theme_stylebox_override("hover", style)
-	button.add_theme_stylebox_override("pressed", style)
-	button.add_theme_stylebox_override("focus", style)
-	if include_disabled:
-		button.add_theme_stylebox_override("disabled", style)
+	use_2d_navigation = true
 
 ## 現在の言語コードを取得
 func _get_language_code() -> String:
 	return "ja" if GameSettings.current_language == GameSettings.Language.JAPANESE else "en"
-
-## disabledボタンをスキップして有効なボタンを探す
-## direction: 1=右/下, -1=左/上
-func _skip_disabled_buttons(row_buttons: Array, direction: int = 1) -> void:
-	var attempts: int = 0
-	var row_size: int = row_buttons.size()
-
-	while current_column < row_size and buttons[row_buttons[current_column]].disabled and attempts < row_size:
-		current_column += direction
-
-		# 範囲外チェックとラップアラウンド
-		if direction > 0:
-			if current_column >= row_size:
-				current_column = 0
-		else:
-			if current_column < 0:
-				current_column = row_size - 1
-
-		attempts += 1
-
-## 中央寄せのHBoxContainerを作成
-func _create_centered_hbox(separation: int = 20) -> HBoxContainer:
-	var container: HBoxContainer = HBoxContainer.new()
-	if separation > 0:
-		container.add_theme_constant_override("separation", separation)
-	container.alignment = BoxContainer.ALIGNMENT_CENTER
-	container.process_mode = Node.PROCESS_MODE_ALWAYS
-	menu_container.add_child(container)
-	return container
 
 ## セクションラベルを作成
 func _create_section_label(text_key: String) -> Label:
@@ -120,6 +69,9 @@ func _create_section_label(text_key: String) -> Label:
 
 func build_menu(parent_container: Control) -> void:
 	## 画面設定メニューを構築
+	# navigation_rowsを初期化（再構築時の重複を防ぐ）
+	navigation_rows.clear()
+
 	# VBoxContainerを作成
 	menu_container = VBoxContainer.new()
 	menu_container.add_theme_constant_override("separation", 20)
@@ -127,30 +79,27 @@ func build_menu(parent_container: Control) -> void:
 	menu_container.visible = false
 	parent_container.add_child(menu_container)
 
-
 	# 解像度セクション
 	resolution_section_label = _create_section_label("resolution_section")
 
-	# 解像度ボタンコンテナ（横並び）
-	var resolution_container: HBoxContainer = _create_centered_hbox(20)
+	# 現在の解像度からインデックスを初期化
+	var current_res: Vector2i = GameSettings.current_resolution
+	for i in range(STANDARD_RESOLUTIONS.size()):
+		if STANDARD_RESOLUTIONS[i] == current_res:
+			current_resolution_index = i
+			break
 
-	var resolution_row_indices: Array[int] = []
-
-	# すべての標準解像度ボタンを作成（利用可能かどうかに関わらず）
-	var available_resolutions: Array[Vector2i] = GameSettings.get_available_resolutions()
-	for resolution in STANDARD_RESOLUTIONS:
-		var is_available: bool = resolution in available_resolutions
-		var button_text: String = "%d×%d" % [resolution.x, resolution.y]
-		var button: Button = _create_horizontal_button(button_text, func(): _on_resolution_selected(resolution), resolution_container)
-
-		# 利用不可能な解像度はdisabled状態にする
-		if not is_available:
-			button.disabled = true
-			button.add_theme_color_override("font_disabled_color", Color(0.875, 0.875, 0.875, 0.5))
-
-		resolution_row_indices.append(buttons.size() - 1)
-
+	# 解像度セレクターを作成
+	var resolution_text: String = "%d×%d" % [STANDARD_RESOLUTIONS[current_resolution_index].x, STANDARD_RESOLUTIONS[current_resolution_index].y]
+	var resolution_selector: ArrowSelector = _create_arrow_selector(resolution_text, func(): pass)
+	resolution_button = resolution_selector.button
+	left_arrow_label = resolution_selector.left_arrow
+	right_arrow_label = resolution_selector.right_arrow
+	var resolution_row_indices: Array[int] = [buttons.size() - 1]
 	navigation_rows.append(resolution_row_indices)
+
+	# 矢印の表示を更新
+	_update_resolution_arrows()
 
 	# スペーサー
 	_create_spacer()
@@ -158,18 +107,17 @@ func build_menu(parent_container: Control) -> void:
 	# フルスクリーンセクション
 	fullscreen_section_label = _create_section_label("fullscreen_section")
 
-	# フルスクリーンボタンコンテナ（横並び）
-	var fullscreen_container: HBoxContainer = _create_centered_hbox(20)
-
 	# フルスクリーンボタンの位置を記録
 	fullscreen_button_index = buttons.size()
-	var fullscreen_row_indices: Array[int] = []
 
-	# フルスクリーントグルボタン（現在の状態の逆を表示）
-	_create_horizontal_button("", _on_fullscreen_toggle, fullscreen_container)
-	fullscreen_row_indices.append(buttons.size() - 1)
+	# フルスクリーンセレクターを作成
+	var fullscreen_selector: ArrowSelector = _create_arrow_selector("", func(): pass)
+	fullscreen_button = fullscreen_selector.button
+	fullscreen_left_arrow = fullscreen_selector.left_arrow
+	fullscreen_right_arrow = fullscreen_selector.right_arrow
 	_update_fullscreen_button_text()
 
+	var fullscreen_row_indices: Array[int] = [buttons.size() - 1]
 	navigation_rows.append(fullscreen_row_indices)
 
 	# スペーサー
@@ -184,19 +132,6 @@ func build_menu(parent_container: Control) -> void:
 	if GameSettings.language_changed.is_connected(_on_language_changed):
 		GameSettings.language_changed.disconnect(_on_language_changed)
 	GameSettings.language_changed.connect(_on_language_changed)
-
-## 横並びボタンを作成（HBoxContainerに追加）
-func _create_horizontal_button(label_text: String, callback: Callable, container: HBoxContainer) -> Button:
-	var button: Button = Button.new()
-	button.text = label_text
-	button.custom_minimum_size = Vector2(350, 60)
-	button.add_theme_font_size_override("font_size", 32)
-	button.focus_mode = Control.FOCUS_NONE
-	button.process_mode = Node.PROCESS_MODE_ALWAYS
-	button.pressed.connect(callback)
-	container.add_child(button)
-	buttons.append(button)
-	return button
 
 func _update_text(label: Label, key: String) -> void:
 	## ラベルテキストを多言語対応で更新
@@ -223,148 +158,106 @@ func show_menu() -> void:
 	# フルスクリーンボタンのテキストを更新
 	_update_fullscreen_button_text()
 
-	# 現在の解像度に応じて選択状態を設定
+	# 現在の解像度インデックスを更新
 	var current_res: Vector2i = GameSettings.current_resolution
+	for i in range(STANDARD_RESOLUTIONS.size()):
+		if STANDARD_RESOLUTIONS[i] == current_res:
+			current_resolution_index = i
+			break
+
+	# 解像度ボタンのテキストと矢印を更新
+	if resolution_button:
+		resolution_button.text = "%d×%d" % [current_res.x, current_res.y]
+	_update_resolution_arrows()
 
 	# 解像度行から開始
 	current_row = 0
 	current_column = 0
 
-	# 現在の解像度がどの列にあるか探す
-	for i in range(STANDARD_RESOLUTIONS.size()):
-		if STANDARD_RESOLUTIONS[i] == current_res:
-			current_column = i
-			break
-
 	_update_2d_selection()
 
-## 2D選択状態を更新（行と列を考慮）
-func _update_2d_selection() -> void:
-	if current_row >= navigation_rows.size():
-		current_row = navigation_rows.size() - 1
-	if current_row < 0:
-		current_row = 0
-
-	var row_buttons: Array = navigation_rows[current_row]
-	if current_column >= row_buttons.size():
-		current_column = row_buttons.size() - 1
-	if current_column < 0:
-		current_column = 0
-
-	var selected_index: int = row_buttons[current_column]
-	current_selection = selected_index
-
-	# すべてのボタンのスタイルを更新
-	for i in range(buttons.size()):
-		var button: Button = buttons[i]
-		if button.disabled:
-			# 無効なボタンは専用スタイル
-			_apply_button_style(button, _disabled_style, true)
-		elif i == current_selection:
-			# 選択中のスタイル
-			_apply_button_style(button, _selected_style)
-		else:
-			# 通常のスタイル
-			_apply_button_style(button, _normal_style)
-
-## 入力処理（2D navigation対応）
-func process_input(_delta: float) -> void:
-	if not menu_container or not menu_container.visible:
+## 解像度の矢印表示を更新
+func _update_resolution_arrows() -> void:
+	if not left_arrow_label or not right_arrow_label:
 		return
 
-	# ESC/Xキーでキャンセル
-	if Input.is_action_just_pressed("ui_menu_cancel"):
-		_on_back_pressed()
+	var available_resolutions: Array[Vector2i] = GameSettings.get_available_resolutions()
+
+	# 左に移動可能かチェック
+	var can_go_left: bool = false
+	if current_resolution_index > 0:
+		var left_resolution: Vector2i = STANDARD_RESOLUTIONS[current_resolution_index - 1]
+		can_go_left = left_resolution in available_resolutions
+
+	# 右に移動可能かチェック
+	var can_go_right: bool = false
+	if current_resolution_index < STANDARD_RESOLUTIONS.size() - 1:
+		var right_resolution: Vector2i = STANDARD_RESOLUTIONS[current_resolution_index + 1]
+		can_go_right = right_resolution in available_resolutions
+
+	_update_arrow_visibility(left_arrow_label, right_arrow_label, can_go_left, can_go_right)
+
+## 解像度を変更
+func _change_resolution(direction: int) -> void:
+	# 新しいインデックスを計算
+	var new_index: int = current_resolution_index + direction
+
+	# 範囲チェック
+	if new_index < 0 or new_index >= STANDARD_RESOLUTIONS.size():
 		return
 
-	# 上キーで行を上に移動
-	if Input.is_action_just_pressed("ui_menu_up"):
-		var old_row: int = current_row
-		current_row -= 1
-		if current_row < 0:
-			current_row = navigation_rows.size() - 1  # 一番下へ
+	# 利用可能な解像度かチェック
+	var available_resolutions: Array[Vector2i] = GameSettings.get_available_resolutions()
+	var new_resolution: Vector2i = STANDARD_RESOLUTIONS[new_index]
 
-		var old_row_buttons: Array = navigation_rows[old_row]
-		var new_row_buttons: Array = navigation_rows[current_row]
+	if new_resolution not in available_resolutions:
+		return
 
-		# 1列から複数列に移動する場合、中央の列に移動
-		if new_row_buttons.size() > old_row_buttons.size() and old_row_buttons.size() == 1:
-			current_column = floori(new_row_buttons.size() / 2.0)
-		elif current_column >= new_row_buttons.size():
-			current_column = new_row_buttons.size() - 1
+	# インデックスを更新
+	current_resolution_index = new_index
 
-		_skip_disabled_buttons(new_row_buttons, 1)
-		_update_2d_selection()
+	# フルスクリーンがONの場合は、先にOFFにする
+	if GameSettings.window_mode == GameSettings.WindowMode.FULLSCREEN:
+		GameSettings.set_window_mode(GameSettings.WindowMode.WINDOWED)
+		# フルスクリーンボタンのテキストを更新
+		_update_fullscreen_button_text()
 
-	# 下キーで行を下に移動
-	elif Input.is_action_just_pressed("ui_menu_down"):
-		var old_row: int = current_row
-		current_row += 1
-		if current_row >= navigation_rows.size():
-			current_row = 0  # 一番上へ
+	# 解像度を適用
+	GameSettings.set_resolution(new_resolution)
 
-		var old_row_buttons: Array = navigation_rows[old_row]
-		var new_row_buttons: Array = navigation_rows[current_row]
+	# ボタンのテキストを更新
+	if resolution_button:
+		resolution_button.text = "%d×%d" % [new_resolution.x, new_resolution.y]
 
-		# 複数列から1列に移動する場合、列を0にリセット
-		if new_row_buttons.size() < old_row_buttons.size() and new_row_buttons.size() == 1:
-			current_column = 0
-		elif current_column >= new_row_buttons.size():
-			current_column = new_row_buttons.size() - 1
+	# 矢印の表示を更新
+	_update_resolution_arrows()
 
-		_skip_disabled_buttons(new_row_buttons, 1)
-		_update_2d_selection()
+## 左キー入力処理（基底クラスからオーバーライド）
+func _handle_left_input() -> void:
+	# 解像度行にいる場合は解像度を変更
+	if current_row == 0:
+		_change_resolution(-1)
+	# フルスクリーン行にいる場合はフルスクリーンを切り替え
+	elif current_row == 1:
+		_toggle_fullscreen()
 
-	# 左キー（A or ←）で列を左に移動
-	elif Input.is_action_just_pressed("ui_menu_left"):
-		var row_buttons: Array = navigation_rows[current_row]
-		if row_buttons.size() > 1:  # 複数のボタンがある行でのみ
-			current_column -= 1
-			if current_column < 0:
-				current_column = row_buttons.size() - 1  # 右端へ
-			# disabledボタンをスキップ
-			_skip_disabled_buttons(row_buttons, -1)
-			_update_2d_selection()
+## 右キー入力処理（基底クラスからオーバーライド）
+func _handle_right_input() -> void:
+	# 解像度行にいる場合は解像度を変更
+	if current_row == 0:
+		_change_resolution(1)
+	# フルスクリーン行にいる場合はフルスクリーンを切り替え
+	elif current_row == 1:
+		_toggle_fullscreen()
 
-	# 右キー（D or →）で列を右に移動
-	elif Input.is_action_just_pressed("ui_menu_right"):
-		var row_buttons: Array = navigation_rows[current_row]
-		if row_buttons.size() > 1:  # 複数のボタンがある行でのみ
-			current_column += 1
-			if current_column >= row_buttons.size():
-				current_column = 0  # 左端へ
-			# disabledボタンをスキップ
-			_skip_disabled_buttons(row_buttons, 1)
-			_update_2d_selection()
-
-	# Z/Enterキーで決定
-	elif Input.is_action_just_pressed("ui_menu_accept"):
-		if current_selection >= 0 and current_selection < buttons.size():
-			var button: Button = buttons[current_selection]
-			if not button.disabled:
-				button.emit_signal("pressed")
-
-func _on_resolution_selected(resolution: Vector2i) -> void:
-	## 解像度を選択
-	GameSettings.set_resolution(resolution)
-
-func _on_fullscreen_toggle() -> void:
-	## フルスクリーンを切り替え
+## フルスクリーンを切り替え
+func _toggle_fullscreen() -> void:
 	if GameSettings.window_mode == GameSettings.WindowMode.FULLSCREEN:
 		GameSettings.set_window_mode(GameSettings.WindowMode.WINDOWED)
 	else:
 		GameSettings.set_window_mode(GameSettings.WindowMode.FULLSCREEN)
 	# ボタンのテキストを更新
 	_update_fullscreen_button_text()
-
-## 戻るボタンを作成（幅を解像度ボタンと同じ350pxにする）
-func _create_back_button() -> void:
-	# HBoxContainerを作成して中央寄せ（解像度ボタンと同じレイアウト）
-	var back_container: HBoxContainer = _create_centered_hbox(0)
-
-	# backボタンを作成（_create_horizontal_buttonを再利用）
-	back_button = _create_horizontal_button("", _on_back_pressed, back_container)
-	_update_back_button_text()
 
 func _on_language_changed(_new_language: String) -> void:
 	## 言語が変更されたときに呼ばれるコールバック
@@ -381,5 +274,15 @@ func cleanup() -> void:
 	## クリーンアップ処理
 	if GameSettings.language_changed.is_connected(_on_language_changed):
 		GameSettings.language_changed.disconnect(_on_language_changed)
-	navigation_rows.clear()
+
+	# ArrowSelectorコンポーネントの参照をクリア
+	left_arrow_label = null
+	right_arrow_label = null
+	resolution_button = null
+	fullscreen_left_arrow = null
+	fullscreen_right_arrow = null
+	fullscreen_button = null
+	resolution_section_label = null
+	fullscreen_section_label = null
+
 	super.cleanup()
