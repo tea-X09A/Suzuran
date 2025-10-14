@@ -39,9 +39,9 @@ const MENU_TEXTS: Dictionary = {
 		"ja": "ロード",
 		"en": "Load"
 	},
-	"resume": {
+	"continue": {
 		"ja": "ゲームに戻る",
-		"en": "Resume"
+		"en": "Continue"
 	},
 	"title": {
 		"ja": "タイトルに戻る",
@@ -140,8 +140,15 @@ func _build_main_menu() -> void:
 	_create_menu_button("load", _on_load_pressed)
 	var settings_button = _create_menu_button("settings", _on_settings_pressed)
 	settings_button.text = "設定 / Settings"  # 設定は固定表記
-	_create_menu_button("resume", _on_resume_pressed)
 	_create_menu_button("title", _on_title_pressed)
+
+	# スペーサーを追加（サブメニューの戻るボタンと同じ距離）
+	var spacer: Control = Control.new()
+	spacer.custom_minimum_size = Vector2(0, 40)
+	spacer.process_mode = Node.PROCESS_MODE_ALWAYS
+	menu_container.add_child(spacer)
+
+	_create_menu_button("continue", _on_continue_pressed)
 
 	# 最初のボタンを選択状態にする
 	if buttons.size() > 0:
@@ -414,7 +421,7 @@ func _on_settings_pressed() -> void:
 	"""設定メニューを表示"""
 	show_settings_menu()
 
-func _on_resume_pressed() -> void:
+func _on_continue_pressed() -> void:
 	PauseManager.resume_game()
 
 func _on_title_pressed() -> void:
