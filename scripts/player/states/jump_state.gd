@@ -37,7 +37,7 @@ func physics_update(delta: float) -> void:
 	var hold_acceleration: float = get_parameter("jump_hold_acceleration")
 
 	# 長押し受付時間内かつボタンが押され続けており、上昇中の場合
-	if elapsed_time < hold_duration and Input.is_action_pressed("jump") and player.velocity.y < 0.0:
+	if elapsed_time < hold_duration and is_jump_pressed() and player.velocity.y < 0.0:
 		# 上昇速度を増加
 		player.velocity.y = max(player.velocity.y + hold_acceleration * delta, max_jump_velocity)
 

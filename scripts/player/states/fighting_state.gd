@@ -49,8 +49,9 @@ func initialize_state() -> void:
 		# 前の状態がRUNだった場合はボーナス速度を追加
 		if is_running_state():
 			forward_speed += get_parameter("move_fighting_run_bonus")
-		# 現在の向きに応じて前進
-		player.velocity.x = player.direction_x * forward_speed
+		# Sprite2Dの向きに応じて前進（shootingと同じ方法で統一）
+		var direction: float = 1.0 if sprite_2d.flip_h else -1.0
+		player.velocity.x = direction * forward_speed
 
 	# アニメーション完了シグナルの接続（重複接続を防止）
 	if animation_player and not animation_player.animation_finished.is_connected(_on_fighting_animation_finished):

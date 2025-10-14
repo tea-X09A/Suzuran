@@ -37,8 +37,8 @@ const MENU_TEXTS: Dictionary = {
 		"en": "Reset to Default"
 	},
 	"waiting": {
-		"ja": "キーを押してください...",
-		"en": "Press a key..."
+		"ja": "キー入力待ち",
+		"en": "Press a key"
 	}
 }
 
@@ -220,17 +220,7 @@ func process_input(_delta: float) -> void:
 
 func _handle_key_input() -> void:
 	"""キー入力待ち状態での入力処理"""
-	# ESCキーでキャンセル
-	if Input.is_action_just_pressed("ui_menu_cancel"):
-		is_waiting_for_input = false
-		var old_action: String = waiting_action
-		waiting_action = ""
-		# ボタンのテキストを元に戻す
-		if old_action in key_buttons:
-			_update_key_button_text(old_action)
-		return
-
-	# 主要なキーコードをチェック
+	# 主要なキーコードを定義
 	var key_codes: Array[int] = [
 		# アルファベット
 		KEY_A, KEY_B, KEY_C, KEY_D, KEY_E, KEY_F, KEY_G, KEY_H, KEY_I, KEY_J,
@@ -247,13 +237,47 @@ func _handle_key_input() -> void:
 		KEY_BRACKETLEFT, KEY_BRACKETRIGHT, KEY_BACKSLASH, KEY_MINUS, KEY_EQUAL
 	]
 
+	# キーバインド設定中はESCキーのみキャンセル（Xキーはキーバインド対象）
+	var esc_pressed_now: bool = Input.is_physical_key_pressed(KEY_ESCAPE)
+	var esc_pressed_before: bool = previous_key_states.get(KEY_ESCAPE, false)
+	if esc_pressed_now and not esc_pressed_before:
+		is_waiting_for_input = false
+		var old_action: String = waiting_action
+		waiting_action = ""
+		# ボタンのテキストを元に戻す
+		if old_action in key_buttons:
+			_update_key_button_text(old_action)
+		# キー状態を更新（次回用）
+		previous_key_states[KEY_ESCAPE] = esc_pressed_now
+		_update_key_states(key_codes)
+		return
+
 	for keycode in key_codes:
 		var is_pressed_now: bool = Input.is_physical_key_pressed(keycode)
 		var was_pressed_before: bool = previous_key_states.get(keycode, false)
 
 		# just_pressed検出
 		if is_pressed_now and not was_pressed_before:
-			# キーバインドを設定
+			# 重複チェック
+			if _is_key_duplicated(waiting_action, keycode):
+				# 重複フィードバック：ボタンを0.5秒間赤く表示
+				var button: Button = key_buttons[waiting_action]
+				if menu_container:
+					var tween: Tween = menu_container.create_tween()
+					tween.tween_property(button, "modulate", Color.RED, 0.0)
+					tween.tween_property(button, "modulate", Color.WHITE, 0.5)
+
+				# 重複している場合は設定せず、入力待ち状態を解除
+				is_waiting_for_input = false
+				var old_action: String = waiting_action
+				waiting_action = ""
+				# ボタンのテキストを元に戻す
+				_update_key_button_text(old_action)
+				# キー状態を更新
+				_update_key_states(key_codes)
+				return
+
+			# 重複していない場合のみキーバインドを設定
 			GameSettings.set_key_binding(waiting_action, keycode)
 
 			# ボタンのテキストを更新
@@ -268,12 +292,24 @@ func _handle_key_input() -> void:
 			return
 
 	# キー状態を更新（次フレーム用）
+	previous_key_states[KEY_ESCAPE] = Input.is_physical_key_pressed(KEY_ESCAPE)
 	_update_key_states(key_codes)
 
 func _update_key_states(key_codes: Array[int]) -> void:
 	"""キー状態を更新（次フレーム用）"""
 	for keycode in key_codes:
 		previous_key_states[keycode] = Input.is_physical_key_pressed(keycode)
+
+func _is_key_duplicated(action: String, keycode: int) -> bool:
+	"""指定されたキーが他のアクションに既に割り当てられているかチェック"""
+	for other_action in ACTION_ORDER:
+		# 自分自身のアクションはスキップ
+		if other_action == action:
+			continue
+		# 他のアクションに同じキーが割り当てられているかチェック
+		if GameSettings.get_key_binding(other_action) == keycode:
+			return true
+	return false
 
 func is_handling_input() -> bool:
 	"""独自の入力処理を行っているかどうか"""

@@ -234,7 +234,7 @@ func _physics_process(delta: float) -> void:
 	is_grounded = is_on_floor()
 
 	# squat状態キャンセルフラグの管理（squatボタンが離されたらフラグをクリア）
-	if squat_was_cancelled and not Input.is_action_pressed("squat"):
+	if squat_was_cancelled and current_state and not current_state.is_squat_input():
 		squat_was_cancelled = false
 
 	# ダウン状態の復帰無敵時間を常に更新（全ステートで有効）
