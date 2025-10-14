@@ -9,6 +9,7 @@ signal resolution_changed(new_resolution: Vector2i)
 
 # ゲーム設定が変更された時に発信するシグナル
 signal always_dash_changed(is_enabled: bool)
+signal key_bindings_changed()
 
 # サポートする言語
 enum Language {
@@ -31,6 +32,17 @@ const DEFAULT_WINDOW_MODE: WindowMode = WindowMode.WINDOWED
 const DEFAULT_RESOLUTION: Vector2i = Vector2i(1920, 1080)
 const DEFAULT_ALWAYS_DASH: bool = false
 
+# デフォルトキーバインド設定
+const DEFAULT_KEY_BINDINGS: Dictionary = {
+	"fight": KEY_F,
+	"shooting": KEY_C,
+	"jump": KEY_W,
+	"left": KEY_A,
+	"right": KEY_D,
+	"squat": KEY_S,
+	"run": KEY_SHIFT
+}
+
 # 言語名のマッピング
 const LANGUAGE_NAMES: Dictionary = {
 	Language.JAPANESE: "Japanese",
@@ -46,6 +58,9 @@ var current_resolution: Vector2i = DEFAULT_RESOLUTION
 
 # ゲーム設定
 var always_dash: bool = DEFAULT_ALWAYS_DASH
+
+# キーバインド設定
+var key_bindings: Dictionary = DEFAULT_KEY_BINDINGS.duplicate()
 
 func _ready() -> void:
 	load_settings()
@@ -164,6 +179,29 @@ func toggle_always_dash() -> void:
 	## 常時ダッシュを切り替える（ON <-> OFF）
 	set_always_dash(not always_dash)
 
+func set_key_binding(action: String, key: int) -> void:
+	## キーバインドを設定する
+	if key_bindings.has(action) and key_bindings[action] != key:
+		key_bindings[action] = key
+		save_settings()
+		key_bindings_changed.emit()
+
+func get_key_binding(action: String) -> int:
+	## キーバインドを取得する
+	return key_bindings.get(action, KEY_NONE)
+
+func reset_key_bindings() -> void:
+	## キーバインドをデフォルトに戻す
+	key_bindings = DEFAULT_KEY_BINDINGS.duplicate()
+	save_settings()
+	key_bindings_changed.emit()
+
+func get_key_name(key: int) -> String:
+	## キーコードからキー名を取得する
+	if key == KEY_NONE:
+		return "None"
+	return OS.get_keycode_string(key)
+
 func save_settings() -> void:
 	## 設定をファイルに保存
 	# ディレクトリの存在を確認し、必要なら作成
@@ -181,7 +219,8 @@ func save_settings() -> void:
 			"width": current_resolution.x,
 			"height": current_resolution.y
 		},
-		"always_dash": always_dash
+		"always_dash": always_dash,
+		"key_bindings": key_bindings
 	}
 
 	var json_string: String = JSON.stringify(settings_data, "\t")
@@ -238,6 +277,13 @@ func _load_from_json() -> void:
 
 	# ゲーム設定の読み込み
 	always_dash = settings_data.get("always_dash", DEFAULT_ALWAYS_DASH)
+
+	# キーバインド設定の読み込み
+	var saved_key_bindings: Dictionary = settings_data.get("key_bindings", {})
+	if saved_key_bindings.is_empty():
+		key_bindings = DEFAULT_KEY_BINDINGS.duplicate()
+	else:
+		key_bindings = saved_key_bindings.duplicate()
 
 	# ディスプレイ設定を適用
 	apply_all_display_settings()

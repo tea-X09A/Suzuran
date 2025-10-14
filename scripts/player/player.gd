@@ -257,6 +257,10 @@ func _physics_process(delta: float) -> void:
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
 
+	# 次フレーム用にキー状態を記録（フレームの最後に更新）
+	if current_state:
+		current_state.update_key_states()
+
 ## アニメーション状態更新
 func update_animation_state(state_name: String) -> void:
 	var state_machine: AnimationNodeStateMachinePlayback = animation_tree.get("parameters/playback")

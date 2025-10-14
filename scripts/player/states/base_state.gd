@@ -13,6 +13,10 @@ var condition: Player.PLAYER_CONDITION
 ## 空中での慣性保持用の水平速度（jump/fall状態で使用）
 var initial_horizontal_speed: float = 0.0
 
+# ======================== キー入力状態管理 ========================
+## 前フレームのキー状態を記録（just_pressed検出用）
+var previous_key_states: Dictionary = {}
+
 # ======================== 初期化処理 ========================
 func _init(player_instance: CharacterBody2D) -> void:
 	player = player_instance
@@ -39,6 +43,14 @@ func physics_update(_delta: float) -> void:
 	# 各Stateで実装: 状態固有の物理演算処理
 	pass
 
+## キー状態の更新（毎フレーム呼び出す）
+func update_key_states() -> void:
+	# 全てのアクションキーの現在の状態を記録
+	var actions: Array[String] = ["fight", "shooting", "jump", "left", "right", "squat", "run"]
+	for action in actions:
+		var key: int = GameSettings.get_key_binding(action)
+		previous_key_states[key] = Input.is_physical_key_pressed(key)
+
 # ======================== 入力処理メソッド ========================
 
 ## 入力処理のメイン関数（各ステートで実装）
@@ -48,15 +60,22 @@ func handle_input(_delta: float) -> void:
 
 ## ジャンプ入力チェック（基本実装、各ステートでオーバーライド可能）
 func can_jump() -> bool:
-	return player.is_grounded and Input.is_action_just_pressed("jump")
+	var jump_key: int = GameSettings.get_key_binding("jump")
+	var is_pressed_now: bool = Input.is_physical_key_pressed(jump_key)
+	var was_pressed_before: bool = previous_key_states.get(jump_key, false)
+	return player.is_grounded and is_pressed_now and not was_pressed_before
 
 ## しゃがみ入力チェック（継続用）
 func is_squat_input() -> bool:
-	return Input.is_action_pressed("squat")
+	var squat_key: int = GameSettings.get_key_binding("squat")
+	return Input.is_physical_key_pressed(squat_key)
 
 ## しゃがみ入力チェック（遷移用：押された瞬間のみ）
 func is_squat_just_pressed() -> bool:
-	return Input.is_action_just_pressed("squat")
+	var squat_key: int = GameSettings.get_key_binding("squat")
+	var is_pressed_now: bool = Input.is_physical_key_pressed(squat_key)
+	var was_pressed_before: bool = previous_key_states.get(squat_key, false)
+	return is_pressed_now and not was_pressed_before
 
 ## squat状態への遷移可否チェック（キャンセルフラグを考慮）
 func can_transition_to_squat() -> bool:
@@ -72,35 +91,44 @@ func can_transition_to_squat() -> bool:
 
 ## 攻撃入力チェック
 func is_fight_input() -> bool:
-	return Input.is_action_just_pressed("fight") or Input.is_action_just_pressed("fighting_01")
+	var fight_key: int = GameSettings.get_key_binding("fight")
+	var is_pressed_now: bool = Input.is_physical_key_pressed(fight_key)
+	var was_pressed_before: bool = previous_key_states.get(fight_key, false)
+	return is_pressed_now and not was_pressed_before
 
 ## 射撃入力チェック
 func is_shooting_input() -> bool:
-	return Input.is_action_just_pressed("shooting") or Input.is_action_just_pressed("shooting_01")
+	var shooting_key: int = GameSettings.get_key_binding("shooting")
+	var is_pressed_now: bool = Input.is_physical_key_pressed(shooting_key)
+	var was_pressed_before: bool = previous_key_states.get(shooting_key, false)
+	return is_pressed_now and not was_pressed_before
 
 # ======================== 共通ユーティリティメソッド ========================
 
 ## 物理キーから方向キー入力を取得（内部ヘルパー）
 func _get_direction_keys() -> Dictionary:
+	var right_key: int = GameSettings.get_key_binding("right")
+	var left_key: int = GameSettings.get_key_binding("left")
 	return {
-		"right": Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT),
-		"left": Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT)
+		"right": Input.is_physical_key_pressed(right_key),
+		"left": Input.is_physical_key_pressed(left_key)
 	}
 
 ## ダッシュ入力チェック（物理キー検出版：確実な動作）
 func is_dash_input() -> bool:
-	var shift_pressed: bool = Input.is_physical_key_pressed(KEY_SHIFT)
+	var run_key: int = GameSettings.get_key_binding("run")
+	var run_pressed: bool = Input.is_physical_key_pressed(run_key)
 	var keys: Dictionary = _get_direction_keys()
 	var has_movement: bool = keys.right or keys.left
 
-	# 常時ダッシュがONの場合：方向キーのみでrun、shift+方向キーでwalk
-	# 常時ダッシュがOFFの場合：方向キーのみでwalk、shift+方向キーでrun
+	# 常時ダッシュがONの場合：方向キーのみでrun、run_key+方向キーでwalk
+	# 常時ダッシュがOFFの場合：方向キーのみでwalk、run_key+方向キーでrun
 	if GameSettings.always_dash:
-		# 常時ダッシュON：shiftが押されていない場合にrunとして扱う
-		return not shift_pressed and has_movement
+		# 常時ダッシュON：runキーが押されていない場合にrunとして扱う
+		return not run_pressed and has_movement
 	else:
-		# 常時ダッシュOFF：従来通り（shiftが押されている場合にrun）
-		return shift_pressed and has_movement
+		# 常時ダッシュOFF：従来通り（runキーが押されている場合にrun）
+		return run_pressed and has_movement
 ## パラメータ取得
 func get_parameter(key: String) -> Variant:
 	return PlayerParameters.get_parameter(condition, key)
