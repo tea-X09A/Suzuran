@@ -161,6 +161,19 @@ func _on_key_button_pressed(action: String) -> void:
 	var lang_code: String = "ja" if GameSettings.current_language == GameSettings.Language.JAPANESE else "en"
 	button.text = MENU_TEXTS["waiting"][lang_code]
 
+	# 現在のキー状態を記録（決定キーの誤検出を防ぐため）
+	var key_codes: Array[int] = [
+		KEY_A, KEY_B, KEY_C, KEY_D, KEY_E, KEY_F, KEY_G, KEY_H, KEY_I, KEY_J,
+		KEY_K, KEY_L, KEY_M, KEY_N, KEY_O, KEY_P, KEY_Q, KEY_R, KEY_S, KEY_T,
+		KEY_U, KEY_V, KEY_W, KEY_X, KEY_Y, KEY_Z,
+		KEY_0, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9,
+		KEY_SPACE, KEY_SHIFT, KEY_CTRL, KEY_ALT, KEY_TAB, KEY_BACKSPACE,
+		KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN,
+		KEY_COMMA, KEY_PERIOD, KEY_SLASH, KEY_SEMICOLON, KEY_APOSTROPHE,
+		KEY_BRACKETLEFT, KEY_BRACKETRIGHT, KEY_BACKSLASH, KEY_MINUS, KEY_EQUAL
+	]
+	_update_key_states(key_codes)
+
 func _on_reset_pressed() -> void:
 	"""リセットボタンが押されたときの処理"""
 	GameSettings.reset_key_bindings()
@@ -247,9 +260,6 @@ func _handle_key_input() -> void:
 		# ボタンのテキストを元に戻す
 		if old_action in key_buttons:
 			_update_key_button_text(old_action)
-		# キー状態を更新（次回用）
-		previous_key_states[KEY_ESCAPE] = esc_pressed_now
-		_update_key_states(key_codes)
 		return
 
 	for keycode in key_codes:
@@ -273,8 +283,6 @@ func _handle_key_input() -> void:
 				waiting_action = ""
 				# ボタンのテキストを元に戻す
 				_update_key_button_text(old_action)
-				# キー状態を更新
-				_update_key_states(key_codes)
 				return
 
 			# 重複していない場合のみキーバインドを設定
@@ -287,8 +295,6 @@ func _handle_key_input() -> void:
 			is_waiting_for_input = false
 			waiting_action = ""
 
-			# キー状態を更新
-			_update_key_states(key_codes)
 			return
 
 	# キー状態を更新（次フレーム用）

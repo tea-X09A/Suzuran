@@ -198,7 +198,8 @@ func can_jump() -> bool:
 
 ## ダウン状態でのジャンプ入力処理
 func try_recovery_jump() -> bool:
-	if Input.is_action_just_pressed("jump") and can_jump():
+	var jump_key: int = GameSettings.get_key_binding("jump")
+	if _check_physical_key_just_pressed(jump_key, ALWAYS_ALLOWED_JUMP_KEYS, "jump") and can_jump():
 		handle_recovery_jump()
 		return true
 	return false

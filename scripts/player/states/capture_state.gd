@@ -72,7 +72,8 @@ func physics_update(delta: float) -> void:
 ## 入力処理（jumpのみでキャンセル可能）
 func handle_input(_delta: float) -> void:
 	# ジャンプ入力でCAPTURE状態をキャンセル
-	if Input.is_action_just_pressed("jump"):
+	var jump_key: int = GameSettings.get_key_binding("jump")
+	if _check_physical_key_just_pressed(jump_key, ALWAYS_ALLOWED_JUMP_KEYS, "jump"):
 		# 復帰時に無敵状態を付与
 		_apply_recovery_invincibility()
 

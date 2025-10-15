@@ -10,6 +10,7 @@ signal resolution_changed(new_resolution: Vector2i)
 # ゲーム設定が変更された時に発信するシグナル
 signal always_dash_changed(is_enabled: bool)
 signal key_bindings_changed()
+signal gamepad_bindings_changed()
 
 # サポートする言語
 enum Language {
@@ -43,6 +44,17 @@ const DEFAULT_KEY_BINDINGS: Dictionary = {
 	"run": KEY_SHIFT
 }
 
+# デフォルトゲームパッドバインド設定
+const DEFAULT_GAMEPAD_BINDINGS: Dictionary = {
+	"fight": JOY_BUTTON_Y,            # Button 3 (Y/Triangle)
+	"shooting": JOY_BUTTON_X,         # Button 2 (X/Square)
+	"jump": JOY_BUTTON_A,             # Button 0 (A/Cross)
+	"left": JOY_BUTTON_DPAD_LEFT,    # Button 13 (D-Pad Left)
+	"right": JOY_BUTTON_DPAD_RIGHT,  # Button 14 (D-Pad Right)
+	"squat": JOY_BUTTON_DPAD_DOWN,   # Button 12 (D-Pad Down)
+	"run": JOY_BUTTON_RIGHT_SHOULDER # Button 10 (RB/R1)
+}
+
 # 言語名のマッピング
 const LANGUAGE_NAMES: Dictionary = {
 	Language.JAPANESE: "Japanese",
@@ -61,6 +73,9 @@ var always_dash: bool = DEFAULT_ALWAYS_DASH
 
 # キーバインド設定
 var key_bindings: Dictionary = DEFAULT_KEY_BINDINGS.duplicate()
+
+# ゲームパッドバインド設定
+var gamepad_bindings: Dictionary = DEFAULT_GAMEPAD_BINDINGS.duplicate()
 
 func _ready() -> void:
 	load_settings()
@@ -202,6 +217,63 @@ func get_key_name(key: int) -> String:
 		return "None"
 	return OS.get_keycode_string(key)
 
+func set_gamepad_binding(action: String, button: int) -> void:
+	## ゲームパッドバインドを設定する
+	if gamepad_bindings.has(action) and gamepad_bindings[action] != button:
+		gamepad_bindings[action] = button
+		save_settings()
+		gamepad_bindings_changed.emit()
+
+func get_gamepad_binding(action: String) -> int:
+	## ゲームパッドバインドを取得する
+	return gamepad_bindings.get(action, JOY_BUTTON_INVALID)
+
+func reset_gamepad_bindings() -> void:
+	## ゲームパッドバインドをデフォルトに戻す
+	gamepad_bindings = DEFAULT_GAMEPAD_BINDINGS.duplicate()
+	save_settings()
+	gamepad_bindings_changed.emit()
+
+func get_gamepad_button_name(button: int) -> String:
+	## ゲームパッドボタンコードからボタン名を取得する
+	if button == JOY_BUTTON_INVALID:
+		return "None"
+
+	# 標準的なゲームパッドボタン名のマッピング
+	match button:
+		JOY_BUTTON_A:
+			return "A"
+		JOY_BUTTON_B:
+			return "B"
+		JOY_BUTTON_X:
+			return "X"
+		JOY_BUTTON_Y:
+			return "Y"
+		JOY_BUTTON_BACK:
+			return "Back"
+		JOY_BUTTON_GUIDE:
+			return "Guide"
+		JOY_BUTTON_START:
+			return "Start"
+		JOY_BUTTON_LEFT_STICK:
+			return "L3"
+		JOY_BUTTON_RIGHT_STICK:
+			return "R3"
+		JOY_BUTTON_LEFT_SHOULDER:
+			return "LB"
+		JOY_BUTTON_RIGHT_SHOULDER:
+			return "RB"
+		JOY_BUTTON_DPAD_UP:
+			return "D-Up"
+		JOY_BUTTON_DPAD_DOWN:
+			return "D-Down"
+		JOY_BUTTON_DPAD_LEFT:
+			return "D-Left"
+		JOY_BUTTON_DPAD_RIGHT:
+			return "D-Right"
+		_:
+			return "Button " + str(button)
+
 func save_settings() -> void:
 	## 設定をファイルに保存
 	# ディレクトリの存在を確認し、必要なら作成
@@ -220,7 +292,8 @@ func save_settings() -> void:
 			"height": current_resolution.y
 		},
 		"always_dash": always_dash,
-		"key_bindings": key_bindings
+		"key_bindings": key_bindings,
+		"gamepad_bindings": gamepad_bindings
 	}
 
 	var json_string: String = JSON.stringify(settings_data, "\t")
@@ -284,6 +357,13 @@ func _load_from_json() -> void:
 		key_bindings = DEFAULT_KEY_BINDINGS.duplicate()
 	else:
 		key_bindings = saved_key_bindings.duplicate()
+
+	# ゲームパッドバインド設定の読み込み
+	var saved_gamepad_bindings: Dictionary = settings_data.get("gamepad_bindings", {})
+	if saved_gamepad_bindings.is_empty():
+		gamepad_bindings = DEFAULT_GAMEPAD_BINDINGS.duplicate()
+	else:
+		gamepad_bindings = saved_gamepad_bindings.duplicate()
 
 	# ディスプレイ設定を適用
 	apply_all_display_settings()
