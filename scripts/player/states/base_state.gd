@@ -69,22 +69,27 @@ func update_key_states() -> void:
 
 # ======================== 入力処理ヘルパーメソッド ========================
 
-## 物理キー入力チェック（カスタムキー + 常に許可キー）
-func _check_physical_key_pressed(custom_key: int, always_allowed_keys: Array[int]) -> bool:
+## 物理キー入力チェック（カスタムキー + 常に許可キー + デフォルトアクション）
+func _check_physical_key_pressed(custom_key: int, always_allowed_keys: Array[int], action_name: String = "") -> bool:
+	# カスタムキーチェック
 	if custom_key != KEY_NONE:
-		# カスタムキーが設定されている場合
 		if Input.is_physical_key_pressed(custom_key):
 			return true
 		# 常に許可キーもチェック
 		for key in always_allowed_keys:
 			if Input.is_physical_key_pressed(key):
 				return true
-		return false
-	# カスタムキーが設定されていない場合はfalseを返す（デフォルトアクションを使用）
+
+	# デフォルトアクション（ジョイスティック入力を含む）を常にチェック
+	if action_name != "":
+		if Input.is_action_pressed(action_name):
+			return true
+
 	return false
 
-## 物理キー just_pressed チェック（カスタムキー + 常に許可キー）
-func _check_physical_key_just_pressed(custom_key: int, always_allowed_keys: Array[int]) -> bool:
+## 物理キー just_pressed チェック（カスタムキー + 常に許可キー + デフォルトアクション）
+func _check_physical_key_just_pressed(custom_key: int, always_allowed_keys: Array[int], action_name: String = "") -> bool:
+	# カスタムキーチェック
 	if custom_key != KEY_NONE:
 		# カスタムキーのjust_pressed検出
 		var is_pressed_now: bool = Input.is_physical_key_pressed(custom_key)
@@ -98,8 +103,12 @@ func _check_physical_key_just_pressed(custom_key: int, always_allowed_keys: Arra
 			was_pressed_before = previous_key_states.get(key, false)
 			if is_pressed_now and not was_pressed_before:
 				return true
-		return false
-	# カスタムキーが設定されていない場合はfalseを返す（デフォルトアクションを使用）
+
+	# デフォルトアクション（ジョイスティック入力を含む）を常にチェック
+	if action_name != "":
+		if Input.is_action_just_pressed(action_name):
+			return true
+
 	return false
 
 # ======================== 入力処理メソッド ========================
@@ -115,46 +124,26 @@ func can_jump() -> bool:
 		return false
 
 	var jump_key: int = GameSettings.get_key_binding("jump")
-
-	# カスタムキーが設定されている場合
-	if jump_key != KEY_NONE:
-		return _check_physical_key_just_pressed(jump_key, ALWAYS_ALLOWED_JUMP_KEYS)
-
-	# カスタムキーが設定されていない場合はデフォルトアクションを使用
-	return Input.is_action_just_pressed("jump")
+	# カスタムキーとデフォルトアクション（ジョイスティック含む）の両方をチェック
+	return _check_physical_key_just_pressed(jump_key, ALWAYS_ALLOWED_JUMP_KEYS, "jump")
 
 ## ジャンプ入力チェック（継続用：長押し検出）
 func is_jump_pressed() -> bool:
 	var jump_key: int = GameSettings.get_key_binding("jump")
-
-	# カスタムキーが設定されている場合
-	if jump_key != KEY_NONE:
-		return _check_physical_key_pressed(jump_key, ALWAYS_ALLOWED_JUMP_KEYS)
-
-	# カスタムキーが設定されていない場合はデフォルトアクションを使用
-	return Input.is_action_pressed("jump")
+	# カスタムキーとデフォルトアクション（ジョイスティック含む）の両方をチェック
+	return _check_physical_key_pressed(jump_key, ALWAYS_ALLOWED_JUMP_KEYS, "jump")
 
 ## しゃがみ入力チェック（継続用）
 func is_squat_input() -> bool:
 	var squat_key: int = GameSettings.get_key_binding("squat")
-
-	# カスタムキーが設定されている場合
-	if squat_key != KEY_NONE:
-		return _check_physical_key_pressed(squat_key, ALWAYS_ALLOWED_SQUAT_KEYS)
-
-	# カスタムキーが設定されていない場合はデフォルトアクションを使用
-	return Input.is_action_pressed("squat")
+	# カスタムキーとデフォルトアクション（ジョイスティック含む）の両方をチェック
+	return _check_physical_key_pressed(squat_key, ALWAYS_ALLOWED_SQUAT_KEYS, "squat")
 
 ## しゃがみ入力チェック（遷移用：押された瞬間のみ）
 func is_squat_just_pressed() -> bool:
 	var squat_key: int = GameSettings.get_key_binding("squat")
-
-	# カスタムキーが設定されている場合
-	if squat_key != KEY_NONE:
-		return _check_physical_key_just_pressed(squat_key, ALWAYS_ALLOWED_SQUAT_KEYS)
-
-	# カスタムキーが設定されていない場合はデフォルトアクションを使用
-	return Input.is_action_just_pressed("squat")
+	# カスタムキーとデフォルトアクション（ジョイスティック含む）の両方をチェック
+	return _check_physical_key_just_pressed(squat_key, ALWAYS_ALLOWED_SQUAT_KEYS, "squat")
 
 ## squat状態への遷移可否チェック（キャンセルフラグを考慮）
 func can_transition_to_squat() -> bool:
@@ -167,26 +156,28 @@ func can_transition_to_squat() -> bool:
 func is_fight_input() -> bool:
 	var fight_key: int = GameSettings.get_key_binding("fight")
 
-	# カスタムキーが設定されている場合（fight には常に許可すべきキーはない）
+	# カスタムキーチェック
 	if fight_key != KEY_NONE:
 		var is_pressed_now: bool = Input.is_physical_key_pressed(fight_key)
 		var was_pressed_before: bool = previous_key_states.get(fight_key, false)
-		return is_pressed_now and not was_pressed_before
+		if is_pressed_now and not was_pressed_before:
+			return true
 
-	# カスタムキーが設定されていない場合はデフォルトアクションを使用
+	# デフォルトアクション（ジョイスティック入力を含む）を常にチェック
 	return Input.is_action_just_pressed("fight")
 
 ## 射撃入力チェック
 func is_shooting_input() -> bool:
 	var shooting_key: int = GameSettings.get_key_binding("shooting")
 
-	# カスタムキーが設定されている場合（shooting には常に許可すべきキーはない）
+	# カスタムキーチェック
 	if shooting_key != KEY_NONE:
 		var is_pressed_now: bool = Input.is_physical_key_pressed(shooting_key)
 		var was_pressed_before: bool = previous_key_states.get(shooting_key, false)
-		return is_pressed_now and not was_pressed_before
+		if is_pressed_now and not was_pressed_before:
+			return true
 
-	# カスタムキーが設定されていない場合はデフォルトアクションを使用
+	# デフォルトアクション（ジョイスティック入力を含む）を常にチェック
 	return Input.is_action_just_pressed("shooting")
 
 # ======================== 共通ユーティリティメソッド ========================
@@ -196,41 +187,37 @@ func _get_direction_keys() -> Dictionary:
 	var right_key: int = GameSettings.get_key_binding("right")
 	var left_key: int = GameSettings.get_key_binding("left")
 
-	var right_pressed: bool = false
-	var left_pressed: bool = false
-
-	# 右方向キー
-	if right_key != KEY_NONE:
-		right_pressed = _check_physical_key_pressed(right_key, ALWAYS_ALLOWED_RIGHT_KEYS)
-	else:
-		right_pressed = Input.is_action_pressed("right")
-
-	# 左方向キー
-	if left_key != KEY_NONE:
-		left_pressed = _check_physical_key_pressed(left_key, ALWAYS_ALLOWED_LEFT_KEYS)
-	else:
-		left_pressed = Input.is_action_pressed("left")
+	# カスタムキーとデフォルトアクション（ジョイスティック含む）の両方をチェック
+	var right_pressed: bool = _check_physical_key_pressed(right_key, ALWAYS_ALLOWED_RIGHT_KEYS, "right")
+	var left_pressed: bool = _check_physical_key_pressed(left_key, ALWAYS_ALLOWED_LEFT_KEYS, "left")
 
 	return {
 		"right": right_pressed,
 		"left": left_pressed
 	}
 
-## ダッシュ入力チェック（物理キー検出版：確実な動作）
+## ダッシュ入力チェック（キーボード + ジョイスティック対応）
 func is_dash_input() -> bool:
 	var run_key: int = GameSettings.get_key_binding("run")
 	var run_pressed: bool = Input.is_physical_key_pressed(run_key)
 	var keys: Dictionary = _get_direction_keys()
 	var has_movement: bool = keys.right or keys.left
 
+	# run_left/run_rightアクション（ジョイスティックショルダー）をチェック
+	# 左右どちらのショルダーが押されていてもrunになる
+	var run_action_pressed: bool = Input.is_action_pressed("run_left") or Input.is_action_pressed("run_right")
+
+	# runキー（Shift）またはrun_left/run_rightアクション（ショルダーボタン）が押されているか
+	var is_run_button_pressed: bool = run_pressed or run_action_pressed
+
 	# 常時ダッシュがONの場合：方向キーのみでrun、run_key+方向キーでwalk
 	# 常時ダッシュがOFFの場合：方向キーのみでwalk、run_key+方向キーでrun
 	if GameSettings.always_dash:
 		# 常時ダッシュON：runキーが押されていない場合にrunとして扱う
-		return not run_pressed and has_movement
+		return not is_run_button_pressed and has_movement
 	else:
 		# 常時ダッシュOFF：従来通り（runキーが押されている場合にrun）
-		return run_pressed and has_movement
+		return is_run_button_pressed and has_movement
 
 ## パラメータ取得
 func get_parameter(key: String) -> Variant:
