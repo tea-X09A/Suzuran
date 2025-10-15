@@ -1,7 +1,7 @@
-# イベントシステム実装計画
+# 会話イベントシステム実装計画
 
 ## 概要
-プレイヤーが特定エリアに入ると会話やアニメーションを実行できるイベントシステムを構築する。
+プレイヤーが特定エリアに入ると会話イベントを実行できるシステムを構築する。
 
 ## 実装する機能
 
@@ -14,10 +14,15 @@
 - **EventManager (AutoLoad)**: イベント実行の中央管理
   - イベントキューの管理
   - プレイヤー操作の制御（イベント中は移動不可）
+  - **敵キャラクターの制御**（イベント中の挙動管理）:
+    - イベント開始時に全ての敵をIDLE状態に固定
+    - 敵の移動、攻撃、巡回などの動作を完全停止
+    - イベント終了時に元の状態（IDLE, PATROL, CHASEなど）に復帰
+    - "enemies"グループを使用して全敵キャラクターを一括制御
   - **pause_managerとの連携**（イベント実行中のゲーム停止）:
     - イベント開始時に`PauseManager.pause_game()`を呼び出してゲーム全体を停止
     - イベント終了時に`PauseManager.resume_game()`を呼び出してゲームを再開
-    - これにより、イベント中は背景のゲームプレイ（敵の動き、タイマーなど）が完全に停止する
+    - これにより、イベント中は背景のゲームプレイ（タイマーなど）が完全に停止する
   - 任意のタイミングでイベントを開始する公開API
   - 複数の発火方法に対応：
     - EventAreaからの自動発火（one_shot活用）
@@ -39,29 +44,47 @@
     - イベント中の挙動が1クラスに集約され保守性が高い
     - 将来的なイベント中の自動移動などの拡張が容易
 
+- **敵キャラクターの制御 (Enemy制御)**: イベント中の敵の状態管理
+  - EventManagerから一括制御
+  - イベント中の動作：
+    - 全ての敵をIDLE状態に強制遷移
+    - 移動、巡回、追跡、攻撃などの動作を完全停止
+    - 速度を完全停止（velocity = Vector2.ZERO）
+    - アニメーションをIDLEに固定
+  - API設計：
+    - `Enemy.pause_for_event()`: イベント開始時に呼び出し、現在の状態を保存してIDLE状態に遷移
+    - `Enemy.resume_from_event()`: イベント終了時に呼び出し、保存していた状態に復帰
+  - 実装方法：
+    - 敵は全て"enemies"グループに所属
+    - EventManagerが`get_tree().get_nodes_in_group("enemies")`で全敵を取得
+    - イベント開始時に全敵に対して`pause_for_event()`を呼び出し
+    - イベント終了時に全敵に対して`resume_from_event()`を呼び出し
+  - メリット：
+    - イベント中の敵の予期しない動きを防止
+    - プレイヤーがイベントに集中できる環境を提供
+    - シンプルな実装で全敵を一括制御可能
+
 ### 2. 会話システム
 - **DialogueEvent**: 会話実行イベント
   - テキスト表示
   - キャラクター名表示
+  - 顔画像の表示制御
   - 複数メッセージの連続表示
   - 次へ進む入力待ち（Zキー/Enterキー）
   - 選択肢表示と分岐処理
-  - 立ち絵の表示制御
 
 - **DialogueBox (UI)**: 会話表示ボックス（ノベルゲーム風）
   - 画面下部4分の1のサイズ
   - 黒色背景（opacity 0.5）+ 上部フェードエフェクト
   - テキストアニメーション（1文字ずつ表示）
   - キャラクター名表示
+  - **顔画像表示機能**（新規）：
+    - メッセージウィンドウ左上に顔画像を表示
+    - サイズ: メッセージウィンドウ高さの約70%（正方形）
+    - 話者が変わる際にフェードイン/アウト
+    - ナレーション時は非表示
   - Zキー/Enterキーで次のメッセージへ
   - Shiftキー長押しで高速スキップ（テキスト即座表示＋自動送り）
-
-- **DialoguePortrait (UI)**: キャラクター立ち絵表示
-  - 左側：プレイヤー立ち絵
-  - 右側：NPC立ち絵
-  - メッセージウィンドウより上のレイヤー
-  - フェードイン/アウトアニメーション
-  - 話者の強調表示（明るさ調整）
 
 - **DialogueChoice (UI)**: 選択肢ボタン
   - 画面中央に縦並び表示
@@ -79,7 +102,7 @@
   class CharacterInfo:
       var character_id: String        # キャラクター識別子（"001", "002"など数値文字列）
       var speaker_name: Dictionary    # 表示名（多言語対応）{"ja": "スズラン", "en": "Suzuran"}
-      var portrait_base_path: String  # 立ち絵フォルダパス
+      var face_image_path: String     # 顔画像フォルダパス
       var default_emotion: String     # デフォルト表情（"normal"など）
   ```
 
@@ -88,33 +111,18 @@
   class DialogueMessage:
       var index: String           # メッセージインデックス（"0", "1", "2", "3-a", "3-b"など）
       var speaker_id: String      # キャラクター識別子（上記で定義した数値ID）
-                                   # 空文字列("")の場合はナレーション扱い（話者名非表示、立ち絵なし）
+                                   # 空文字列("")の場合はナレーション扱い（話者名非表示、顔画像なし）
       var text: Dictionary        # メッセージ内容（多言語対応）{"ja": "...", "en": "..."}
       var emotion: String         # 表情差分（空文字列ならdefault使用）
-      var speaker_side: String    # "left" or "right"
       var choices: Array          # 選択肢配列（オプション）
   ```
 
-  **立ち絵パスの構築方法**:
-  - 実行時に `portrait_base_path + emotion + ".png"` で構築
-  - 例：`"res://assets/images/portrait/player/" + "happy" + ".png"`
+  **顔画像パスの構築方法**:
+  - 実行時に `face_image_path + emotion + ".png"` で構築
+  - 例：`"res://assets/images/faces/player/" + "happy" + ".png"`
   - これにより冗長性を削減し、保守性を向上
 
-### 3. アニメーションイベント
-- **AnimationEvent**: アニメーション実行イベント
-  - AnimationPlayerの再生
-  - 完了待機
-  - ループ/ワンショット対応
-
-### 4. カットシーンイベント
-- **CutsceneEvent**: 複合イベント実行
-  - カメラ移動
-  - キャラクターアニメーション
-  - 会話との組み合わせ
-  - タイムライン制御
-  - Shiftキー長押しで高速再生
-
-### 5. イベントトリガー
+### 3. イベントトリガー
 
 #### EventArea（共通スクリプト）
 - **共通スクリプト**: 全てのEventAreaは`event_area.gd`を共有
@@ -157,15 +165,12 @@ scripts/
 ├── events/
 │   ├── base_event.gd                  # 基底クラス
 │   ├── dialogue_event.gd              # 会話イベント
-│   ├── animation_event.gd             # アニメーションイベント
-│   ├── cutscene_event.gd              # カットシーンイベント
 │   ├── condition_config.gd            # 条件設定リソースクラス（新規）
 │   ├── event_config.gd                # イベント個別設定リソースクラス（新規）
 │   └── event_config_data.gd           # イベント設定データリソースクラス（新規）
 │
 ├── dialogue/
-│   ├── dialogue_box.gd                # 会話UIコントローラー
-│   ├── dialogue_portrait.gd           # 立ち絵表示制御
+│   ├── dialogue_box.gd                # 会話UIコントローラー（顔画像表示機能含む）
 │   ├── dialogue_choice.gd             # 選択肢ボタン
 │   └── dialogue_data.gd               # 会話データリソース
 │
@@ -174,8 +179,11 @@ scripts/
 │   └── states/
 │       └── event_state.gd             # イベント中のプレイヤー状態（新規）
 │
+├── enemies/
+│   └── enemy.gd                       # 既存を拡張（pause_for_event/resume_from_eventメソッド追加）
+│
 ├── autoload/
-│   ├── event_manager.gd               # イベント管理（新規AutoLoad）
+│   ├── event_manager.gd               # イベント管理（新規AutoLoad、敵制御機能含む）
 │   ├── game_settings.gd               # ゲーム設定管理（言語設定等、新規AutoLoad）
 │   └── game_progress.gd               # ゲーム進行状況管理（イベント実行回数等、新規AutoLoad）
 │
@@ -185,8 +193,7 @@ scripts/
 scenes/
 ├── dialogue/
 │   ├── dialogue_system.tscn    # 会話システム全体（UIルート）
-│   ├── dialogue_box.tscn       # メッセージウィンドウ
-│   ├── dialogue_portrait.tscn  # 立ち絵コンテナ
+│   ├── dialogue_box.tscn       # メッセージウィンドウ（顔画像表示含む）
 │   └── dialogue_choice.tscn    # 選択肢ボタン
 │
 └── levels/
@@ -194,9 +201,9 @@ scenes/
 
 assets/
 └── images/
-    └── portrait/               # 立ち絵画像格納フォルダ（新規）
+    └── faces/                  # 顔画像格納フォルダ（新規）
         ├── player/             # プレイヤー表情バリエーション
-        └── npcs/               # NPC立ち絵
+        └── npcs/               # NPC顔画像
 
 data/
 ├── event_config.tres           # 全イベント設定を管理するリソース（新規）
@@ -220,7 +227,7 @@ data/
    - GameSettings AutoLoad（言語設定管理）
    - GameProgress AutoLoad（イベント実行回数管理）
    - BaseEvent基底クラス
-   - EventManager AutoLoad
+   - EventManager AutoLoad（敵制御機能含む）
    - **EventState実装とPlayer統合**:
      - `scripts/player/states/event_state.gd` 新規作成
      - `scripts/player/player.gd` 拡張:
@@ -228,6 +235,12 @@ data/
        - `start_event()` メソッド追加
        - `end_event()` メソッド追加
        - `get_current_state()` メソッド追加（プレイヤー状態を返す）
+   - **Enemy制御機能の実装**:
+     - `scripts/enemies/enemy.gd` 拡張:
+       - `pause_for_event()` メソッド追加（現在状態を保存してIDLE状態に遷移）
+       - `resume_from_event()` メソッド追加（保存した状態に復帰）
+       - イベント用の状態保存変数 `saved_state_before_event` 追加
+     - 全敵キャラクターを"enemies"グループに登録
 
 2. **イベント設定システム**
    - ConditionConfig リソースクラス実装（`scripts/events/condition_config.gd`）
@@ -238,24 +251,17 @@ data/
 
 3. **会話システム**
    - DialogueData リソース（多言語対応）
-   - DialogueBox UI
+   - DialogueBox UI（顔画像表示機能含む）
    - DialogueEvent 実装
 
-4. **アニメーションシステム**
-   - AnimationEvent 実装
-
-5. **統合とテスト**
+4. **統合とテスト**
    - サンプルDialogueDataリソース作成（event_XXX_01.tres、event_XXX_02.tres形式）
    - level1での動作確認
    - プレイヤー状態による条件分岐のテスト
 
-6. **統合テスト**
+5. **統合テスト**
    - NPCスクリプトでの会話呼び出し実装例
    - トラップでのイベント発火実装例
-
-7. **カットシーン（オプション）**
-   - CutsceneEvent 実装
-   - 複合イベント例作成
 
 ## 設計方針
 
@@ -271,9 +277,9 @@ data/
   - イベント固有の設定はEventConfigDataリソースに集約
   - 一つのtresファイルで全イベントの設定を一括管理
 
-## EventState実装詳細
+## イベント中のキャラクター制御実装詳細
 
-### event_state.gdの実装
+### event_state.gdの実装（プレイヤー）
 ```gdscript
 class_name EventState
 extends BaseState
@@ -310,11 +316,11 @@ func physics_update(delta: float) -> void:
 state_instances["EVENT"] = EventState.new(self)
 
 # イベント制御メソッド（メソッド末尾付近に追加）
-## イベント開始（EventAreaから呼び出される）
+## イベント開始（EventManagerから呼び出される）
 func start_event() -> void:
 	update_animation_state("EVENT")
 
-## イベント終了（DialogueManagerから呼び出される）
+## イベント終了（EventManagerから呼び出される）
 func end_event() -> void:
 	update_animation_state("IDLE")
 
@@ -325,6 +331,99 @@ func get_current_state() -> String:
 	# 例: player_mode変数が"normal"または"expansion"を保持していると仮定
 	# ここでは仮の実装
 	return "normal"  # 実際の実装では状態変数を返す
+```
+
+### Enemy.gdへの統合（敵キャラクター制御）
+```gdscript
+# Enemy.gd
+
+# イベント開始前の状態を保存する変数
+var saved_state_before_event: String = ""
+
+## イベント開始時の処理：現在の状態を保存してIDLE状態に遷移
+func pause_for_event() -> void:
+	# 現在のステート名を保存
+	if current_state:
+		saved_state_before_event = _get_current_state_name()
+
+	# IDLE状態に強制遷移
+	update_animation_state("IDLE")
+
+	# 速度を完全停止
+	velocity = Vector2.ZERO
+
+## イベント終了時の処理：保存していた状態に復帰
+func resume_from_event() -> void:
+	# 保存していた状態に復帰
+	if saved_state_before_event != "":
+		update_animation_state(saved_state_before_event)
+		saved_state_before_event = ""
+	else:
+		# 保存状態がない場合はIDLEに
+		update_animation_state("IDLE")
+
+## 現在のステート名を取得（内部ヘルパー関数）
+func _get_current_state_name() -> String:
+	for state_name in state_instances.keys():
+		if state_instances[state_name] == current_state:
+			return state_name
+	return "IDLE"
+
+## _ready()で敵グループに追加
+func _ready() -> void:
+	# 既存の初期化処理...
+
+	# "enemies"グループに追加（イベント時の一括制御用）
+	add_to_group("enemies")
+```
+
+### EventManager.gdでの敵制御
+```gdscript
+# EventManager.gd (AutoLoad)
+
+## イベント開始時：全ての敵を一時停止
+func _pause_all_enemies() -> void:
+	var enemies: Array = get_tree().get_nodes_in_group("enemies")
+	for enemy in enemies:
+		if enemy.has_method("pause_for_event"):
+			enemy.pause_for_event()
+
+## イベント終了時：全ての敵を再開
+func _resume_all_enemies() -> void:
+	var enemies: Array = get_tree().get_nodes_in_group("enemies")
+	for enemy in enemies:
+		if enemy.has_method("resume_from_event"):
+			enemy.resume_from_event()
+
+## イベント開始処理（既存メソッドに追加）
+func start_event(event_data: BaseEvent) -> void:
+	# プレイヤーを停止
+	var player = get_tree().get_first_node_in_group("player")
+	if player and player.has_method("start_event"):
+		player.start_event()
+
+	# 全ての敵を停止
+	_pause_all_enemies()
+
+	# ゲーム全体を一時停止
+	PauseManager.pause_game()
+
+	# イベント実行...
+
+## イベント終了処理（既存メソッドに追加）
+func _on_event_finished() -> void:
+	# イベント完了処理...
+
+	# ゲームを再開
+	PauseManager.resume_game()
+
+	# 全ての敵を再開
+	_resume_all_enemies()
+
+	# プレイヤーを再開
+	var player = get_tree().get_first_node_in_group("player")
+	if player and player.has_method("end_event"):
+		player.end_event()
 ```
 
 ### EventAreaの動作フロー
@@ -521,7 +620,7 @@ events = Array[EventConfig]([SubResource("EventConfig_001"), SubResource("EventC
 - **すべてのイベントは必ず `required_player_state` を指定すること**（"normal", "expansion"など）
 - 状態不問（""）のイベントは作成しない方針
 - tres ファイルは手動で編集するのではなく、**Godotエディタのインスペクタで視覚的に作成・編集すること**
-- 各サブリソースにはユニークなIDを付与（GodotエディタWASが自動生成）
+- 各サブリソースにはユニークなIDを付与（Godotエディタが自動生成）
 
 #### EventAreaからの使用例
 ```gdscript
@@ -603,17 +702,17 @@ func set_flag(flag_name: String, value: bool) -> void:
   - `speaker_id`が空文字列("")の場合はナレーション扱いとする
   - ナレーション時の動作:
     - 話者名を非表示にする
-    - 左右の立ち絵を両方とも暗く表示（非話者扱い）
+    - 顔画像を非表示にする
     - テキストは通常通り表示される
 - **メッセージインデックス管理**:
   - 各メッセージに一意の`index`文字列を付与（"0", "1", "2", "3-a", "3-b"など）
   - 選択肢による分岐では末尾にアルファベット（-a, -b, -c...）を付与
   - インデックス検索用のヘルパー関数: `get_message_by_index(index: String) -> DialogueMessage`
-- **立ち絵パス構築**: `get_portrait_path(speaker_id, emotion)`メソッドで動的に構築
+- **顔画像パス構築**: `get_face_image_path(speaker_id, emotion)`メソッドで動的に構築
 - **表情のフォールバック**: `emotion`が空文字列の場合は`default_emotion`を使用
-- **立ち絵の柔軟性**:
-  - 立ち絵画像が存在しない、または表示されていない場合でも、テキスト表示は正常に動作する
-  - 立ち絵のロードエラーや非表示状態は、会話の進行を妨げない
+- **顔画像の柔軟性**:
+  - 顔画像が存在しない、または表示されていない場合でも、テキスト表示は正常に動作する
+  - 顔画像のロードエラーや非表示状態は、会話の進行を妨げない
 - **型安全性**: CharacterInfo、DialogueMessage、DialogueChoiceは全てtyped配列で管理
 - **多言語対応**:
   - `speaker_name`と`text`は辞書形式: `{"ja": "日本語", "en": "English"}`
@@ -676,44 +775,46 @@ func set_flag(flag_name: String, value: bool) -> void:
    ├─ 3回目（count=2） → dialogue_resources[2]（例: event_001_normal_03.tres）
    └─ N回目以降 → dialogue_resources[last]（配列の最後の要素をリピート）
    ↓
-7. PauseManager.pause_game() でゲーム全体を停止（背景のゲームプレイを停止）
+7. EventManager.start_event() 呼び出し:
+   a. player.start_event() でプレイヤーをEVENT状態に遷移
+   b. EventManager._pause_all_enemies() で全ての敵をIDLE状態に遷移
+   c. PauseManager.pause_game() でゲーム全体を停止（背景のゲームプレイを停止）
    ↓
-8. player.start_event() でプレイヤーをEVENT状態に遷移
+8. EventManager.start_dialogue(resource_path) でイベント実行
    ↓
-9. EventManager.start_dialogue(resource_path) でイベント実行
+9. イベント終了後、EventManager._on_event_finished() 呼び出し:
+   a. PauseManager.resume_game() でゲームを再開
+   b. EventManager._resume_all_enemies() で全ての敵を元の状態に復帰
+   c. player.end_event() でIDLE状態に復帰
    ↓
-10. イベント終了後、player.end_event() でIDLE状態に復帰
+10. GameProgress.increment_event_count(event_id) で実行回数を記録
    ↓
-11. PauseManager.resume_game() でゲームを再開
-   ↓
-12. GameProgress.increment_event_count(event_id) で実行回数を記録
-   ↓
-13. one_shot=true の場合、EventAreaを無効化
+11. one_shot=true の場合、EventAreaを無効化
 ```
 
 ## UI詳細仕様
 
-### メッセージウィンドウ
+### メッセージウィンドウ（DialogueBox）
 - **配置**: 画面下部
 - **サイズ**: 画面の縦幅の1/4（25%）
 - **背景**: 黒色 (Color: #000000, Alpha: 0.5)
 - **エフェクト**: 上部にフェード（グラデーション）を適用
 - **テキスト**: 白色、1文字ずつ表示アニメーション
+- **キャラクター名表示**: メッセージウィンドウ上部または左上に表示
 
-### 立ち絵表示
-- **配置**: メッセージウィンドウより上のレイヤー
-  - 左側: プレイヤー立ち絵
-  - 右側: NPC立ち絵
-- **サイズ**: 画面高さの60-70%程度
+### 顔画像表示（DialogueBox内）
+- **配置**: メッセージウィンドウの左上
+- **サイズ**: メッセージウィンドウ高さの約70%（正方形）
+  - 例: メッセージウィンドウが200pxの高さの場合、顔画像は140x140px程度
 - **エフェクト**:
   - 表示/非表示時のフェードイン/アウト
-  - 話者の立ち絵は明るく、非話者は暗く（modulate調整）
-  - **ナレーション時**（speaker_idが空文字列""の場合）:
-    - 左右の立ち絵ともに暗く表示（非話者扱い）
-    - 話者名は非表示
-- **立ち絵がない場合の動作**:
-  - 立ち絵画像が存在しない、または表示されていない場合でも、テキストは正常に表示される
-  - 立ち絵の表示/非表示はテキスト表示の可否に影響しない
+  - 話者が変わる際にフェード切り替え
+- **ナレーション時**（speaker_idが空文字列""の場合）:
+  - 顔画像を非表示
+  - 話者名は非表示
+- **顔画像がない場合の動作**:
+  - 顔画像が存在しない場合でも、テキストは正常に表示される
+  - 顔画像のロードエラーは会話の進行を妨げない
 
 ### 選択肢表示
 - **配置**: 画面中央に縦並び
@@ -726,7 +827,7 @@ func set_flag(flag_name: String, value: bool) -> void:
 ### 入力操作
 - **Zキー / Enterキー**: テキスト送り、選択肢決定
 - **↑↓ / WSキー**: 選択肢の移動
-- **Shiftキー（長押し）**: 会話・カットシーンの高速スキップ
+- **Shiftキー（長押し）**: 会話の高速スキップ
 
 ## 選択肢システムの仕様
 
@@ -758,13 +859,13 @@ characters = [
     {
         "character_id": "001",
         "speaker_name": {"ja": "鈴蘭", "en": "Suzuran"},
-        "portrait_base_path": "res://assets/images/portrait/player/",
+        "face_image_path": "res://assets/images/faces/player/",
         "default_emotion": "normal"
     },
     {
         "character_id": "002",
         "speaker_name": {"ja": "商人", "en": "Merchant"},
-        "portrait_base_path": "res://assets/images/portrait/npcs/merchant/",
+        "face_image_path": "res://assets/images/faces/npcs/merchant/",
         "default_emotion": "smile"
     }
 ]
@@ -775,7 +876,6 @@ messages = [
         "speaker_id": "002",
         "text": {"ja": "いらっしゃいませ！", "en": "Welcome!"},
         "emotion": "smile",
-        "speaker_side": "right",
         "choices": []
     },
     {
@@ -783,7 +883,6 @@ messages = [
         "speaker_id": "001",
         "text": {"ja": "手裏剣を買いたいのですが...", "en": "I'd like to buy some shuriken..."},
         "emotion": "",  # 空文字列 → default_emotion("normal")を使用
-        "speaker_side": "left",
         "choices": []
     },
     {
@@ -791,7 +890,6 @@ messages = [
         "speaker_id": "002",
         "text": {"ja": "手裏剣ですか。どうしましょう？", "en": "Shuriken, you say. What would you like to do?"},
         "emotion": "thinking",
-        "speaker_side": "right",
         "choices": [
             {"text": {"ja": "買う", "en": "Buy"}, "next_index": "3-a"},
             {"text": {"ja": "やめておく", "en": "Never mind"}, "next_index": "3-b"}
@@ -802,7 +900,6 @@ messages = [
         "speaker_id": "002",
         "text": {"ja": "ありがとうございます！", "en": "Thank you very much!"},
         "emotion": "happy",
-        "speaker_side": "right",
         "choices": []
     },
     {
@@ -810,7 +907,6 @@ messages = [
         "speaker_id": "002",
         "text": {"ja": "またのお越しをお待ちしております。", "en": "We look forward to seeing you again."},
         "emotion": "smile",
-        "speaker_side": "right",
         "choices": []
     }
 ]
@@ -884,7 +980,7 @@ event_004_expansion_02.tres   # 2回目以降（リピート）
 event_004_default_01.tres
 ```
 
-### 4. GameProgressとの連携
+### 2. GameProgressとの連携
 - **イベント実行回数の記録**: EventManagerがイベント完了時に自動的に記録
 - **フラグ管理**: イベント中でフラグを設定し、他のイベントの条件に使用
 - **セーブ/ロード**: GameProgressの状態をセーブデータに保存
