@@ -147,7 +147,7 @@ func _process_menu_input() -> void:
 		current_selection = (current_selection + 1) % debug_items.size()
 		_update_item_selection()
 	# 決定キー/左右キーで値を変更
-	elif Input.is_action_just_pressed("ui_menu_accept") or Input.is_action_just_pressed("left") or Input.is_action_just_pressed("right"):
+	elif Input.is_action_just_pressed("ui_menu_accept") or Input.is_action_just_pressed("ui_menu_left") or Input.is_action_just_pressed("ui_menu_right"):
 		_toggle_current_item()
 
 ## 選択中の項目を強調表示
