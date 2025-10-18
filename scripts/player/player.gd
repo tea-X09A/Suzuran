@@ -73,6 +73,8 @@ var auto_move_mode: bool = false
 var ammo_count: int = -1
 # UI 弾倉ゲージへの参照
 var ammo_gauge: Control = null
+# イベント中の入力無効化フラグ
+var disable_input: bool = false
 
 # ======================== ステート管理システム ========================
 
@@ -183,7 +185,6 @@ func _initialize_state_system() -> void:
 	state_instances["KNOCKBACK"] = KnockbackState.new(self)
 	state_instances["DOWN"] = DownState.new(self)
 	state_instances["CAPTURE"] = CaptureState.new(self)
-	state_instances["EVENT"] = EventState.new(self)
 
 	# 頻繁にアクセスするDownStateの参照をキャッシュ
 	down_state = state_instances["DOWN"] as DownState
@@ -487,15 +488,29 @@ func has_ammo() -> bool:
 
 ## イベント開始時の処理（EventManagerから呼び出される）
 ##
-## プレイヤーをEVENT状態に遷移させ、すべての操作を無効化します。
+## 入力を無効化し、空中状態の場合は水平速度をゼロにします。
+## 地上状態の場合は即座にIDLE状態に遷移します。
 func start_event() -> void:
-	update_animation_state("EVENT")
+	disable_input = true
+
+	# 現在のアニメーション状態を取得
+	var state_machine: AnimationNodeStateMachinePlayback = animation_tree.get("parameters/playback")
+	if state_machine:
+		var current_anim_state: String = state_machine.get_current_node()
+
+		# 空中状態（JUMP/FALL）の場合は水平速度をゼロに（垂直落下）
+		if current_anim_state in ["JUMP", "FALL"]:
+			velocity.x = 0.0
+		# 地上状態の場合は即座にIDLEに遷移
+		elif is_grounded:
+			velocity.x = 0.0
+			update_animation_state("IDLE")
 
 ## イベント終了時の処理（EventManagerから呼び出される）
 ##
-## プレイヤーをIDLE状態に復帰させ、操作を再有効化します。
+## 入力を再有効化します。
 func end_event() -> void:
-	update_animation_state("IDLE")
+	disable_input = false
 
 ## プレイヤーの現在の状態を取得（イベントシステムで使用）
 ##

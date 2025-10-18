@@ -142,6 +142,9 @@ func _check_physical_key_just_pressed(custom_key: int, always_allowed_keys: Arra
 
 ## 入力処理のメイン関数（各ステートで実装）
 func handle_input(_delta: float) -> void:
+	# イベント中は入力を無効化
+	if player.disable_input:
+		return
 	# 各Stateで実装: 状態固有の入力処理
 	pass
 
