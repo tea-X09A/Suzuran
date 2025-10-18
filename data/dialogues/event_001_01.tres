@@ -7,18 +7,28 @@
 
 [sub_resource type="Resource" id="character_001"]
 script = ExtResource("2_character_info")
-character_id = "narrator"
+character_id = "000"
 speaker_name = {
-"en": "Narrator",
-"ja": "ナレーター"
+"en": "",
+"ja": ""
 }
 face_image_path = ""
+default_emotion = "normal"
+
+[sub_resource type="Resource" id="character_suzuran"]
+script = ExtResource("2_character_info")
+character_id = "001"
+speaker_name = {
+"en": "Suzuran",
+"ja": "鈴蘭"
+}
+face_image_path = "res://assets/images/faces/player/suzuran_"
 default_emotion = "normal"
 
 [sub_resource type="Resource" id="message_001"]
 script = ExtResource("3_message")
 index = "0"
-speaker_id = "narrator"
+speaker_id = "000"
 text = {
 "en": "This is a sample event. When you touch the event area, a dialogue will start.",
 "ja": "これはサンプルイベントです。イベントエリアに触れると会話が始まります。"
@@ -30,7 +40,7 @@ condition = ""
 [sub_resource type="Resource" id="message_002"]
 script = ExtResource("3_message")
 index = "1"
-speaker_id = "narrator"
+speaker_id = "000"
 text = {
 "en": "The event and dialogue system is working correctly. You can create your own events!",
 "ja": "イベントと会話システムは正常に動作しています。独自のイベントを作成できます！"
@@ -39,8 +49,20 @@ emotion = ""
 choices = Array[ExtResource("3_lx7pl")]([])
 condition = ""
 
+[sub_resource type="Resource" id="message_003"]
+script = ExtResource("3_message")
+index = "2"
+speaker_id = "001"
+text = {
+"en": "Hello! I'm Suzuran. My character ID is now numeric (001) and my face should be displayed!",
+"ja": "こんにちは！鈴蘭です。私のキャラクターIDは数値(001)になっていて、顔画像が表示されるはずです！"
+}
+emotion = ""
+choices = Array[ExtResource("3_lx7pl")]([])
+condition = ""
+
 [resource]
 script = ExtResource("1_dialogue_data")
-characters = Array[ExtResource("2_character_info")]([SubResource("character_001")])
-messages = Array[ExtResource("3_message")]([SubResource("message_001"), SubResource("message_002")])
+characters = Array[ExtResource("2_character_info")]([SubResource("character_001"), SubResource("character_suzuran")])
+messages = Array[ExtResource("3_message")]([SubResource("message_001"), SubResource("message_002"), SubResource("message_003")])
 text_speed = 0.05

@@ -126,11 +126,12 @@ func show_message(speaker_name: String, message_text: String, face_path: String,
 
 	# 話者名を設定
 	if speaker_name.is_empty():
+		# 話者名を透明化（スペースは確保したまま非表示）
 		speaker_name_label.text = ""
-		speaker_name_label.visible = false
+		speaker_name_label.modulate = Color(1, 1, 1, 0)
 	else:
 		speaker_name_label.text = speaker_name
-		speaker_name_label.visible = true
+		speaker_name_label.modulate = Color(1, 1, 1, 1)
 
 	# メッセージテキストを設定
 	current_text = message_text
@@ -198,16 +199,16 @@ func _update_text_animation(delta: float) -> void:
 ## 顔画像を設定
 func _set_face_image(face_path: String) -> void:
 	if face_path.is_empty():
-		# 顔画像を非表示
-		face_image.visible = false
+		# 顔画像を透明化（スペースは確保したまま非表示）
+		face_image.modulate = Color(1, 1, 1, 0)
 		face_image.texture = null
 	else:
 		# 顔画像を読み込んで表示
 		var texture: Texture2D = load(face_path)
 		if texture:
 			face_image.texture = texture
-			face_image.visible = true
+			face_image.modulate = Color(1, 1, 1, 1)
 		else:
 			push_warning("DialogueBox: Failed to load face image: " + face_path)
-			face_image.visible = false
+			face_image.modulate = Color(1, 1, 1, 0)
 			face_image.texture = null

@@ -10,7 +10,7 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -200.0
+offset_top = -240.0
 grow_horizontal = 2
 grow_vertical = 0
 script = ExtResource("1_dialogue_box")
@@ -31,6 +31,7 @@ layout_mode = 2
 
 [node name="SpeakerRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
+theme_override_constants/separation = 20
 
 [node name="FaceImage" type="TextureRect" parent="MarginContainer/VBoxContainer/SpeakerRow"]
 custom_minimum_size = Vector2(140, 140)
