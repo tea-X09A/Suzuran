@@ -13,6 +13,10 @@ func cleanup_state() -> void:
 
 ## 入力処理
 func handle_input(_delta: float) -> void:
+	super.handle_input(_delta)
+	if player.disable_input:
+		return
+
 	# 空中でのアクション入力（攻撃・射撃）
 	if handle_air_action_input():
 		return

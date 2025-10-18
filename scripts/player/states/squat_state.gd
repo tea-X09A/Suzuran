@@ -9,6 +9,10 @@ func initialize_state() -> void:
 
 ## 入力処理（SQUAT状態固有）
 func handle_input(delta: float) -> void:
+	super.handle_input(delta)
+	if player.disable_input:
+		return
+
 	# ジャンプ入力チェック（最優先：しゃがみキャンセル）
 	if can_jump():
 		player.squat_was_cancelled = true  # キャンセルフラグを設定

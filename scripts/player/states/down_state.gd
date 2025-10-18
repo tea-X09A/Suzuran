@@ -40,6 +40,10 @@ func cleanup_state() -> void:
 
 ## 入力処理
 func handle_input(_delta: float) -> void:
+	super.handle_input(_delta)
+	if player.disable_input:
+		return
+
 	try_recovery_jump()
 
 

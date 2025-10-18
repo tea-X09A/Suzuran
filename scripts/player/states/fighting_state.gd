@@ -72,6 +72,10 @@ func cleanup_state() -> void:
 
 ## 入力処理
 func handle_input(_delta: float) -> void:
+	super.handle_input(_delta)
+	if player.disable_input:
+		return
+
 	# 地上のみジャンプとしゃがみを受け付ける
 	if can_jump():
 		perform_jump()

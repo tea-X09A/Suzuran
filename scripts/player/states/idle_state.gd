@@ -11,6 +11,10 @@ func initialize_state() -> void:
 
 ## 入力処理（IDLE状態固有）
 func handle_input(delta: float) -> void:
+	super.handle_input(delta)
+	if player.disable_input:
+		return
+
 	# 共通入力処理（ジャンプ、しゃがみ、攻撃、射撃）
 	if handle_common_inputs():
 		return

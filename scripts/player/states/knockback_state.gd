@@ -8,6 +8,10 @@ func initialize_state() -> void:
 
 ## 入力処理
 func handle_input(_delta: float) -> void:
+	super.handle_input(_delta)
+	if player.disable_input:
+		return
+
 	if player.down_state:
 		player.down_state.try_recovery_jump()
 

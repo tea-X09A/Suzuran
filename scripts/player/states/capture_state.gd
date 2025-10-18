@@ -71,6 +71,10 @@ func physics_update(delta: float) -> void:
 
 ## 入力処理（jumpのみでキャンセル可能）
 func handle_input(_delta: float) -> void:
+	super.handle_input(_delta)
+	if player.disable_input:
+		return
+
 	# ジャンプ入力でCAPTURE状態をキャンセル
 	var jump_key: int = GameSettings.get_key_binding("jump")
 	if _check_physical_key_just_pressed(jump_key, ALWAYS_ALLOWED_JUMP_KEYS, "jump"):

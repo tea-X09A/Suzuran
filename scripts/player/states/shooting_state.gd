@@ -24,6 +24,10 @@ func cleanup_state() -> void:
 
 ## 入力処理
 func handle_input(_delta: float) -> void:
+	super.handle_input(_delta)
+	if player.disable_input:
+		return
+
 	# shooting_02のアニメーション中は、入力でキャンセル不可
 	if is_shooting_02:
 		return
