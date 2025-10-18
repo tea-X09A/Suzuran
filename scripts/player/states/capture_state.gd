@@ -29,7 +29,7 @@ func initialize_state() -> void:
 	# CAPTURE状態用のアニメーションを再生
 	_play_capture_animation()
 	# 全てのenemyの移動をキャンセルし、その場で立ち止まらせる
-	_stop_all_enemies()
+	EnemyManager.disable_all_enemies(player.get_tree())
 	# 全てのhitboxとhurtboxを無効化
 	player.disable_all_collision_boxes()
 	# カメラ参照を取得してキャッシュ
@@ -43,7 +43,7 @@ func cleanup_state() -> void:
 	if player.animation_tree:
 		player.animation_tree.active = true
 	# 全てのenemyを表示し、通常のパトロールを再開させる
-	_resume_all_enemies()
+	EnemyManager.enable_all_enemies(player.get_tree())
 	# 全てのhitboxとhurtboxを再度有効化
 	player.enable_all_collision_boxes()
 	# カメラをズームアウト
@@ -133,22 +133,6 @@ func _land_on_ground() -> void:
 		player.velocity.y = 0.0
 		# move_and_slide()を1回実行して、is_on_floor()が正しく機能するようにする
 		player.move_and_slide()
-
-# ======================== Enemy制御処理 ========================
-
-## 全てのenemyの移動を停止し、非表示にする
-func _stop_all_enemies() -> void:
-	var enemies: Array = player.get_tree().get_nodes_in_group("enemies")
-	for enemy in enemies:
-		if enemy.has_method("enter_capture_state"):
-			enemy.enter_capture_state()
-
-## 全てのenemyを表示し、パトロールを再開させる
-func _resume_all_enemies() -> void:
-	var enemies: Array = player.get_tree().get_nodes_in_group("enemies")
-	for enemy in enemies:
-		if enemy.has_method("exit_capture_state"):
-			enemy.exit_capture_state()
 
 # ======================== アニメーション処理 ========================
 

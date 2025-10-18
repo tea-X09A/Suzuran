@@ -14,11 +14,6 @@
 - **EventManager (AutoLoad)**: イベント実行の中央管理
   - イベントキューの管理
   - プレイヤー操作の制御（イベント中は移動不可）
-  - **敵キャラクターの制御**（イベント中の挙動管理）:
-    - イベント開始時に全ての敵をIDLE状態に固定
-    - 敵の移動、攻撃、巡回などの動作を完全停止
-    - イベント終了時に元の状態（IDLE, PATROL, CHASEなど）に復帰
-    - "enemies"グループを使用して全敵キャラクターを一括制御
   - **pause_managerとの連携**（イベント実行中のゲーム停止）:
     - イベント開始時に`PauseManager.pause_game()`を呼び出してゲーム全体を停止
     - イベント終了時に`PauseManager.resume_game()`を呼び出してゲームを再開
@@ -43,26 +38,6 @@
     - プロジェクトのステートパターン方針に準拠
     - イベント中の挙動が1クラスに集約され保守性が高い
     - 将来的なイベント中の自動移動などの拡張が容易
-
-- **敵キャラクターの制御 (Enemy制御)**: イベント中の敵の状態管理
-  - EventManagerから一括制御
-  - イベント中の動作：
-    - 全ての敵をIDLE状態に強制遷移
-    - 移動、巡回、追跡、攻撃などの動作を完全停止
-    - 速度を完全停止（velocity = Vector2.ZERO）
-    - アニメーションをIDLEに固定
-  - API設計：
-    - `Enemy.pause_for_event()`: イベント開始時に呼び出し、現在の状態を保存してIDLE状態に遷移
-    - `Enemy.resume_from_event()`: イベント終了時に呼び出し、保存していた状態に復帰
-  - 実装方法：
-    - 敵は全て"enemies"グループに所属
-    - EventManagerが`get_tree().get_nodes_in_group("enemies")`で全敵を取得
-    - イベント開始時に全敵に対して`pause_for_event()`を呼び出し
-    - イベント終了時に全敵に対して`resume_from_event()`を呼び出し
-  - メリット：
-    - イベント中の敵の予期しない動きを防止
-    - プレイヤーがイベントに集中できる環境を提供
-    - シンプルな実装で全敵を一括制御可能
 
 ### 2. 会話システム
 - **DialogueEvent**: 会話実行イベント
@@ -115,6 +90,7 @@
       var text: Dictionary        # メッセージ内容（多言語対応）{"ja": "...", "en": "..."}
       var emotion: String         # 表情差分（空文字列ならdefault使用）
       var choices: Array          # 選択肢配列（オプション）
+      var condition: String       # 表示条件（プレイヤー状態: "normal", "expansion", ""=条件なし）
   ```
 
   **顔画像パスの構築方法**:
@@ -134,23 +110,16 @@
 #### EventConfigData（イベント設定リソース）
 - 全イベントの設定を一つのtresファイルで一括管理
 - **主な機能**:
-  - **条件判定**: `can_trigger(event_id, player_state) -> bool` - プレイヤー状態に基づくイベント発火条件のチェック
   - **リソース選択**: `get_dialogue_resource(event_id, count) -> String` - 実行回数に基づくリソースパス取得
   - **設定取得**: `get_event_config(event_id) -> EventConfig` - イベントIDから設定を取得
 
-- **EventConfig構造**:
+- **EventConfig構造**（簡略化）:
   - `event_id: String` - イベント識別子（"001", "002"など）
-  - `conditions: Array[ConditionConfig]` - 条件とリソースのペアの配列
-    - 複数の条件を持つことで、同じevent_idでもプレイヤー状態に応じて異なる会話を表示可能
-    - 配列の上から順に評価され、最初にマッチした条件のリソースが使用される
-    - 空文字列("")のrequired_player_stateは「状態不問」として最後に配置すること
-
-- **ConditionConfig構造**:
-  - `required_player_state: String` - 必要なプレイヤー状態（"normal", "expansion"など、空文字列=""は状態不問）
   - `dialogue_resources: Array[String]` - DialogueDataリソースパスの配列（実行回数順: [01, 02, 03, ...]）
-    - 例: `["res://data/dialogues/event_001_normal_01.tres", "res://data/dialogues/event_001_normal_02.tres"]`
+    - 例: `["res://data/dialogues/event_001_01.tres", "res://data/dialogues/event_001_02.tres"]`
     - インデックス0が初回、1が2回目、2が3回目...
     - 配列の範囲外の場合は最後の要素を返す（リピート用）
+    - **プレイヤー状態による条件分岐は各DialogueDataリソース内で処理**
 
 #### 任意オブジェクトからの発火
 - **NPC**: 接触やインタラクトキーで会話開始（何度でも可能）
@@ -165,7 +134,6 @@ scripts/
 ├── events/
 │   ├── base_event.gd                  # 基底クラス
 │   ├── dialogue_event.gd              # 会話イベント
-│   ├── condition_config.gd            # 条件設定リソースクラス（新規）
 │   ├── event_config.gd                # イベント個別設定リソースクラス（新規）
 │   └── event_config_data.gd           # イベント設定データリソースクラス（新規）
 │
@@ -179,13 +147,10 @@ scripts/
 │   └── states/
 │       └── event_state.gd             # イベント中のプレイヤー状態（新規）
 │
-├── enemies/
-│   └── enemy.gd                       # 既存を拡張（pause_for_event/resume_from_eventメソッド追加）
-│
 ├── autoload/
-│   ├── event_manager.gd               # イベント管理（新規AutoLoad、敵制御機能含む）
-│   ├── game_settings.gd               # ゲーム設定管理（言語設定等、新規AutoLoad）
-│   └── game_progress.gd               # ゲーム進行状況管理（イベント実行回数等、新規AutoLoad）
+│   ├── event_manager.gd               # イベント管理（新規AutoLoad）
+│   ├── game_settings.gd               # ゲーム設定管理（言語設定等、既存AutoLoad）
+│   └── save_load_manager.gd           # セーブ/ロード管理（イベント実行回数管理含む、既存AutoLoad）
 │
 └── levels/
     └── event_area.gd                  # 共通スクリプト（event_id駆動に拡張）
@@ -208,26 +173,24 @@ assets/
 data/
 ├── event_config.tres           # 全イベント設定を管理するリソース（新規）
 └── dialogues/                  # DialogueDataリソース格納フォルダ（新規）
-    ├── event_001_normal_01.tres      # イベント001・normal状態・1回目
-    ├── event_001_normal_02.tres      # イベント001・normal状態・2回目以降
-    ├── event_001_expansion_01.tres   # イベント001・expansion状態・1回目
-    ├── event_001_expansion_02.tres   # イベント001・expansion状態・2回目以降
-    ├── event_002_normal_01.tres      # イベント002・normal状態・1回目
-    ├── event_002_normal_02.tres      # イベント002・normal状態・2回目以降
-    ├── event_003_normal_01.tres      # イベント003・normal状態・1回目
-    ├── event_003_normal_02.tres      # イベント003・normal状態・2回目
-    ├── event_003_normal_03.tres      # イベント003・normal状態・3回目
-    ├── event_003_normal_04.tres      # イベント003・normal状態・4回目以降
-    └── ...                           # 他の会話データ
+    ├── event_001_01.tres       # イベント001・1回目（内部でプレイヤー状態による分岐を処理）
+    ├── event_001_02.tres       # イベント001・2回目以降
+    ├── event_002_01.tres       # イベント002・1回目
+    ├── event_002_02.tres       # イベント002・2回目以降
+    ├── event_003_01.tres       # イベント003・1回目
+    ├── event_003_02.tres       # イベント003・2回目
+    ├── event_003_03.tres       # イベント003・3回目
+    ├── event_003_04.tres       # イベント003・4回目以降
+    └── ...                     # 他の会話データ
 ```
 
 ## 実装順序
 
 1. **基盤構築**
-   - GameSettings AutoLoad（言語設定管理）
-   - GameProgress AutoLoad（イベント実行回数管理）
+   - GameSettings AutoLoad（言語設定管理、既存）
+   - SaveLoadManager AutoLoad（イベント実行回数管理、既存）
    - BaseEvent基底クラス
-   - EventManager AutoLoad（敵制御機能含む）
+   - EventManager AutoLoad
    - **EventState実装とPlayer統合**:
      - `scripts/player/states/event_state.gd` 新規作成
      - `scripts/player/player.gd` 拡張:
@@ -235,29 +198,22 @@ data/
        - `start_event()` メソッド追加
        - `end_event()` メソッド追加
        - `get_current_state()` メソッド追加（プレイヤー状態を返す）
-   - **Enemy制御機能の実装**:
-     - `scripts/enemies/enemy.gd` 拡張:
-       - `pause_for_event()` メソッド追加（現在状態を保存してIDLE状態に遷移）
-       - `resume_from_event()` メソッド追加（保存した状態に復帰）
-       - イベント用の状態保存変数 `saved_state_before_event` 追加
-     - 全敵キャラクターを"enemies"グループに登録
 
 2. **イベント設定システム**
-   - ConditionConfig リソースクラス実装（`scripts/events/condition_config.gd`）
    - EventConfig リソースクラス実装（`scripts/events/event_config.gd`）
    - EventConfigData リソースクラス実装（`scripts/events/event_config_data.gd`）
    - event_config.tres リソースファイル作成（Godotエディタで視覚的に作成）
    - EventArea共通スクリプト拡張（EventConfigData使用）
 
 3. **会話システム**
-   - DialogueData リソース（多言語対応）
+   - DialogueData リソース（多言語対応、conditionフィールド追加）
    - DialogueBox UI（顔画像表示機能含む）
-   - DialogueEvent 実装
+   - DialogueEvent 実装（プレイヤー状態に基づくメッセージフィルタリング機能含む）
 
 4. **統合とテスト**
    - サンプルDialogueDataリソース作成（event_XXX_01.tres、event_XXX_02.tres形式）
    - level1での動作確認
-   - プレイヤー状態による条件分岐のテスト
+   - プレイヤー状態による条件分岐のテスト（DialogueData内のconditionフィールドを使用）
 
 5. **統合テスト**
    - NPCスクリプトでの会話呼び出し実装例
@@ -333,99 +289,6 @@ func get_current_state() -> String:
 	return "normal"  # 実際の実装では状態変数を返す
 ```
 
-### Enemy.gdへの統合（敵キャラクター制御）
-```gdscript
-# Enemy.gd
-
-# イベント開始前の状態を保存する変数
-var saved_state_before_event: String = ""
-
-## イベント開始時の処理：現在の状態を保存してIDLE状態に遷移
-func pause_for_event() -> void:
-	# 現在のステート名を保存
-	if current_state:
-		saved_state_before_event = _get_current_state_name()
-
-	# IDLE状態に強制遷移
-	update_animation_state("IDLE")
-
-	# 速度を完全停止
-	velocity = Vector2.ZERO
-
-## イベント終了時の処理：保存していた状態に復帰
-func resume_from_event() -> void:
-	# 保存していた状態に復帰
-	if saved_state_before_event != "":
-		update_animation_state(saved_state_before_event)
-		saved_state_before_event = ""
-	else:
-		# 保存状態がない場合はIDLEに
-		update_animation_state("IDLE")
-
-## 現在のステート名を取得（内部ヘルパー関数）
-func _get_current_state_name() -> String:
-	for state_name in state_instances.keys():
-		if state_instances[state_name] == current_state:
-			return state_name
-	return "IDLE"
-
-## _ready()で敵グループに追加
-func _ready() -> void:
-	# 既存の初期化処理...
-
-	# "enemies"グループに追加（イベント時の一括制御用）
-	add_to_group("enemies")
-```
-
-### EventManager.gdでの敵制御
-```gdscript
-# EventManager.gd (AutoLoad)
-
-## イベント開始時：全ての敵を一時停止
-func _pause_all_enemies() -> void:
-	var enemies: Array = get_tree().get_nodes_in_group("enemies")
-	for enemy in enemies:
-		if enemy.has_method("pause_for_event"):
-			enemy.pause_for_event()
-
-## イベント終了時：全ての敵を再開
-func _resume_all_enemies() -> void:
-	var enemies: Array = get_tree().get_nodes_in_group("enemies")
-	for enemy in enemies:
-		if enemy.has_method("resume_from_event"):
-			enemy.resume_from_event()
-
-## イベント開始処理（既存メソッドに追加）
-func start_event(event_data: BaseEvent) -> void:
-	# プレイヤーを停止
-	var player = get_tree().get_first_node_in_group("player")
-	if player and player.has_method("start_event"):
-		player.start_event()
-
-	# 全ての敵を停止
-	_pause_all_enemies()
-
-	# ゲーム全体を一時停止
-	PauseManager.pause_game()
-
-	# イベント実行...
-
-## イベント終了処理（既存メソッドに追加）
-func _on_event_finished() -> void:
-	# イベント完了処理...
-
-	# ゲームを再開
-	PauseManager.resume_game()
-
-	# 全ての敵を再開
-	_resume_all_enemies()
-
-	# プレイヤーを再開
-	var player = get_tree().get_first_node_in_group("player")
-	if player and player.has_method("end_event"):
-		player.end_event()
-```
-
 ### EventAreaの動作フロー
 ```gdscript
 # EventArea.gd（共通スクリプト）
@@ -442,16 +305,9 @@ func _on_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player") and event_config != null:
 		var player = body as Player
 
-		# プレイヤーの現在の状態を取得
-		var player_state: String = player.get_current_state()  # "normal", "expansion"など
-
-		# 発火条件チェック（EventConfigDataを使用）
-		if not event_config.can_trigger(event_id, player_state):
-			return
-
 		# 実行回数を取得してリソースパスを決定
-		var count: int = GameProgress.get_event_count(event_id)
-		var dialogue_resource: String = event_config.get_dialogue_resource(event_id, player_state, count)
+		var count: int = SaveLoadManager.get_event_count(event_id)
+		var dialogue_resource: String = event_config.get_dialogue_resource(event_id, count)
 		if dialogue_resource == "":
 			return
 
@@ -460,7 +316,7 @@ func _on_body_entered(body: Node2D) -> void:
 
 		# イベント開始
 		player.start_event()
-		# ダイアログ表示
+		# ダイアログ表示（DialogueEvent内でプレイヤー状態に基づく条件分岐を処理）
 		EventManager.start_dialogue(dialogue_resource)
 
 		# イベント終了を待機（シグナル接続で処理）
@@ -485,23 +341,13 @@ func _on_event_finished() -> void:
 **重要**: Godotのtresファイルで内部クラスを扱うため、各クラスを独立したResourceとして定義する必要があります。
 
 ```gdscript
-# scripts/events/condition_config.gd
-# 条件と会話リソースのペア
-class_name ConditionConfig
-extends Resource
-
-@export var required_player_state: String = ""       # 必要なプレイヤー状態（"normal", "expansion"など、空文字列=""は状態不問）
-@export var dialogue_resources: Array[String] = []   # 実行回数順のDialogueDataパス配列
-```
-
-```gdscript
 # scripts/events/event_config.gd
 # イベント個別設定
 class_name EventConfig
 extends Resource
 
 @export var event_id: String = ""                    # イベント識別子（"001", "002"など）
-@export var conditions: Array[ConditionConfig] = []  # 条件とリソースのペアの配列
+@export var dialogue_resources: Array[String] = []   # 実行回数順のDialogueDataパス配列
 ```
 
 ```gdscript
@@ -519,41 +365,33 @@ func get_event_config(event_id: String) -> EventConfig:
 			return event
 	return null
 
-# プレイヤー状態に一致する条件設定を取得
-func get_matching_condition(event_id: String, player_state: String) -> ConditionConfig:
-	var config: EventConfig = get_event_config(event_id)
-	if config == null or config.conditions.is_empty():
-		return null
-
-	# 配列の上から順に評価し、最初にマッチした条件を返す
-	for condition in config.conditions:
-		# 具体的な状態指定がある場合、プレイヤー状態と一致するかチェック
-		if condition.required_player_state != "" and condition.required_player_state == player_state:
-			return condition
-
-	# 一致する具体的な条件がない場合、状態不問（""）の条件を探す
-	for condition in config.conditions:
-		if condition.required_player_state == "":
-			return condition
-
-	return null
-
-# イベント発火条件チェック
-func can_trigger(event_id: String, player_state: String) -> bool:
-	var condition: ConditionConfig = get_matching_condition(event_id, player_state)
-	return condition != null
-
 # 実行回数に基づいてDialogueDataリソースパスを取得
-func get_dialogue_resource(event_id: String, player_state: String, count: int) -> String:
-	var condition: ConditionConfig = get_matching_condition(event_id, player_state)
-	if condition == null or condition.dialogue_resources.is_empty():
-		push_error("No matching condition or dialogue_resources is empty for event: %s, player_state: %s" % [event_id, player_state])
+func get_dialogue_resource(event_id: String, count: int) -> String:
+	var config: EventConfig = get_event_config(event_id)
+	if config == null or config.dialogue_resources.is_empty():
+		push_error("No config or dialogue_resources is empty for event: %s" % event_id)
 		return ""
 
 	# countに対応するリソースを取得
 	# 配列の範囲外の場合は最後の要素を返す（リピート用）
-	var index: int = min(count, condition.dialogue_resources.size() - 1)
-	return condition.dialogue_resources[index]
+	var index: int = min(count, config.dialogue_resources.size() - 1)
+	return config.dialogue_resources[index]
+```
+
+**DialogueEvent内での条件分岐処理**:
+```gdscript
+# scripts/events/dialogue_event.gd（抜粋）
+# メッセージを表示する際に、プレイヤーの現在の状態を取得し、
+# 条件に合致するメッセージのみをフィルタリングして表示する
+
+func filter_messages_by_condition(messages: Array, player_state: String) -> Array:
+	var filtered: Array = []
+	for msg in messages:
+		# conditionが空文字列("")の場合は常に表示
+		# conditionが設定されている場合はプレイヤー状態と一致する場合のみ表示
+		if msg.condition == "" or msg.condition == player_state:
+			filtered.append(msg)
+	return filtered
 ```
 
 #### イベント設定リソースファイルの作成方法
@@ -562,54 +400,32 @@ func get_dialogue_resource(event_id: String, player_state: String, count: int) -
 1. Godotエディタで `res://data/event_config.tres` を新規作成
 2. インスペクタで `EventConfigData` スクリプトをアタッチ
 3. `events` 配列に `EventConfig` リソースを追加
-4. 各 `EventConfig` の `conditions` 配列に `ConditionConfig` リソースを追加
-5. 各 `ConditionConfig` に対して:
-   - `required_player_state` を設定（"normal", "expansion"など）
-   - `dialogue_resources` 配列にDialogueDataのパスを追加
+4. 各 `EventConfig` に対して:
+   - `event_id` を設定（"001", "002"など）
+   - `dialogue_resources` 配列にDialogueDataのパスを追加（実行回数順）
 
 **tres ファイルの実例**:
 ```
 # data/event_config.tres
-[gd_resource type="Resource" script_class="EventConfigData" load_steps=10 format=3 uid="uid://xxxxx"]
+[gd_resource type="Resource" script_class="EventConfigData" load_steps=5 format=3 uid="uid://xxxxx"]
 
 [ext_resource type="Script" path="res://scripts/events/event_config_data.gd" id="1_xxxxx"]
 [ext_resource type="Script" path="res://scripts/events/event_config.gd" id="2_xxxxx"]
-[ext_resource type="Script" path="res://scripts/events/condition_config.gd" id="3_xxxxx"]
-
-[sub_resource type="Resource" id="ConditionConfig_event001_normal"]
-script = ExtResource("3_xxxxx")
-required_player_state = "normal"
-dialogue_resources = Array[String](["res://data/dialogues/event_001_normal_01.tres", "res://data/dialogues/event_001_normal_02.tres"])
-
-[sub_resource type="Resource" id="ConditionConfig_event001_expansion"]
-script = ExtResource("3_xxxxx")
-required_player_state = "expansion"
-dialogue_resources = Array[String](["res://data/dialogues/event_001_expansion_01.tres", "res://data/dialogues/event_001_expansion_02.tres"])
 
 [sub_resource type="Resource" id="EventConfig_001"]
 script = ExtResource("2_xxxxx")
 event_id = "001"
-conditions = Array[ConditionConfig]([SubResource("ConditionConfig_event001_normal"), SubResource("ConditionConfig_event001_expansion")])
-
-[sub_resource type="Resource" id="ConditionConfig_event002_normal"]
-script = ExtResource("3_xxxxx")
-required_player_state = "normal"
-dialogue_resources = Array[String](["res://data/dialogues/event_002_normal_01.tres", "res://data/dialogues/event_002_normal_02.tres"])
+dialogue_resources = Array[String](["res://data/dialogues/event_001_01.tres", "res://data/dialogues/event_001_02.tres"])
 
 [sub_resource type="Resource" id="EventConfig_002"]
 script = ExtResource("2_xxxxx")
 event_id = "002"
-conditions = Array[ConditionConfig]([SubResource("ConditionConfig_event002_normal")])
-
-[sub_resource type="Resource" id="ConditionConfig_event003_normal"]
-script = ExtResource("3_xxxxx")
-required_player_state = "normal"
-dialogue_resources = Array[String](["res://data/dialogues/event_003_normal_01.tres", "res://data/dialogues/event_003_normal_02.tres", "res://data/dialogues/event_003_normal_03.tres", "res://data/dialogues/event_003_normal_04.tres"])
+dialogue_resources = Array[String](["res://data/dialogues/event_002_01.tres", "res://data/dialogues/event_002_02.tres"])
 
 [sub_resource type="Resource" id="EventConfig_003"]
 script = ExtResource("2_xxxxx")
 event_id = "003"
-conditions = Array[ConditionConfig]([SubResource("ConditionConfig_event003_normal")])
+dialogue_resources = Array[String](["res://data/dialogues/event_003_01.tres", "res://data/dialogues/event_003_02.tres", "res://data/dialogues/event_003_03.tres", "res://data/dialogues/event_003_04.tres"])
 
 [resource]
 script = ExtResource("1_xxxxx")
@@ -617,10 +433,9 @@ events = Array[EventConfig]([SubResource("EventConfig_001"), SubResource("EventC
 ```
 
 **重要な注意点**:
-- **すべてのイベントは必ず `required_player_state` を指定すること**（"normal", "expansion"など）
-- 状態不問（""）のイベントは作成しない方針
 - tres ファイルは手動で編集するのではなく、**Godotエディタのインスペクタで視覚的に作成・編集すること**
 - 各サブリソースにはユニークなIDを付与（Godotエディタが自動生成）
+- **プレイヤー状態による条件分岐は各DialogueDataリソース内のメッセージのconditionフィールドで処理**
 
 #### EventAreaからの使用例
 ```gdscript
@@ -638,15 +453,10 @@ func _ready() -> void:
 func _on_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player") and event_config != null:
 		var player = body as Player
-		var player_state: String = player.get_current_state()
-
-		# 発火条件チェック
-		if not event_config.can_trigger(event_id, player_state):
-			return
 
 		# 実行回数を取得してリソースパスを決定
-		var count: int = GameProgress.get_event_count(event_id)
-		var dialogue_resource: String = event_config.get_dialogue_resource(event_id, player_state, count)
+		var count: int = SaveLoadManager.get_event_count(event_id)
+		var dialogue_resource: String = event_config.get_dialogue_resource(event_id, count)
 		if dialogue_resource == "":
 			return
 
@@ -655,6 +465,7 @@ func _on_body_entered(body: Node2D) -> void:
 
 		# イベント開始
 		player.start_event()
+		# ダイアログ表示（DialogueEvent内でプレイヤー状態に基づくメッセージフィルタリングを実行）
 		EventManager.start_dialogue(dialogue_resource)
 
 		# イベント終了を待機（シグナル接続で処理）
@@ -670,9 +481,9 @@ func _on_event_finished() -> void:
 	PauseManager.resume_game()
 ```
 
-#### GameProgressの主要メソッド（実装予定）
+#### SaveLoadManagerの主要メソッド（既存実装）
 ```gdscript
-# scripts/autoload/game_progress.gd
+# scripts/autoload/save_load_manager.gd
 extends Node
 
 # イベント実行回数を記録する辞書
@@ -683,16 +494,15 @@ func get_event_count(event_id: String) -> int:
 	return event_counts.get(event_id, 0)
 
 func increment_event_count(event_id: String) -> void:
-	event_counts[event_id] = get_event_count(event_id) + 1
+	var current_count: int = get_event_count(event_id)
+	event_counts[event_id] = current_count + 1
 
-# フラグ管理（将来的な拡張用）
-var flags: Dictionary = {}  # { "flag_name": true/false }
-
-func get_flag(flag_name: String) -> bool:
-	return flags.get(flag_name, false)
-
-func set_flag(flag_name: String, value: bool) -> void:
-	flags[flag_name] = value
+# セーブ/ロード機能
+# - save_game(slot: int): セーブデータをJSON形式で保存（event_countsを含む）
+# - load_game(slot: int): セーブデータを読み込み（event_countsを復元）
+# - get_save_file_path(slot: int): セーブファイルのパスを取得
+# - save_exists(slot: int): セーブデータの存在確認
+# - get_save_timestamp(slot: int): セーブデータのタイムスタンプ取得
 ```
 
 ### DialogueData実装における注意事項
@@ -714,6 +524,13 @@ func set_flag(flag_name: String, value: bool) -> void:
   - 顔画像が存在しない、または表示されていない場合でも、テキスト表示は正常に動作する
   - 顔画像のロードエラーや非表示状態は、会話の進行を妨げない
 - **型安全性**: CharacterInfo、DialogueMessage、DialogueChoiceは全てtyped配列で管理
+- **条件分岐処理**:
+  - 各メッセージの`condition`フィールドでプレイヤー状態による表示条件を指定
+  - `condition: ""` → 常に表示（プレイヤー状態に関係なく表示）
+  - `condition: "normal"` → プレイヤーがnormal状態の時のみ表示
+  - `condition: "expansion"` → プレイヤーがexpansion状態の時のみ表示
+  - DialogueEvent内で`filter_messages_by_condition()`を使用してフィルタリング
+  - 1つのDialogueDataリソース内に複数の状態に対応するメッセージを含めることが可能
 - **多言語対応**:
   - `speaker_name`と`text`は辞書形式: `{"ja": "日本語", "en": "English"}`
   - 実行時に`GameSettings.current_language`に基づいて適切な言語を取得
@@ -734,15 +551,14 @@ func set_flag(flag_name: String, value: bool) -> void:
 ### 1. EventArea経由（自動発火）
 - **event_id駆動**: 各EventAreaは`event_id`でEventConfigDataからイベント設定を識別
 - プレイヤーがエリアに侵入すると自動的にイベント開始
-- **プレイヤー状態による条件判定**:
-  - `player.get_current_state()`で現在の状態を取得
-  - `event_config.can_trigger(event_id, player_state)`で発火可否を判定
-  - 例: expansion状態でのみ発火するイベント
+- **プレイヤー状態による条件分岐**:
+  - DialogueDataリソース内のメッセージのconditionフィールドで処理
+  - DialogueEvent実行時に`player.get_current_state()`で現在の状態を取得し、メッセージをフィルタリング
+  - 例: 同じイベントでもnormal状態とexpansion状態で異なる会話を表示
 - **`one_shot = true`**: 一度だけ発火（デフォルト）
   - 発火後、`monitoring = false`でエリアを無効化
-  - GameProgressにイベント実行回数を記録
+  - SaveLoadManagerにイベント実行回数を記録
 - **`one_shot = false`**: 何度でも発火
-  - 毎回、EventConfigDataで条件判定
   - 実行回数に応じたリソースを自動選択（dialogue_resources配列から）
 - 用途: ストーリーイベント、チュートリアル、NPCとの会話
 
@@ -759,37 +575,34 @@ func set_flag(flag_name: String, value: bool) -> void:
    ↓
 2. EventConfigDataリソース（event_config.tres）を読み込み
    ↓
-3. プレイヤーの現在の状態（normal/expansionなど）を取得
+3. SaveLoadManager.get_event_count(event_id) で実行回数を取得
    ↓
-4. event_config.can_trigger(event_id, player_state) で条件判定
-   ├─ false → イベント不発火（プレイヤー状態に合致する条件が存在しない）
-   └─ true → 次へ
-   ↓
-5. GameProgress.get_event_count(event_id) で実行回数を取得
-   ↓
-6. event_config.get_dialogue_resource(event_id, player_state, count) でリソースパス取得
-   ├─ プレイヤー状態に一致するConditionConfigを検索
-   ├─ 該当するConditionConfig内のdialogue_resourcesから実行回数に応じたリソースを選択
-   ├─ 初回（count=0） → dialogue_resources[0]（例: event_001_normal_01.tres）
-   ├─ 2回目（count=1） → dialogue_resources[1]（例: event_001_normal_02.tres）
-   ├─ 3回目（count=2） → dialogue_resources[2]（例: event_001_normal_03.tres）
+4. event_config.get_dialogue_resource(event_id, count) でリソースパス取得
+   ├─ EventConfigから該当するevent_idのdialogue_resourcesを取得
+   ├─ 実行回数に応じたリソースを選択
+   ├─ 初回（count=0） → dialogue_resources[0]（例: event_001_01.tres）
+   ├─ 2回目（count=1） → dialogue_resources[1]（例: event_001_02.tres）
+   ├─ 3回目（count=2） → dialogue_resources[2]（例: event_001_03.tres）
    └─ N回目以降 → dialogue_resources[last]（配列の最後の要素をリピート）
    ↓
-7. EventManager.start_event() 呼び出し:
+5. EventManager.start_event() 呼び出し:
    a. player.start_event() でプレイヤーをEVENT状態に遷移
-   b. EventManager._pause_all_enemies() で全ての敵をIDLE状態に遷移
-   c. PauseManager.pause_game() でゲーム全体を停止（背景のゲームプレイを停止）
+   b. PauseManager.pause_game() でゲーム全体を停止（背景のゲームプレイを停止）
    ↓
-8. EventManager.start_dialogue(resource_path) でイベント実行
+6. EventManager.start_dialogue(resource_path) でイベント実行
+   a. DialogueDataリソースを読み込み
+   b. DialogueEvent内でプレイヤーの現在の状態を取得
+   c. メッセージ配列をプレイヤー状態でフィルタリング
+      - 各メッセージのconditionフィールドをチェック
+      - condition == "" または condition == player_state のメッセージのみを表示
    ↓
-9. イベント終了後、EventManager._on_event_finished() 呼び出し:
+7. イベント終了後、EventManager._on_event_finished() 呼び出し:
    a. PauseManager.resume_game() でゲームを再開
-   b. EventManager._resume_all_enemies() で全ての敵を元の状態に復帰
-   c. player.end_event() でIDLE状態に復帰
+   b. player.end_event() でIDLE状態に復帰
    ↓
-10. GameProgress.increment_event_count(event_id) で実行回数を記録
+8. SaveLoadManager.increment_event_count(event_id) で実行回数を記録
    ↓
-11. one_shot=true の場合、EventAreaを無効化
+9. one_shot=true の場合、EventAreaを無効化
 ```
 
 ## UI詳細仕様
@@ -815,6 +628,468 @@ func set_flag(flag_name: String, value: bool) -> void:
 - **顔画像がない場合の動作**:
   - 顔画像が存在しない場合でも、テキストは正常に表示される
   - 顔画像のロードエラーは会話の進行を妨げない
+
+### DialogueBoxシーンのノード構成
+
+**シーンファイル**: `scenes/dialogue/dialogue_box.tscn`
+**アタッチスクリプト**: `scripts/dialogue/dialogue_box.gd`
+
+#### ノード階層
+
+```
+DialogueBox (PanelContainer)
+├── MarginContainer
+│   └── VBoxContainer
+│       ├── HBoxContainer (speaker_row)
+│       │   ├── FaceImage (TextureRect)
+│       │   └── VBoxContainer (text_column)
+│       │       ├── SpeakerName (Label)
+│       │       └── DialogueText (RichTextLabel)
+│       └── HSeparator (optional)
+```
+
+#### 各ノードの詳細設定
+
+**1. DialogueBox (PanelContainer)** - ルートノード
+- **ノードタイプ**: `PanelContainer`
+- **Custom Minimum Size**: 横幅1152px（プロジェクト解像度に合わせる）、縦幅200px（画面の約1/4）
+- **Layout**:
+  - Anchor Preset: `Bottom Wide`（画面下部全体に配置）
+  - Grow Direction: `Begin`（上方向に成長）
+  - Offset Top: `-200` （下から200px）
+  - Offset Bottom: `0`
+- **Theme Override / Styles**:
+  - StyleBoxFlat を作成:
+    - Background Color: `#000000`（黒）
+    - Alpha: `0.5`（半透明）
+    - Border Width: すべて `0`
+    - Corner Radius: 上部のみ `8px`（上部を丸める）
+- **Process Mode**: `PROCESS_MODE_ALWAYS`（ポーズ中も動作）
+
+**2. MarginContainer** - 内側の余白管理
+- **ノードタイプ**: `MarginContainer`
+- **Theme Override / Constants**:
+  - Margin Left: `24`
+  - Margin Top: `16`
+  - Margin Right: `24`
+  - Margin Bottom: `16`
+
+**3. VBoxContainer** - 縦方向レイアウト
+- **ノードタイプ**: `VBoxContainer`
+- **Theme Override / Constants**:
+  - Separation: `8`（子要素間のスペース）
+
+**4. HBoxContainer (speaker_row)** - 顔画像とテキストの横並び
+- **ノードタイプ**: `HBoxContainer`
+- **Name**: `SpeakerRow`
+- **Theme Override / Constants**:
+  - Separation: `16`（顔画像とテキストのスペース）
+
+**5. FaceImage (TextureRect)** - 顔画像表示
+- **ノードタイプ**: `TextureRect`
+- **Name**: `FaceImage`
+- **Custom Minimum Size**: `140x140` px（メッセージウィンドウ高さ200pxの70%）
+- **Expand Mode**: `Keep Size`
+- **Stretch Mode**: `Scale`
+- **Modulate**: `Color(1, 1, 1, 1)`（初期は完全不透明、フェード用にTweenで変更）
+- **Visibility**: 初期状態では `visible = true`（スクリプトで制御）
+
+**6. VBoxContainer (text_column)** - 話者名とテキストの縦並び
+- **ノードタイプ**: `VBoxContainer`
+- **Name**: `TextColumn`
+- **Size Flags Horizontal**: `Expand + Fill`（横方向に拡張）
+- **Theme Override / Constants**:
+  - Separation: `4`（話者名とテキストのスペース）
+
+**7. SpeakerName (Label)** - 話者名表示
+- **ノードタイプ**: `Label`
+- **Name**: `SpeakerName`
+- **Text**: `"話者名"`（プレースホルダー、実行時に動的変更）
+- **Theme Override / Font Sizes**: `20`
+- **Theme Override / Colors**:
+  - Font Color: `#FFD700`（ゴールド、話者名を強調）
+- **Autowrap Mode**: `Off`（折り返しなし）
+
+**8. DialogueText (RichTextLabel)** - メッセージテキスト表示
+- **ノードタイプ**: `RichTextLabel`
+- **Name**: `DialogueText`
+- **Text**: `"ここにメッセージが表示されます"`（プレースホルダー）
+- **Theme Override / Font Sizes**: `16`
+- **Theme Override / Colors**:
+  - Default Font Color: `#FFFFFF`（白）
+- **BBCode Enabled**: `true`（リッチテキスト対応、将来の拡張用）
+- **Fit Content**: `true`（コンテンツに合わせてサイズ調整）
+- **Scroll Active**: `false`（スクロール不要）
+- **Visible Characters**: `-1`（初期状態、スクリプトで1文字ずつ表示制御）
+- **Size Flags Vertical**: `Expand + Fill`（縦方向に拡張）
+
+**9. HSeparator (optional)** - 区切り線（オプション）
+- **ノードタイプ**: `HSeparator`
+- **Name**: `Separator`
+- **Visible**: `false`（必要に応じて表示）
+
+#### シーン作成手順（Godotエディタ）
+
+1. **新規シーン作成**:
+   - FileMenuから「New Scene」
+   - `PanelContainer`をルートノードとして選択
+   - ノード名を`DialogueBox`に変更
+
+2. **PanelContainerの設定**:
+   - InspectorでLayout → Anchor Preset → `Bottom Wide`を選択
+   - Rect → Size → yを`200`に設定
+   - Theme Overrides → Styles → Panelを追加:
+     - 新規`StyleBoxFlat`を作成
+     - Bg Colorを`#000000`、Alphaを`128`（0.5の場合）に設定
+     - Border Widthをすべて`0`に設定
+     - Corner Radiusの`Top Left`と`Top Right`を`8`に設定
+
+3. **子ノードの追加**（階層順）:
+   - `DialogueBox`を右クリック → Add Child Node → `MarginContainer`
+   - `MarginContainer`を右クリック → Add Child Node → `VBoxContainer`
+   - `VBoxContainer`を右クリック → Add Child Node → `HBoxContainer`（名前を`SpeakerRow`に変更）
+   - `SpeakerRow`を右クリック → Add Child Node → `TextureRect`（名前を`FaceImage`に変更）
+   - `SpeakerRow`を右クリック → Add Child Node → `VBoxContainer`（名前を`TextColumn`に変更）
+   - `TextColumn`を右クリック → Add Child Node → `Label`（名前を`SpeakerName`に変更）
+   - `TextColumn`を右クリック → Add Child Node → `RichTextLabel`（名前を`DialogueText`に変更）
+
+4. **各ノードのプロパティ設定**:
+   - 上記「各ノードの詳細設定」に従って、Inspectorで各プロパティを設定
+
+5. **シーン保存**:
+   - Scene → Save Scene As... → `scenes/dialogue/dialogue_box.tscn`
+
+6. **スクリプトアタッチ**:
+   - `DialogueBox`ノードを選択
+   - Attach Script → `scripts/dialogue/dialogue_box.gd`を作成
+   - スクリプト内で`@onready`でノード参照をキャッシュ:
+     ```gdscript
+     extends PanelContainer
+
+     @onready var face_image: TextureRect = $MarginContainer/VBoxContainer/SpeakerRow/FaceImage
+     @onready var speaker_name: Label = $MarginContainer/VBoxContainer/SpeakerRow/TextColumn/SpeakerName
+     @onready var dialogue_text: RichTextLabel = $MarginContainer/VBoxContainer/SpeakerRow/TextColumn/DialogueText
+     ```
+
+#### ノード構成の設計思想
+
+- **PanelContainerをルート**に選択: 背景スタイリング（StyleBoxFlat）を直接適用可能
+- **MarginContainerで余白管理**: テキストが枠に接触しないよう内側に余白を確保
+- **VBoxContainerで縦レイアウト**: 話者情報とテキストを縦に配置、将来の拡張（選択肢表示など）に対応
+- **HBoxContainerで横レイアウト**: 顔画像とテキストを横並びに配置
+- **TextureRectで顔画像**: 画像の拡大縮小を適切に処理、Tweenでフェード制御
+- **Labelで話者名**: シンプルなテキスト表示、色で強調
+- **RichTextLabelでメッセージ**: BBCode対応で将来的に太字・色変更などの拡張可能、Visible Charactersで1文字ずつ表示制御
+
+#### スクリプト側での制御ポイント
+
+```gdscript
+# scripts/dialogue/dialogue_box.gd (抜粋)
+
+# 顔画像のフェード表示
+func show_face_image(texture: Texture2D) -> void:
+    face_image.texture = texture
+    var tween = create_tween()
+    tween.tween_property(face_image, "modulate:a", 1.0, 0.3)
+
+# 顔画像の非表示（ナレーション時）
+func hide_face_image() -> void:
+    var tween = create_tween()
+    tween.tween_property(face_image, "modulate:a", 0.0, 0.3)
+
+# 話者名の設定
+func set_speaker_name(name: String) -> void:
+    if name == "":
+        speaker_name.visible = false
+    else:
+        speaker_name.text = name
+        speaker_name.visible = true
+
+# テキストの1文字ずつ表示
+func display_text(text: String, speed: float = 0.05) -> void:
+    dialogue_text.text = text
+    dialogue_text.visible_characters = 0
+    var char_count = text.length()
+    for i in range(char_count):
+        dialogue_text.visible_characters = i + 1
+        await get_tree().create_timer(speed).timeout
+```
+
+### DialogueSystemシーンのノード構成
+
+**シーンファイル**: `scenes/dialogue/dialogue_system.tscn`
+**アタッチスクリプト**: `scripts/dialogue/dialogue_system.gd`
+
+#### ノード階層
+
+```
+DialogueSystem (CanvasLayer)
+├── DialogueBoxContainer (Control)
+│   └── DialogueBox (インスタンス: dialogue_box.tscn)
+└── DialogueChoicesContainer (Control)
+    └── VBoxContainer
+        ├── ChoiceButton1 (インスタンス: dialogue_choice.tscn)
+        └── ChoiceButton2 (インスタンス: dialogue_choice.tscn)
+```
+
+#### 各ノードの詳細設定
+
+**1. DialogueSystem (CanvasLayer)** - ルートノード
+- **ノードタイプ**: `CanvasLayer`
+- **Layer**: `50`（UI表示用、TransitionManagerのlayer=100より下）
+- **Process Mode**: `PROCESS_MODE_ALWAYS`（ポーズ中も動作）
+- **Follow Viewport Enabled**: `true`（ビューポートに追従）
+
+**2. DialogueBoxContainer (Control)** - DialogueBoxの配置コンテナ
+- **ノードタイプ**: `Control`
+- **Name**: `DialogueBoxContainer`
+- **Layout**: `Full Rect`（画面全体に配置）
+- **Mouse Filter**: `Ignore`（クリックイベントを無視）
+
+**3. DialogueBox (インスタンス)** - メッセージウィンドウ
+- **シーンインスタンス**: `scenes/dialogue/dialogue_box.tscn`をインスタンス化
+- 親ノード: `DialogueBoxContainer`
+- 配置: 画面下部（dialogue_box.tscn内で設定済み）
+
+**4. DialogueChoicesContainer (Control)** - 選択肢の配置コンテナ
+- **ノードタイプ**: `Control`
+- **Name**: `DialogueChoicesContainer`
+- **Layout**: `Full Rect`（画面全体に配置）
+- **Mouse Filter**: `Ignore`（親はクリック無視、子のボタンのみ反応）
+- **Visibility**: 初期状態では `visible = false`（選択肢表示時のみ表示）
+
+**5. VBoxContainer** - 選択肢の縦並びレイアウト
+- **ノードタイプ**: `VBoxContainer`
+- **Anchor Preset**: `Center`（画面中央に配置）
+- **Grow Horizontal/Vertical**: `Both`（中央から成長）
+- **Alignment**: `Vertical = Center`, `Horizontal = Center`
+- **Theme Override / Constants**:
+  - Separation: `16`（選択肢間のスペース）
+
+**6-7. ChoiceButton1, ChoiceButton2 (インスタンス)** - 選択肢ボタン
+- **シーンインスタンス**: `scenes/dialogue/dialogue_choice.tscn`をインスタンス化（最大2つ）
+- 親ノード: `VBoxContainer`
+- 必要に応じて動的に追加・削除
+
+#### シーン作成手順（Godotエディタ）
+
+1. **新規シーン作成**:
+   - FileMenuから「New Scene」
+   - `CanvasLayer`をルートノードとして選択
+   - ノード名を`DialogueSystem`に変更
+
+2. **CanvasLayerの設定**:
+   - InspectorでLayer → `50`に設定
+   - Process → Mode → `Always`を選択
+
+3. **子ノードの追加**（階層順）:
+   - `DialogueSystem`を右クリック → Add Child Node → `Control`（名前を`DialogueBoxContainer`に変更）
+   - `DialogueBoxContainer`のLayoutを`Full Rect`に設定
+   - `DialogueBoxContainer`を右クリック → Instantiate Child Scene → `scenes/dialogue/dialogue_box.tscn`を選択
+
+   - `DialogueSystem`を右クリック → Add Child Node → `Control`（名前を`DialogueChoicesContainer`に変更）
+   - `DialogueChoicesContainer`のLayoutを`Full Rect`に設定、`visible = false`に設定
+   - `DialogueChoicesContainer`を右クリック → Add Child Node → `VBoxContainer`
+   - `VBoxContainer`のAnchor Presetを`Center`に設定
+
+4. **シーン保存**:
+   - Scene → Save Scene As... → `scenes/dialogue/dialogue_system.tscn`
+
+5. **スクリプトアタッチ**:
+   - `DialogueSystem`ノードを選択
+   - Attach Script → `scripts/dialogue/dialogue_system.gd`を作成
+   - スクリプト内で`@onready`でノード参照をキャッシュ:
+     ```gdscript
+     extends CanvasLayer
+
+     @onready var dialogue_box: PanelContainer = $DialogueBoxContainer/DialogueBox
+     @onready var choices_container: Control = $DialogueChoicesContainer
+     @onready var choices_vbox: VBoxContainer = $DialogueChoicesContainer/VBoxContainer
+
+     # 選択肢ボタンのシーンをプリロード
+     const CHOICE_BUTTON_SCENE = preload("res://scenes/dialogue/dialogue_choice.tscn")
+     ```
+
+#### スクリプト側での制御ポイント
+
+```gdscript
+# scripts/dialogue/dialogue_system.gd (抜粋)
+
+# ダイアログシステムの表示
+func show_dialogue() -> void:
+    show()  # CanvasLayerを表示
+    dialogue_box.show()
+
+# ダイアログシステムの非表示
+func hide_dialogue() -> void:
+    dialogue_box.hide()
+    choices_container.hide()
+    hide()  # CanvasLayerを非表示
+
+# 選択肢を動的に生成
+func show_choices(choice_texts: Array[String]) -> void:
+    # 既存の選択肢をクリア
+    for child in choices_vbox.get_children():
+        child.queue_free()
+
+    # 新しい選択肢を生成（最大2つ）
+    for i in range(min(choice_texts.size(), 2)):
+        var choice_button = CHOICE_BUTTON_SCENE.instantiate()
+        choices_vbox.add_child(choice_button)
+        choice_button.set_text(choice_texts[i])
+        choice_button.choice_selected.connect(_on_choice_selected.bind(i))
+
+    choices_container.show()
+
+# 選択肢の非表示
+func hide_choices() -> void:
+    choices_container.hide()
+    # 選択肢ボタンをクリア
+    for child in choices_vbox.get_children():
+        child.queue_free()
+
+# 選択肢が選択された時の処理
+func _on_choice_selected(choice_index: int) -> void:
+    hide_choices()
+    # 選択結果をDialogueEventに通知
+    emit_signal("choice_made", choice_index)
+```
+
+### DialogueChoiceシーンのノード構成
+
+**シーンファイル**: `scenes/dialogue/dialogue_choice.tscn`
+**アタッチスクリプト**: `scripts/dialogue/dialogue_choice.gd`
+
+#### ノード階層
+
+```
+ChoiceButton (Button)
+└── Label (選択肢テキスト表示)
+```
+
+#### 各ノードの詳細設定
+
+**1. ChoiceButton (Button)** - ルートノード
+- **ノードタイプ**: `Button`
+- **Custom Minimum Size**: 横幅`400px`、縦幅`60px`
+- **Text**: 空（Labelで表示）
+- **Theme Override / Styles**:
+  - Normal: `StyleBoxFlat`を作成
+    - Background Color: `#1A1A1A`（ダークグレー）
+    - Alpha: `0.8`（半透明）
+    - Border Width: すべて `2`
+    - Border Color: `#FFFFFF`（白）
+    - Corner Radius: すべて `8px`
+  - Hover: `StyleBoxFlat`を作成
+    - Background Color: `#333333`（明るいグレー）
+    - Alpha: `0.9`
+    - Border Width: すべて `3`
+    - Border Color: `#FFD700`（ゴールド）
+    - Corner Radius: すべて `8px`
+  - Pressed: `StyleBoxFlat`を作成
+    - Background Color: `#FFD700`（ゴールド）
+    - Alpha: `0.5`
+    - Border Width: すべて `3`
+    - Border Color: `#FFFFFF`（白）
+    - Corner Radius: すべて `8px`
+  - Focus: Hoverと同じスタイル
+- **Focus Mode**: `All`（キーボードフォーカス対応）
+
+**2. Label** - 選択肢テキスト表示（オプション、Buttonの内部テキストでも可）
+- **ノードタイプ**: `Label`
+- **Anchor Preset**: `Full Rect`（ボタン全体に配置）
+- **Horizontal Alignment**: `Center`
+- **Vertical Alignment**: `Center`
+- **Theme Override / Font Sizes**: `18`
+- **Theme Override / Colors**:
+  - Font Color: `#FFFFFF`（白）
+- **Autowrap Mode**: `Word Smart`（長いテキストは折り返し）
+
+#### シーン作成手順（Godotエディタ）
+
+1. **新規シーン作成**:
+   - FileMenuから「New Scene」
+   - `Button`をルートノードとして選択
+   - ノード名を`ChoiceButton`に変更
+
+2. **Buttonの設定**:
+   - InspectorでCustom Minimum Size → x: `400`, y: `60`に設定
+   - Theme Overrides → Styles → Normal, Hover, Pressed, Focusを上記設定に従って作成
+   - Focus → Mode → `All`を選択
+
+3. **Labelの追加**（オプション）:
+   - `ChoiceButton`を右クリック → Add Child Node → `Label`
+   - Anchor Presetを`Full Rect`に設定
+   - Horizontal/Vertical Alignmentを`Center`に設定
+   - Theme Overrides → Font Sizeを`18`に設定
+   - Theme Overrides → Colors → Font Colorを`#FFFFFF`に設定
+
+4. **シーン保存**:
+   - Scene → Save Scene As... → `scenes/dialogue/dialogue_choice.tscn`
+
+5. **スクリプトアタッチ**:
+   - `ChoiceButton`ノードを選択
+   - Attach Script → `scripts/dialogue/dialogue_choice.gd`を作成
+   - スクリプト内でシグナルとテキスト設定を実装:
+     ```gdscript
+     extends Button
+
+     signal choice_selected
+
+     @onready var label: Label = $Label  # Labelを使う場合
+
+     # 選択肢テキストを設定
+     func set_text(choice_text: String) -> void:
+         # Labelを使う場合
+         label.text = choice_text
+         # または、Buttonの内部テキストを使う場合
+         # text = choice_text
+
+     func _ready() -> void:
+         # ボタンが押された時にシグナルを発信
+         pressed.connect(_on_pressed)
+
+     func _on_pressed() -> void:
+         choice_selected.emit()
+     ```
+
+#### スクリプト側での制御ポイント
+
+```gdscript
+# scripts/dialogue/dialogue_choice.gd (完全版)
+
+extends Button
+
+signal choice_selected
+
+@onready var label: Label = $Label
+
+# 選択肢テキストを設定
+func set_text(choice_text: String) -> void:
+    label.text = choice_text
+
+# ボタンが押された時の処理
+func _ready() -> void:
+    pressed.connect(_on_pressed)
+
+func _on_pressed() -> void:
+    choice_selected.emit()
+
+# キーボード入力対応（↑↓で選択移動）
+func _input(event: InputEvent) -> void:
+    if has_focus():
+        # Enterキー/Zキーで決定
+        if event.is_action_pressed("ui_accept") or event.is_action_pressed("jump"):
+            _on_pressed()
+```
+
+#### ノード構成の設計思想
+
+- **Buttonをルート**に選択: クリック/キーボード入力を標準的に処理
+- **StyleBoxFlatでビジュアル制御**: Normal/Hover/Pressed状態で異なるスタイルを適用し、視覚的フィードバックを提供
+- **Focus Mode対応**: キーボードナビゲーション（↑↓キー）で選択肢間を移動可能
+- **Labelでテキスト表示**: 中央配置、折り返し対応で長いテキストにも対応
+- **シグナル駆動**: `choice_selected`シグナルでDialogueSystemに通知、疎結合を維持
 
 ### 選択肢表示
 - **配置**: 画面中央に縦並び
@@ -853,6 +1128,8 @@ class DialogueChoice:
 - 分岐がある場合は"3-a", "3-b"のようにアルファベットサフィックスを付与
 
 ### DialogueDataの使用例
+
+#### 例1: 基本的な会話（conditionなし）
 ```gdscript
 # DialogueDataリソースの設定例
 characters = [
@@ -876,14 +1153,16 @@ messages = [
         "speaker_id": "002",
         "text": {"ja": "いらっしゃいませ！", "en": "Welcome!"},
         "emotion": "smile",
-        "choices": []
+        "choices": [],
+        "condition": ""  # 条件なし（常に表示）
     },
     {
         "index": "1",
         "speaker_id": "001",
         "text": {"ja": "手裏剣を買いたいのですが...", "en": "I'd like to buy some shuriken..."},
         "emotion": "",  # 空文字列 → default_emotion("normal")を使用
-        "choices": []
+        "choices": [],
+        "condition": ""
     },
     {
         "index": "2",
@@ -893,23 +1172,105 @@ messages = [
         "choices": [
             {"text": {"ja": "買う", "en": "Buy"}, "next_index": "3-a"},
             {"text": {"ja": "やめておく", "en": "Never mind"}, "next_index": "3-b"}
-        ]
+        ],
+        "condition": ""
     },
     {
         "index": "3-a",  # 「買う」を選択した場合
         "speaker_id": "002",
         "text": {"ja": "ありがとうございます！", "en": "Thank you very much!"},
         "emotion": "happy",
-        "choices": []
+        "choices": [],
+        "condition": ""
     },
     {
         "index": "3-b",  # 「やめておく」を選択した場合
         "speaker_id": "002",
         "text": {"ja": "またのお越しをお待ちしております。", "en": "We look forward to seeing you again."},
         "emotion": "smile",
-        "choices": []
+        "choices": [],
+        "condition": ""
     }
 ]
+```
+
+#### 例2: プレイヤー状態による分岐（conditionあり）
+```gdscript
+# DialogueDataリソースの設定例（プレイヤー状態で会話が変わる）
+characters = [
+    {
+        "character_id": "001",
+        "speaker_name": {"ja": "鈴蘭", "en": "Suzuran"},
+        "face_image_path": "res://assets/images/faces/player/",
+        "default_emotion": "normal"
+    },
+    {
+        "character_id": "003",
+        "speaker_name": {"ja": "門番", "en": "Guard"},
+        "face_image_path": "res://assets/images/faces/npcs/guard/",
+        "default_emotion": "serious"
+    }
+]
+
+messages = [
+    # normal状態の場合のメッセージ
+    {
+        "index": "0",
+        "speaker_id": "003",
+        "text": {"ja": "ここから先は関係者以外立入禁止だ。", "en": "No unauthorized personnel beyond this point."},
+        "emotion": "serious",
+        "choices": [],
+        "condition": "normal"  # normal状態の時のみ表示
+    },
+    {
+        "index": "1",
+        "speaker_id": "001",
+        "text": {"ja": "なんとか通してもらえませんか？", "en": "Can you please let me through?"},
+        "emotion": "worried",
+        "choices": [],
+        "condition": "normal"
+    },
+    {
+        "index": "2",
+        "speaker_id": "003",
+        "text": {"ja": "ダメだ。規則は規則だ。", "en": "No. Rules are rules."},
+        "emotion": "angry",
+        "choices": [],
+        "condition": "normal"
+    },
+    # expansion状態の場合のメッセージ
+    {
+        "index": "0",
+        "speaker_id": "003",
+        "text": {"ja": "おっと、その体では通れまい。", "en": "Whoa, you can't fit through with that body."},
+        "emotion": "surprised",
+        "choices": [],
+        "condition": "expansion"  # expansion状態の時のみ表示
+    },
+    {
+        "index": "1",
+        "speaker_id": "001",
+        "text": {"ja": "くっ...なんてこと。", "en": "Damn... this is bad."},
+        "emotion": "embarrassed",
+        "choices": [],
+        "condition": "expansion"
+    },
+    {
+        "index": "2",
+        "speaker_id": "003",
+        "text": {"ja": "元の姿に戻ってから出直してくれ。", "en": "Come back after you return to normal."},
+        "emotion": "smile",
+        "choices": [],
+        "condition": "expansion"
+    }
+]
+```
+
+**conditionフィールドの動作**:
+- `condition: ""` → 常に表示（プレイヤー状態に関係なく表示）
+- `condition: "normal"` → プレイヤーがnormal状態の時のみ表示
+- `condition: "expansion"` → プレイヤーがexpansion状態の時のみ表示
+- DialogueEvent内で `filter_messages_by_condition()` を使用してフィルタリング
 ```
 
 ### UI配置
@@ -939,26 +1300,24 @@ messages = [
 ### 1. リソースファイルの命名規則
 
 #### 基本命名パターン
-- **状態不問の場合**: `event_[ID]_[回数].tres`
+- **統一形式**: `event_[ID]_[回数].tres`
   - 例: `event_001_01.tres`, `event_001_02.tres`
-- **プレイヤー状態が条件の場合**: `event_[ID]_[状態]_[回数].tres`
-  - 例: `event_001_normal_01.tres`, `event_001_expansion_01.tres`
 - **IDは3桁のゼロパディング**: `001`, `002`, `003`...
 - **回数は2桁のゼロパディング**: `01`, `02`, `03`...
-- **状態名**: `normal`, `expansion`, `default`など（小文字）
 - **配列順序と一致**: dialogue_resources配列のインデックス順にファイル番号を付与
 - **リピート用リソース**: 配列の最後の要素が2回目以降すべてに使用される
 - **一貫性の維持**: プロジェクト全体で統一されたルールを適用
+- **プレイヤー状態による分岐**: ファイル名ではなく、各DialogueData内のメッセージのconditionフィールドで処理
 
 #### 命名例
 
-**パターン1: 状態不問のシンプルなイベント**
+**パターン1: シンプルなイベント**
 ```
 event_001_01.tres  # 初回
 event_001_02.tres  # 2回目以降（リピート）
 ```
 
-**パターン2: 複数回異なる会話（状態不問）**
+**パターン2: 複数回異なる会話**
 ```
 event_003_01.tres  # 1回目
 event_003_02.tres  # 2回目
@@ -966,24 +1325,71 @@ event_003_03.tres  # 3回目
 event_003_04.tres  # 4回目以降（リピート）
 ```
 
-**パターン3: 同じevent_idで複数のプレイヤー状態に対応**
+**パターン3: プレイヤー状態による分岐を含むイベント**
 ```
-# normal状態のとき
-event_004_normal_01.tres   # 初回
-event_004_normal_02.tres   # 2回目以降（リピート）
+# event_004_01.tres の中身:
+# - normal状態のメッセージ（condition: "normal"）
+# - expansion状態のメッセージ（condition: "expansion"）
+# の両方を含む
 
-# expansion状態のとき
-event_004_expansion_01.tres   # 初回
-event_004_expansion_02.tres   # 2回目以降（リピート）
-
-# フォールバック（状態不問）
-event_004_default_01.tres
+event_004_01.tres  # 初回（内部でプレイヤー状態により分岐）
+event_004_02.tres  # 2回目以降（内部でプレイヤー状態により分岐）
 ```
 
-### 2. GameProgressとの連携
+### 2. SaveLoadManagerとの連携
 - **イベント実行回数の記録**: EventManagerがイベント完了時に自動的に記録
-- **フラグ管理**: イベント中でフラグを設定し、他のイベントの条件に使用
-- **セーブ/ロード**: GameProgressの状態をセーブデータに保存
+- **セーブ/ロード**: SaveLoadManagerがイベント実行回数（event_counts）をセーブデータに保存/復元
+- **永続化**: セーブデータにはevent_countsが含まれ、ロード時に復元される
+
+### 3. イベントシステムとセーブ機能の統合仕様
+
+#### 設計の背景
+当初、イベント実行回数を管理する専用のAutoLoad「GameProgress」を導入する計画でしたが、既存のSaveLoadManagerが同等の機能を実装していることが判明しました。設計の重複を避け、保守性を向上させるため、SaveLoadManagerを拡張する方針に変更しました。
+
+#### SaveLoadManagerの役割
+- **イベント実行回数管理**: `event_counts: Dictionary`でイベントIDごとの実行回数を保持
+- **セーブデータの永続化**: JSON形式でイベント実行回数を保存（user://save_XXX.json）
+- **ロード時の復元**: セーブデータからイベント実行回数を復元し、ゲーム進行状態を正確に再現
+
+#### セーブデータの構造（event_countsフィールド）
+```json
+{
+  "save_number": 1,
+  "timestamp": "2025-10-18T15:30:45",
+  "current_scene": "res://scenes/levels/level_0.tscn",
+  "player_data": { ... },
+  "event_counts": {
+    "001": 2,  // イベント001は2回実行済み
+    "002": 1,  // イベント002は1回実行済み
+    "003": 0   // イベント003は未実行
+  }
+}
+```
+
+#### データフロー
+```
+イベント発火
+    ↓
+SaveLoadManager.get_event_count(event_id) で実行回数取得
+    ↓
+EventConfigData.get_dialogue_resource(event_id, count) で適切なリソース選択
+    ↓
+イベント実行（DialogueEvent）
+    ↓
+イベント完了
+    ↓
+SaveLoadManager.increment_event_count(event_id) で実行回数をカウントアップ
+    ↓
+セーブ時: event_counts辞書をJSON形式で保存
+    ↓
+ロード時: JSONから復元してevent_counts辞書を再構築
+```
+
+#### 統合のメリット
+1. **コードの重複を回避**: 新規AutoLoad（GameProgress）を追加せず、既存実装を活用
+2. **保守性の向上**: イベント実行回数とセーブ機能が同一箇所で管理される
+3. **データ整合性**: セーブ/ロード処理とイベント管理が密結合し、状態の不整合を防止
+4. **実装の簡略化**: 新規AutoLoadの作成、登録、テストが不要
 
 ## まとめ
 
@@ -994,8 +1400,10 @@ event_id駆動設計とEventConfigDataリソースにより、以下を実現：
 3. **拡張性**: 新イベントの追加はevent_config.tresに設定を追加するだけ
 4. **保守性**: 共通処理の変更が一箇所で済み、設定変更もエディタで簡単
 5. **コードの削減**: 個別スクリプトファイルが不要で、プロジェクト構造がシンプル
-6. **プレイヤー状態連動**: normalやexpansionなどのプレイヤー状態に応じたイベント発火
+6. **プレイヤー状態連動**: normalやexpansionなどのプレイヤー状態に応じた会話分岐
 7. **柔軟なリソース管理**: 実行回数に応じた複数パターンの会話を配列で管理
-8. **複数条件対応**: 同じevent_idで複数のプレイヤー状態に対応する会話を定義可能
-9. **優先順位制御**: 条件配列の順序で評価優先度を制御し、フォールバック処理を実現
-10. **シンプルな命名規則**: `event_XXX_[状態]_YY.tres`形式で一貫性を保持
+8. **ファイル内条件分岐**: DialogueData内のconditionフィールドでプレイヤー状態による分岐を処理
+9. **シンプルな命名規則**: `event_XXX_YY.tres`形式で一貫性を保持
+10. **設計の簡略化**: ConditionConfigを削除し、EventConfigとEventConfigDataを簡略化
+11. **セーブ/ロード統合**: SaveLoadManagerによるイベント実行回数の永続化（event_countsをJSON形式で保存/復元）
+12. **既存実装の活用**: 既存のSaveLoadManagerを拡張し、新規AutoLoad（GameProgress）の重複を回避

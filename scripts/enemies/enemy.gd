@@ -534,12 +534,11 @@ func _on_player_detected(_body: Node2D) -> void:
 func _on_player_lost(_body: Node2D) -> void:
 	pass
 
-# ======================== CAPTURE状態制御 ========================
+# ======================== エネミーの有効化/無効化 ========================
 
-## CAPTURE状態開始時の処理
-func enter_capture_state() -> void:
-	# CAPTURE状態フラグを立てる
-	is_in_capture_mode = true
+## エネミーを無効化（非表示・動作停止）
+## 汎用的な無効化処理。CAPTURE状態やその他のゲームイベントで使用可能
+func disable() -> void:
 	# 移動を停止
 	velocity = Vector2.ZERO
 	# 現在の状態を待機に変更
@@ -552,10 +551,9 @@ func enter_capture_state() -> void:
 	# 非表示にする
 	visible = false
 
-## CAPTURE状態終了時の処理
-func exit_capture_state() -> void:
-	# CAPTURE状態フラグを解除
-	is_in_capture_mode = false
+## エネミーを有効化（表示・動作再開）
+## 汎用的な有効化処理。無効化状態から復帰する際に使用
+func enable() -> void:
 	# 表示する
 	visible = true
 	# 画面内の場合はhitbox、hurtbox、detection_areaを有効化
@@ -565,6 +563,22 @@ func exit_capture_state() -> void:
 			detection_area.monitoring = true
 	# パトロールを再開
 	change_state("IDLE")
+
+# ======================== CAPTURE状態制御 ========================
+
+## CAPTURE状態開始時の処理
+func enter_capture_state() -> void:
+	# CAPTURE状態フラグを立てる
+	is_in_capture_mode = true
+	# 共通の無効化処理を呼び出す
+	disable()
+
+## CAPTURE状態終了時の処理
+func exit_capture_state() -> void:
+	# CAPTURE状態フラグを解除
+	is_in_capture_mode = false
+	# 共通の有効化処理を呼び出す
+	enable()
 
 # ======================== ダメージ処理 ========================
 
