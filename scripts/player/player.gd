@@ -183,6 +183,7 @@ func _initialize_state_system() -> void:
 	state_instances["KNOCKBACK"] = KnockbackState.new(self)
 	state_instances["DOWN"] = DownState.new(self)
 	state_instances["CAPTURE"] = CaptureState.new(self)
+	state_instances["EVENT"] = EventState.new(self)
 
 	# 頻繁にアクセスするDownStateの参照をキャッシュ
 	down_state = state_instances["DOWN"] as DownState
@@ -482,6 +483,32 @@ func consume_ammo() -> bool:
 func has_ammo() -> bool:
 	return ammo_count < 0 or ammo_count > 0
 
+# ======================== イベントシステム連携 ========================
+
+## イベント開始時の処理（EventManagerから呼び出される）
+##
+## プレイヤーをEVENT状態に遷移させ、すべての操作を無効化します。
+func start_event() -> void:
+	update_animation_state("EVENT")
+
+## イベント終了時の処理（EventManagerから呼び出される）
+##
+## プレイヤーをIDLE状態に復帰させ、操作を再有効化します。
+func end_event() -> void:
+	update_animation_state("IDLE")
+
+## プレイヤーの現在の状態を取得（イベントシステムで使用）
+##
+## @return String プレイヤー状態（"normal" または "expansion"）
+func get_current_state() -> String:
+	match condition:
+		PLAYER_CONDITION.NORMAL:
+			return "normal"
+		PLAYER_CONDITION.EXPANSION:
+			return "expansion"
+		_:
+			return "normal"
+
 # ======================== 状態の保存・復元 ========================
 
 ## プレイヤーの現在の状態を取得（シーン遷移時に使用）
@@ -550,7 +577,6 @@ func _on_debug_value_changed(key: String, value: Variant) -> void:
 			var new_condition: PLAYER_CONDITION = value as PLAYER_CONDITION
 			if new_condition != condition:
 				condition = new_condition
-				print("Debug: Condition changed to ", "NORMAL" if condition == PLAYER_CONDITION.NORMAL else "EXPANSION")
 
 		"invincible":
 			# 無敵状態の切り替え（invincibility_effectを使用）
@@ -561,4 +587,3 @@ func _on_debug_value_changed(key: String, value: Variant) -> void:
 			else:
 				# 無敵状態を解除
 				invincibility_effect.clear_invincible()
-			print("Debug: Invincible ", "enabled" if enable_invincible else "disabled")

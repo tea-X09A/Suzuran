@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EventConfigData" load_steps=3 format=3 uid="uid://bwxqm2jvhx8xj"]
+
+[ext_resource type="Script" path="res://scripts/events/event_config_data.gd" id="1_event_config_data"]
+[ext_resource type="Script" path="res://scripts/events/event_config.gd" id="2_event_config"]
+
+[sub_resource type="Resource" id="EventConfig_1"]
+script = ExtResource("2_event_config")
+event_id = "001"
+dialogue_resources = Array[String](["res://data/dialogues/event_001_01.tres"])
+max_execution_count = -1
+
+[resource]
+script = ExtResource("1_event_config_data")
+events = Array[ExtResource("2_event_config")]([SubResource("EventConfig_1")])

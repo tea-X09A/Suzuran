@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=4 uid="uid://c66yhlgjdohsy"]
+[gd_scene load_steps=15 format=4 uid="uid://c66yhlgjdohsy"]
 
 [ext_resource type="PackedScene" uid="uid://cb3hree4jheeu" path="res://scenes/levels/camera.tscn" id="1_o8kyb"]
 [ext_resource type="Texture2D" uid="uid://cvvb866p8u71i" path="res://assets/images/tilesets/tilesheet_complete.png" id="3_5kr0j"]
@@ -11,6 +11,7 @@
 [ext_resource type="Script" uid="uid://cem1ykee8ffbe" path="res://scripts/ui/ammo_gauge.gd" id="7_ammo"]
 [ext_resource type="Texture2D" uid="uid://c5dl3pkbmw88x" path="res://assets/images/bullets/kunai.png" id="8_kunai"]
 [ext_resource type="PackedScene" uid="uid://dwhuyn1us30js" path="res://scenes/levels/transition_area.tscn" id="8_transition"]
+[ext_resource type="PackedScene" uid="uid://c8vxhm5q7b4ki" path="res://scenes/levels/event_area.tscn" id="12_7s2gi"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ry65h"]
 texture = ExtResource("3_5kr0j")
@@ -350,3 +351,7 @@ max_hp = 10
 [node name="TransitionArea" parent="." instance=ExtResource("8_transition")]
 position = Vector2(3264, -256)
 next_level = "level1"
+
+[node name="EventArea" parent="." instance=ExtResource("12_7s2gi")]
+position = Vector2(2992, -256)
+event_id = "001"

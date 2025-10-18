@@ -25,6 +25,7 @@ DebugManager="*res://scripts/autoload/debug_manager.gd"
 KunaiPoolManager="*res://scripts/autoload/kunai_pool_manager.gd"
 MenuManager="*res://scripts/autoload/menu_manager.gd"
 SaveLoadManager="*res://scripts/autoload/save_load_manager.gd"
+EventManager="*res://scripts/autoload/event_manager.gd"
 
 [display]
 

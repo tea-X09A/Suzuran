@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="DialogueData" load_steps=8 format=3 uid="uid://65ps3m6ptamr"]
+
+[ext_resource type="Script" uid="uid://d4f5b8w8t3fsx" path="res://scripts/dialogue/dialogue_data.gd" id="1_dialogue_data"]
+[ext_resource type="Script" path="res://scripts/dialogue/dialogue_character_info.gd" id="2_character_info"]
+[ext_resource type="Script" path="res://scripts/dialogue/dialogue_choice_data.gd" id="3_lx7pl"]
+[ext_resource type="Script" path="res://scripts/dialogue/dialogue_message.gd" id="3_message"]
+
+[sub_resource type="Resource" id="character_001"]
+script = ExtResource("2_character_info")
+character_id = "narrator"
+speaker_name = {
+"en": "Narrator",
+"ja": "ナレーター"
+}
+face_image_path = ""
+default_emotion = "normal"
+
+[sub_resource type="Resource" id="message_001"]
+script = ExtResource("3_message")
+index = "0"
+speaker_id = "narrator"
+text = {
+"en": "This is a sample event. When you touch the event area, a dialogue will start.",
+"ja": "これはサンプルイベントです。イベントエリアに触れると会話が始まります。"
+}
+emotion = ""
+choices = Array[ExtResource("3_lx7pl")]([])
+condition = ""
+
+[sub_resource type="Resource" id="message_002"]
+script = ExtResource("3_message")
+index = "1"
+speaker_id = "narrator"
+text = {
+"en": "The event and dialogue system is working correctly. You can create your own events!",
+"ja": "イベントと会話システムは正常に動作しています。独自のイベントを作成できます！"
+}
+emotion = ""
+choices = Array[ExtResource("3_lx7pl")]([])
+condition = ""
+
+[resource]
+script = ExtResource("1_dialogue_data")
+characters = Array[ExtResource("2_character_info")]([SubResource("character_001")])
+messages = Array[ExtResource("3_message")]([SubResource("message_001"), SubResource("message_002")])
+text_speed = 0.05
