@@ -3,13 +3,17 @@ extends PanelContainer
 ## 会話システムのメッセージウィンドウ
 ##
 ## 話者名、メッセージテキスト、顔画像を表示します。
-## テキストアニメーション（1文字ずつ表示）とShiftキーによる高速スキップに対応します。
+## テキストアニメーション（1文字ずつ表示）、Enter/z長押しによる高速表示、
+## Shiftキーによる自動スキップに対応します。
 ## sow.mdの要件に基づいて実装されています。
 
 # ======================== シグナル定義 ========================
 
 ## テキスト表示が完了した時に発信
 signal message_completed()
+
+## 自動スキップモードでテキスト表示が完了した時に発信
+signal auto_skip_requested()
 
 # ======================== フォントサイズ設定 ========================
 
@@ -45,8 +49,14 @@ var is_text_complete: bool = false
 ## テキストアニメーション中かどうか
 var is_animating: bool = false
 
-## 高速スキップ中かどうか
-var is_fast_skipping: bool = false
+## Enter/z長押しによる高速表示中かどうか
+var is_fast_displaying: bool = false
+
+## Shiftキーによる自動スキップモード中かどうか
+var is_auto_skip_mode: bool = false
+
+## 通常のテキスト表示速度（初期値を保持）
+var normal_display_time: float = 0.05
 
 # ======================== 初期化処理 ========================
 
@@ -68,14 +78,28 @@ func _process(delta: float) -> void:
 	if is_animating:
 		_update_text_animation(delta)
 
-	# Shiftキーで高速スキップ
+	# Shiftキーで自動スキップモード + 30倍速表示
+	# ShiftキーはEnter/zキーよりも優先される
 	if Input.is_key_pressed(KEY_SHIFT):
-		if not is_fast_skipping:
-			is_fast_skipping = true
-			char_display_time = 0.01  # 高速表示（通常の5倍速）
+		if not is_auto_skip_mode:
+			is_auto_skip_mode = true
+			char_display_time = normal_display_time / 30.0  # 30倍速（約0.0017秒/文字）
 	else:
-		if is_fast_skipping:
-			is_fast_skipping = false
+		if is_auto_skip_mode:
+			is_auto_skip_mode = false
+			# Shiftを離した際に、Enter/zが押されていなければ通常速度に戻す
+			if not Input.is_action_pressed("ui_menu_accept"):
+				char_display_time = normal_display_time
+
+		# Enter/zキー長押しで高速表示（Shiftが押されていない場合のみ）
+		if Input.is_action_pressed("ui_menu_accept"):
+			if not is_fast_displaying:
+				is_fast_displaying = true
+				char_display_time = 0.01  # 高速表示（0.01秒/文字）
+		else:
+			if is_fast_displaying:
+				is_fast_displaying = false
+				char_display_time = normal_display_time  # 元の速度に戻す
 
 # ======================== 公開API ========================
 
@@ -87,7 +111,18 @@ func _process(delta: float) -> void:
 ## @param text_speed float テキスト表示速度（1文字あたりの秒数）
 func show_message(speaker_name: String, message_text: String, face_path: String, text_speed: float) -> void:
 	# 表示速度を設定
-	char_display_time = text_speed
+	normal_display_time = text_speed
+
+	# 現在の入力状態に応じて速度を設定
+	if is_auto_skip_mode:
+		# 自動スキップモード中は30倍速を維持
+		char_display_time = normal_display_time / 30.0
+	elif is_fast_displaying:
+		# Enter/z長押し中は高速表示を維持
+		char_display_time = 0.01
+	else:
+		# それ以外は通常速度
+		char_display_time = text_speed
 
 	# 話者名を設定
 	if speaker_name.is_empty():
@@ -155,6 +190,10 @@ func _update_text_animation(delta: float) -> void:
 			is_animating = false
 			is_text_complete = true
 			message_completed.emit()
+
+			# 自動スキップモードの場合は専用シグナルを発信
+			if is_auto_skip_mode:
+				auto_skip_requested.emit()
 
 ## 顔画像を設定
 func _set_face_image(face_path: String) -> void:
