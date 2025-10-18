@@ -80,6 +80,10 @@ func _process(_delta: float) -> void:
 	if TransitionManager and TransitionManager.is_transitioning:
 		return
 
+	# イベント実行中は入力を無効化
+	if EventManager and EventManager.is_event_running:
+		return
+
 	# メニューが表示されていない場合
 	if not pause_menu.visible:
 		# ESCキーでメニューを開く
@@ -209,6 +213,10 @@ func _create_menu_button(text_key: String, callback: Callable) -> Button:
 	return button
 
 func _process_menu_input(_delta: float) -> void:
+	# イベント実行中は入力を無効化
+	if EventManager and EventManager.is_event_running:
+		return
+
 	# サブメニューが独自に入力を処理する必要がある場合は、先に処理を委譲
 	# （例: 確認ダイアログ表示中など）
 	if current_menu_state != "main":
