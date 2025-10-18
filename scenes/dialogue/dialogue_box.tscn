@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://b7vn5wq2m4pxe"]
 
-[ext_resource type="Script" path="res://scripts/dialogue/dialogue_box.gd" id="1_dialogue_box"]
+[ext_resource type="Script" uid="uid://dpibidfy6vkmn" path="res://scripts/dialogue/dialogue_box.gd" id="1_dialogue_box"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
 bg_color = Color(0, 0, 0, 0.5)
@@ -45,7 +45,6 @@ size_flags_horizontal = 3
 [node name="SpeakerName" type="Label" parent="MarginContainer/VBoxContainer/SpeakerRow/TextColumn"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.843137, 0, 1)
-theme_override_font_sizes/font_size = 24
 text = "Speaker Name"
 
 [node name="DialogueText" type="RichTextLabel" parent="MarginContainer/VBoxContainer/SpeakerRow/TextColumn"]

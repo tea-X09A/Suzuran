@@ -11,6 +11,14 @@ extends PanelContainer
 ## テキスト表示が完了した時に発信
 signal message_completed()
 
+# ======================== フォントサイズ設定 ========================
+
+## 話者名のフォントサイズ
+@export var speaker_name_font_size: int = 32
+
+## 会話テキストのフォントサイズ
+@export var dialogue_text_font_size: int = 32
+
 # ======================== ノード参照キャッシュ ========================
 
 @onready var speaker_name_label: Label = $MarginContainer/VBoxContainer/SpeakerRow/TextColumn/SpeakerName
@@ -43,17 +51,15 @@ var is_fast_skipping: bool = false
 # ======================== 初期化処理 ========================
 
 func _ready() -> void:
+	# フォントサイズを動的に設定
+	speaker_name_label.add_theme_font_size_override("font_size", speaker_name_font_size)
+	dialogue_text.add_theme_font_size_override("normal_font_size", dialogue_text_font_size)
+
 	# 初期状態では非表示
 	visible = false
 
 	# RichTextLabelの初期設定
-	dialogue_text.bbcode_enabled = true
 	dialogue_text.visible_characters = 0
-
-	# FaceImageの初期設定
-	face_image.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-	face_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	face_image.custom_minimum_size = Vector2(140, 140)
 
 # ======================== フレーム更新処理 ========================
 
@@ -70,7 +76,6 @@ func _process(delta: float) -> void:
 	else:
 		if is_fast_skipping:
 			is_fast_skipping = false
-			# 元の速度に戻す（次のメッセージから適用）
 
 # ======================== 公開API ========================
 

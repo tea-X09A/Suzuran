@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://c8qw7xp1n6bvf"]
 
-[ext_resource type="Script" path="res://scripts/dialogue/dialogue_choice.gd" id="1_dialogue_choice"]
+[ext_resource type="Script" uid="uid://bme4b1nyddatn" path="res://scripts/dialogue/dialogue_choice.gd" id="1_dialogue_choice"]
 
 [node name="ChoiceButton" type="Button"]
 custom_minimum_size = Vector2(400, 60)

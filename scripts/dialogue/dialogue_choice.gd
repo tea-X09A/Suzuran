@@ -11,6 +11,11 @@ extends Button
 ## 選択肢が選択された時に発信（choice_indexを含む）
 signal choice_selected(choice_index: int)
 
+# ======================== フォントサイズ設定 ========================
+
+## 選択肢のフォントサイズ
+@export var choice_font_size: int = 32
+
 # ======================== 状態管理変数 ========================
 
 ## この選択肢のインデックス
@@ -30,6 +35,9 @@ var is_selected_state: bool = false
 # ======================== 初期化処理 ========================
 
 func _ready() -> void:
+	# フォントサイズを動的に設定
+	add_theme_font_size_override("font_size", choice_font_size)
+
 	# ボタンのpressedシグナルに接続
 	pressed.connect(_on_button_pressed)
 
