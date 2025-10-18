@@ -3,6 +3,7 @@ extends BaseState
 
 ## 入力処理（WALK状態固有）
 func handle_input(delta: float) -> void:
+	# 基底クラスのdisable_inputチェックを実行（イベント中の入力無効化）
 	super.handle_input(delta)
 	if player.disable_input:
 		return

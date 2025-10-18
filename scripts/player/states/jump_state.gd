@@ -18,6 +18,7 @@ func cleanup_state() -> void:
 
 ## 入力処理
 func handle_input(_delta: float) -> void:
+	# 基底クラスのdisable_inputチェックを実行（イベント中の入力無効化）
 	super.handle_input(_delta)
 	if player.disable_input:
 		return
