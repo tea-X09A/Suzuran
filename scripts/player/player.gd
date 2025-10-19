@@ -75,6 +75,8 @@ var ammo_count: int = -1
 var ammo_gauge: Control = null
 # イベント中の入力無効化フラグ
 var disable_input: bool = false
+# Examine機能のインジケーター（ActionIndicator）
+var examine_indicator: ActionIndicator = null
 
 # ======================== ステート管理システム ========================
 
@@ -104,6 +106,7 @@ func _ready() -> void:
 	GRAVITY = ProjectSettings.get_setting("physics/2d/default_gravity")
 	_initialize_systems()
 	_initialize_ui()
+	_initialize_examine_indicator()
 	_connect_debug_signals()
 
 	# ロード時の後処理
@@ -150,6 +153,11 @@ func _exit_tree() -> void:
 	# DebugManagerのシグナル切断（メモリリーク防止）
 	if DebugManager and DebugManager.debug_value_changed.is_connected(_on_debug_value_changed):
 		DebugManager.debug_value_changed.disconnect(_on_debug_value_changed)
+
+	# Examineインジケーターの解放
+	if examine_indicator:
+		examine_indicator.queue_free()
+		examine_indicator = null
 
 ## システムコンポーネントの初期化
 func _initialize_systems() -> void:
@@ -209,6 +217,13 @@ func _initialize_box_positions() -> void:
 	# 初期のsprite向きに基づいて位置を更新
 	_update_box_positions(sprite_2d.flip_h)
 
+## Examine用インジケーターの初期化
+func _initialize_examine_indicator() -> void:
+	# ActionIndicatorインスタンスを作成
+	examine_indicator = ActionIndicator.new()
+	# Playerの子として追加
+	add_child(examine_indicator)
+
 ## UIシステムの初期化
 func _initialize_ui() -> void:
 	# CanvasLayerからEPGaugeノードを探す（Level0またはLevel1）
@@ -258,6 +273,10 @@ func _physics_process(delta: float) -> void:
 
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
+
+	# Examineインジケーターの位置を更新
+	if examine_indicator:
+		examine_indicator.update_position(sprite_2d)
 
 	# 次フレーム用にキー状態を記録（フレームの最後に更新）
 	if current_state:
@@ -576,6 +595,18 @@ func restore_player_state(state: Dictionary) -> void:
 		direction_x = state["direction_x"]
 		sprite_2d.flip_h = direction_x > 0.0
 		_update_box_positions(sprite_2d.flip_h)
+
+# ======================== Examine機能 ========================
+
+## Examineインジケーターを表示
+func show_examine_indicator() -> void:
+	if examine_indicator:
+		examine_indicator.show_indicator()
+
+## Examineインジケーターを非表示
+func hide_examine_indicator() -> void:
+	if examine_indicator:
+		examine_indicator.hide_indicator()
 
 # ======================== デバッグ機能 ========================
 

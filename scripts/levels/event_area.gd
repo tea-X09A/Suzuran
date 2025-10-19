@@ -35,11 +35,11 @@ var is_activated: bool = false
 ## プレイヤーがエリア内にいるかどうか（EXAMINE用）
 var player_in_area: bool = false
 
+## プレイヤーへの参照（EXAMINE用インジケーター制御に使用）
+var player_reference: Player = null
+
 ## EventConfigDataリソース（キャッシュ）
 @onready var event_config_data: EventConfigData = _load_event_config_data()
-
-## EXAMINEタイプ用の視覚的インジケーター（Labelノード）
-var examine_label: Label = null
 
 # ======================== 初期化処理 ========================
 
@@ -50,7 +50,6 @@ func _ready() -> void:
 	if event_type == EventType.EXAMINE:
 		body_exited.connect(_on_body_exited)
 		set_process(true)
-		_create_examine_indicator()
 	else:
 		set_process(false)
 
@@ -62,9 +61,6 @@ func _process(_delta: float) -> void:
 		if Input.is_action_just_pressed("ui_menu_accept"):
 			_trigger_event()
 
-	# インジケーター表示を更新
-	_update_examine_indicator()
-
 ## クリーンアップ処理
 func _exit_tree() -> void:
 	# シグナル切断（メモリリーク防止）
@@ -75,17 +71,20 @@ func _exit_tree() -> void:
 	if event_type == EventType.EXAMINE:
 		if body_exited.is_connected(_on_body_exited):
 			body_exited.disconnect(_on_body_exited)
-		if examine_label:
-			examine_label.queue_free()
-			examine_label = null
+		# プレイヤー参照をクリア
+		player_reference = null
 
 # ======================== イベント処理 ========================
 
 func _on_body_entered(body: Node2D) -> void:
 	if body is Player:
-		# EXAMINEタイプの場合は、プレイヤーがエリア内にいることだけを記録
+		# EXAMINEタイプの場合は、プレイヤーがエリア内にいることを記録し、インジケーターを表示
 		if event_type == EventType.EXAMINE:
 			player_in_area = true
+			player_reference = body as Player
+			# one_shotが有効で既に発火済みの場合は表示しない
+			if not (one_shot and is_activated):
+				player_reference.show_examine_indicator()
 			return
 
 		# AUTOタイプの場合は、従来通り即座にイベントを発動
@@ -95,7 +94,10 @@ func _on_body_entered(body: Node2D) -> void:
 func _on_body_exited(body: Node2D) -> void:
 	if body is Player:
 		player_in_area = false
-		_update_examine_indicator()
+		# インジケーターを非表示
+		if player_reference:
+			player_reference.hide_examine_indicator()
+		player_reference = null
 
 ## イベント発動処理（AUTOとEXAMINEの両方で使用）
 func _trigger_event() -> void:
@@ -136,6 +138,10 @@ func _trigger_event() -> void:
 	# イベント発火フラグを立てる
 	is_activated = true
 
+	# インジケーターを非表示（イベント実行中は表示しない）
+	if player_reference:
+		player_reference.hide_examine_indicator()
+
 	# DialogueDataリソースを読み込み
 	var dialogue_data: DialogueData = load(dialogue_resource_path)
 	if not dialogue_data:
@@ -153,6 +159,10 @@ func _trigger_event() -> void:
 func reset() -> void:
 	is_activated = false
 	player_in_area = false
+	# インジケーターを非表示にしてプレイヤー参照をクリア
+	if player_reference:
+		player_reference.hide_examine_indicator()
+		player_reference = null
 
 # ======================== 内部ヘルパー関数 ========================
 
@@ -170,43 +180,6 @@ func _load_event_config_data() -> EventConfigData:
 	else:
 		push_error("EventArea: Resource at " + CONFIG_PATH + " is not EventConfigData")
 		return null
-
-## EXAMINEタイプ用の視覚的インジケーターを作成
-func _create_examine_indicator() -> void:
-	# Labelノードを作成
-	examine_label = Label.new()
-	examine_label.text = "[Z] 調べる"
-	examine_label.visible = false
-
-	# テキストのスタイル設定
-	examine_label.add_theme_font_size_override("font_size", 24)
-	examine_label.add_theme_color_override("font_color", Color.WHITE)
-	examine_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	examine_label.add_theme_constant_override("outline_size", 4)
-
-	# ラベルの位置を設定（エリアの上部中央）
-	examine_label.position = Vector2(32, -280)
-	examine_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	examine_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	examine_label.size = Vector2(200, 40)
-	examine_label.pivot_offset = Vector2(100, 20)
-
-	# シーンツリーに追加
-	add_child(examine_label)
-
-## EXAMINEタイプのインジケーター表示を更新
-func _update_examine_indicator() -> void:
-	if examine_label == null:
-		return
-
-	# プレイヤーがエリア内にいて、かつイベントが実行中でない場合のみ表示
-	var should_show: bool = player_in_area and not EventManager.is_event_running
-
-	# one_shotが有効で既に発火済みの場合は表示しない
-	if one_shot and is_activated:
-		should_show = false
-
-	examine_label.visible = should_show
 
 # ======================== イベント完了時の処理 ========================
 
