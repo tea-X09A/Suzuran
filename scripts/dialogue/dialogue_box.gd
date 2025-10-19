@@ -4,7 +4,7 @@ extends PanelContainer
 ##
 ## 話者名、メッセージテキストを表示します。
 ## テキストアニメーション（1文字ずつ表示）、決定ボタン長押しによる高速表示、
-## Shiftキーによる自動スキップに対応します。
+## Shiftキー/R1ボタンによる自動スキップに対応します。
 ## sow.mdの要件に基づいて実装されています。
 
 # ======================== シグナル定義 ========================
@@ -56,7 +56,7 @@ var is_animating: bool = false
 ## 決定ボタン長押しによる高速表示中かどうか
 var is_fast_displaying: bool = false
 
-## Shiftキーによる自動スキップモード中かどうか
+## fast_skipアクション（Shiftキー/R1ボタン）による自動スキップモード中かどうか
 var is_auto_skip_mode: bool = false
 
 ## 通常のテキスト表示速度（初期値を保持）
@@ -92,20 +92,20 @@ func _process(delta: float) -> void:
 	if is_animating:
 		_update_text_animation(delta)
 
-	# Shiftキーで自動スキップモード + 30倍速表示
-	# ShiftキーはEnter/zキーよりも優先される
-	if Input.is_key_pressed(KEY_SHIFT):
+	# Shiftキー/R1ボタンで自動スキップモード + 30倍速表示
+	# fast_skipアクションはEnter/zキーよりも優先される
+	if Input.is_action_pressed("fast_skip"):
 		if not is_auto_skip_mode:
 			is_auto_skip_mode = true
 			char_display_time = normal_display_time / 30.0  # 30倍速（約0.0017秒/文字）
 	else:
 		if is_auto_skip_mode:
 			is_auto_skip_mode = false
-			# Shiftを離した際に、決定ボタンが押されていなければ通常速度に戻す
+			# fast_skipを離した際に、決定ボタンが押されていなければ通常速度に戻す
 			if not GameSettings.is_action_menu_accept_hold():
 				char_display_time = normal_display_time
 
-		# 決定ボタン長押しで高速表示（Shiftが押されていない場合のみ）
+		# 決定ボタン長押しで高速表示（fast_skipが押されていない場合のみ）
 		if GameSettings.is_action_menu_accept_hold():
 			if not is_fast_displaying:
 				is_fast_displaying = true

@@ -268,14 +268,14 @@ func _process_next_input() -> void:
 	if not waiting_for_input:
 		return
 
-	# Shiftキー（自動スキップモード）で次へ
+	# Shiftキー/R1ボタン（自動スキップモード）で次へ
 	# 選択肢がある場合は自動スキップしない
-	if Input.is_key_pressed(KEY_SHIFT):
+	if Input.is_action_pressed("fast_skip"):
 		if not showing_choices:
 			# テキスト表示が完了しているか確認
 			if dialogue_box and dialogue_box.has_method("get_is_text_complete") and dialogue_box.get_is_text_complete():
 				_advance_to_next_message()
-		return  # Shiftキー処理後は他の入力チェックをスキップ
+		return  # fast_skip処理後は他の入力チェックをスキップ
 
 	# 決定ボタンで次へ（キーボード: Z/Enter、ゲームパッド: 言語により⚪︎/×が切替）
 	if GameSettings.is_action_menu_accept_pressed():
