@@ -217,8 +217,8 @@ func process_input(_delta: float) -> void:
 		_handle_key_input()
 		return
 
-	# ESC/Xキーでキャンセル
-	if Input.is_action_just_pressed("ui_menu_cancel"):
+	# ESC/キャンセルボタンで戻る（ゲームパッド: 言語により×/⚪︎が切替）
+	if GameSettings.is_action_menu_cancel_pressed():
 		_on_back_pressed()
 		return
 

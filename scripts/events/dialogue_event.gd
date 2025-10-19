@@ -242,8 +242,8 @@ func _process_choice_input() -> void:
 		selected_choice_index = min(choice_buttons.size() - 1, selected_choice_index + 1)
 		_update_choice_selection()
 
-	# Zキー / Enterキーで決定
-	if Input.is_action_just_pressed("ui_menu_accept"):
+	# 決定ボタンで選択（キーボード: Z/Enter、ゲームパッド: 言語により⚪︎/×が切替）
+	if GameSettings.is_action_menu_accept_pressed():
 		if selected_choice_index < choice_buttons.size():
 			var button: Node = choice_buttons[selected_choice_index]
 			if button.has_method("_on_button_pressed"):
@@ -277,8 +277,8 @@ func _process_next_input() -> void:
 				_advance_to_next_message()
 		return  # Shiftキー処理後は他の入力チェックをスキップ
 
-	# Zキー / Enterキーで次へ
-	if Input.is_action_just_pressed("ui_menu_accept"):
+	# 決定ボタンで次へ（キーボード: Z/Enter、ゲームパッド: 言語により⚪︎/×が切替）
+	if GameSettings.is_action_menu_accept_pressed():
 		# テキスト表示が完了しているか確認
 		if dialogue_box and dialogue_box.has_method("get_is_text_complete") and dialogue_box.get_is_text_complete():
 			_advance_to_next_message()

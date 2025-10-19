@@ -96,11 +96,11 @@ func _process(_delta: float) -> void:
 		menu_just_opened = false
 		return
 
-	# ウィンドウモードが変更された直後は、ui_menu_acceptのみをスキップ
+	# ウィンドウモードが変更された直後は、決定ボタンのみをスキップ
 	# 方向キーやキャンセルは即座に処理できるようにする
 	if window_mode_skip_frames > 0:
 		window_mode_skip_frames -= 1
-		if Input.is_action_just_pressed("ui_menu_accept"):
+		if GameSettings.is_action_menu_accept_pressed():
 			return
 		# 他の入力（方向キー、キャンセル）は通常通り処理
 
@@ -222,8 +222,8 @@ func _process_menu_input(_delta: float) -> void:
 			_process_submenu_input()
 			return
 
-	# ESC/Xキーでキャンセル
-	if Input.is_action_just_pressed("ui_menu_cancel") or Input.is_action_just_pressed("pause"):
+	# ESC/キャンセルボタンでメニューを閉じる（ゲームパッド: 言語により×/⚪︎が切替）
+	if GameSettings.is_action_menu_cancel_pressed() or Input.is_action_just_pressed("pause"):
 		match current_menu_state:
 			"main":
 				# メインメニューからゲームに戻る
@@ -259,7 +259,7 @@ func _process_main_menu_input() -> void:
 			current_selection = 0
 		_update_button_selection()
 
-	elif Input.is_action_just_pressed("ui_menu_accept"):
+	elif GameSettings.is_action_menu_accept_pressed():
 		if current_selection >= 0 and current_selection < buttons.size():
 			buttons[current_selection].emit_signal("pressed")
 

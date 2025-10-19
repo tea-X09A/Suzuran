@@ -110,6 +110,56 @@ func get_last_used_device() -> InputDevice:
 	## 最後に使用された入力デバイスを取得する
 	return last_used_device
 
+## 言語を考慮したメニュー入力チェック
+func is_action_menu_accept_pressed() -> bool:
+	## 言語とデバイスを考慮して「決定」が押されたかをチェック
+	## キーボード: Zキー/Enterが決定（言語に関わらず）
+	## ゲームパッド日本語: Circle(○)が決定
+	## ゲームパッド英語: Cross(×)が決定
+	if last_used_device == InputDevice.KEYBOARD:
+		# キーボードの場合は従来通り
+		return Input.is_action_just_pressed("ui_menu_accept")
+	else:  # GAMEPAD
+		if current_language == Language.JAPANESE:
+			# 日本語: Circle(○) = ui_menu_accept
+			return Input.is_action_just_pressed("ui_menu_accept")
+		else:  # ENGLISH
+			# 英語: Cross(×) = ui_menu_cancel を決定として扱う
+			return Input.is_action_just_pressed("ui_menu_cancel")
+
+func is_action_menu_cancel_pressed() -> bool:
+	## 言語とデバイスを考慮して「キャンセル」が押されたかをチェック
+	## キーボード: Xキーがキャンセル（言語に関わらず）
+	## ゲームパッド日本語: Cross(×)がキャンセル
+	## ゲームパッド英語: Circle(○)がキャンセル
+	if last_used_device == InputDevice.KEYBOARD:
+		# キーボードの場合は従来通り
+		return Input.is_action_just_pressed("ui_menu_cancel")
+	else:  # GAMEPAD
+		if current_language == Language.JAPANESE:
+			# 日本語: Cross(×) = ui_menu_cancel
+			return Input.is_action_just_pressed("ui_menu_cancel")
+		else:  # ENGLISH
+			# 英語: Circle(○) = ui_menu_accept をキャンセルとして扱う
+			return Input.is_action_just_pressed("ui_menu_accept")
+
+## 言語を考慮したメニュー入力チェック（長押し版）
+func is_action_menu_accept_hold() -> bool:
+	## 言語とデバイスを考慮して「決定」が押されているかをチェック（長押し検出用）
+	## キーボード: Zキー/Enterが押されている（言語に関わらず）
+	## ゲームパッド日本語: Circle(○)が押されている
+	## ゲームパッド英語: Cross(×)が押されている
+	if last_used_device == InputDevice.KEYBOARD:
+		# キーボードの場合は従来通り
+		return Input.is_action_pressed("ui_menu_accept")
+	else:  # GAMEPAD
+		if current_language == Language.JAPANESE:
+			# 日本語: Circle(○) = ui_menu_accept
+			return Input.is_action_pressed("ui_menu_accept")
+		else:  # ENGLISH
+			# 英語: Cross(×) = ui_menu_cancel を決定として扱う
+			return Input.is_action_pressed("ui_menu_cancel")
+
 ## 統一された設定変更メソッド（値が変更された場合のみシグナル発行と保存を実行）
 func _change_setting(current_value: Variant, new_value: Variant, setter: Callable, signal_emitter: Callable) -> bool:
 	if current_value != new_value:
@@ -265,42 +315,42 @@ func reset_gamepad_bindings() -> void:
 	gamepad_bindings_changed.emit()
 
 func get_gamepad_button_name(button: int) -> String:
-	## ゲームパッドボタンコードからボタン名を取得する
+	## ゲームパッドボタンコードからボタン名を取得する（PlayStation表記）
 	if button == JOY_BUTTON_INVALID:
 		return "None"
 
-	# 標準的なゲームパッドボタン名のマッピング
+	# PlayStationコントローラーのボタン名マッピング
 	match button:
 		JOY_BUTTON_A:
-			return "A"
+			return "×"  # Cross
 		JOY_BUTTON_B:
-			return "B"
+			return "○"  # Circle
 		JOY_BUTTON_X:
-			return "X"
+			return "□"  # Square
 		JOY_BUTTON_Y:
-			return "Y"
+			return "△"  # Triangle
 		JOY_BUTTON_BACK:
-			return "Back"
+			return "Share"
 		JOY_BUTTON_GUIDE:
-			return "Guide"
+			return "PS"
 		JOY_BUTTON_START:
-			return "Start"
+			return "Options"
 		JOY_BUTTON_LEFT_STICK:
 			return "L3"
 		JOY_BUTTON_RIGHT_STICK:
 			return "R3"
 		JOY_BUTTON_LEFT_SHOULDER:
-			return "LB"
+			return "L1"
 		JOY_BUTTON_RIGHT_SHOULDER:
-			return "RB"
+			return "R1"
 		JOY_BUTTON_DPAD_UP:
-			return "D-Up"
+			return "↑"
 		JOY_BUTTON_DPAD_DOWN:
-			return "D-Down"
+			return "↓"
 		JOY_BUTTON_DPAD_LEFT:
-			return "D-Left"
+			return "←"
 		JOY_BUTTON_DPAD_RIGHT:
-			return "D-Right"
+			return "→"
 		_:
 			return "Button " + str(button)
 

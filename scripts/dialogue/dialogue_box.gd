@@ -3,7 +3,7 @@ extends PanelContainer
 ## 会話システムのメッセージウィンドウ
 ##
 ## 話者名、メッセージテキストを表示します。
-## テキストアニメーション（1文字ずつ表示）、Enter/z長押しによる高速表示、
+## テキストアニメーション（1文字ずつ表示）、決定ボタン長押しによる高速表示、
 ## Shiftキーによる自動スキップに対応します。
 ## sow.mdの要件に基づいて実装されています。
 
@@ -53,7 +53,7 @@ var is_text_complete: bool = false
 ## テキストアニメーション中かどうか
 var is_animating: bool = false
 
-## Enter/z長押しによる高速表示中かどうか
+## 決定ボタン長押しによる高速表示中かどうか
 var is_fast_displaying: bool = false
 
 ## Shiftキーによる自動スキップモード中かどうか
@@ -101,12 +101,12 @@ func _process(delta: float) -> void:
 	else:
 		if is_auto_skip_mode:
 			is_auto_skip_mode = false
-			# Shiftを離した際に、Enter/zが押されていなければ通常速度に戻す
-			if not Input.is_action_pressed("ui_menu_accept"):
+			# Shiftを離した際に、決定ボタンが押されていなければ通常速度に戻す
+			if not GameSettings.is_action_menu_accept_hold():
 				char_display_time = normal_display_time
 
-		# Enter/zキー長押しで高速表示（Shiftが押されていない場合のみ）
-		if Input.is_action_pressed("ui_menu_accept"):
+		# 決定ボタン長押しで高速表示（Shiftが押されていない場合のみ）
+		if GameSettings.is_action_menu_accept_hold():
 			if not is_fast_displaying:
 				is_fast_displaying = true
 				char_display_time = 0.01  # 高速表示（0.01秒/文字）
@@ -131,7 +131,7 @@ func show_message(speaker_name: String, message_text: String, text_speed: float)
 		# 自動スキップモード中は30倍速を維持
 		char_display_time = normal_display_time / 30.0
 	elif is_fast_displaying:
-		# Enter/z長押し中は高速表示を維持
+		# 決定ボタン長押し中は高速表示を維持
 		char_display_time = 0.01
 	else:
 		# それ以外は通常速度

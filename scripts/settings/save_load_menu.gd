@@ -515,14 +515,14 @@ func process_input(_delta: float) -> void:
 		elif Input.is_action_just_pressed("ui_menu_down"):
 			current_selection = 1
 			_update_confirm_button_selection()
-		# 決定キー: 選択を実行
-		elif Input.is_action_just_pressed("ui_menu_accept"):
+		# 決定キー: 選択を実行（言語を考慮）
+		elif GameSettings.is_action_menu_accept_pressed():
 			if current_selection == 0:
 				_on_confirm_yes()
 			else:
 				_on_confirm_no()
-		# キャンセルキー（ESC/Xキー）: 「いいえ」を実行（スロット選択画面に戻る）
-		elif Input.is_action_just_pressed("ui_menu_cancel") or Input.is_action_just_pressed("pause"):
+		# ESC/キャンセルボタン: 「いいえ」を実行（ゲームパッド: 言語により×/⚪︎が切替）
+		elif GameSettings.is_action_menu_cancel_pressed() or Input.is_action_just_pressed("pause"):
 			_on_confirm_no()
 		return
 
@@ -530,8 +530,8 @@ func process_input(_delta: float) -> void:
 	if not menu_container or not menu_container.visible:
 		return
 
-	# ESC/Xキーでキャンセル
-	if Input.is_action_just_pressed("ui_menu_cancel"):
+	# ESC/キャンセルボタンで戻る（ゲームパッド: 言語により×/⚪︎が切替）
+	if GameSettings.is_action_menu_cancel_pressed():
 		_on_back_pressed()
 		return
 
@@ -548,7 +548,7 @@ func process_input(_delta: float) -> void:
 			current_selection = next_selection
 			_update_button_selection()
 
-	elif Input.is_action_just_pressed("ui_menu_accept"):
+	elif GameSettings.is_action_menu_accept_pressed():
 		if current_selection >= 0 and current_selection < buttons.size():
 			var button: Button = buttons[current_selection]
 			# 無効化されていないボタンのみ押下可能
