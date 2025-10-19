@@ -10,8 +10,8 @@ const NOTO_SANS_JP: FontFile = preload("res://assets/fonts/NotoSansJP-Regular.tt
 const FONT_SIZE_SMALL: int = 24
 const FONT_SIZE_MEDIUM: int = 28
 const FONT_SIZE_LARGE: int = 32
-const FONT_SIZE_XL: int = 40
-const FONT_SIZE_XXL: int = 48
+const FONT_SIZE_XL: int = 36
+const FONT_SIZE_XXL: int = 42
 
 
 ## 太字フォントバリエーションを生成する

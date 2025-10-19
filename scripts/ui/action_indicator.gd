@@ -82,8 +82,10 @@ func _create_ui() -> void:
 
 	# Label作成
 	_label = Label.new()
+	# FontTheme経由でBoldフォントを適用（イベント時と同じ太さに統一）
+	FontTheme.apply_to_label(_label, font_size, true)
+	# テキスト色を設定（FontThemeは色を設定しないため）
 	_label.add_theme_color_override("font_color", text_color)
-	_label.add_theme_font_size_override("font_size", font_size)
 	_label.custom_minimum_size = Vector2(24, 24)
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

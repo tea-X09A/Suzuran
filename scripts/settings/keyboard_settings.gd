@@ -87,7 +87,7 @@ func build_menu(parent_container: Control) -> void:
 		_create_key_binding_row(grid_container, action)
 
 	# スペーサー
-	_create_spacer(30)
+	_create_spacer(10)
 
 	# リセットボタンを作成
 	_create_reset_button()
@@ -107,7 +107,7 @@ func _create_key_binding_row(grid: GridContainer, action: String) -> void:
 	var label: Label = Label.new()
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	FontTheme.apply_to_label(label, FontTheme.FONT_SIZE_MEDIUM)
+	FontTheme.apply_to_label(label, FontTheme.FONT_SIZE_MEDIUM, true)
 	label.custom_minimum_size = Vector2(200, BUTTON_HEIGHT)
 	label.process_mode = Node.PROCESS_MODE_ALWAYS
 	label.set_meta("text_key", action)
@@ -117,7 +117,7 @@ func _create_key_binding_row(grid: GridContainer, action: String) -> void:
 	# キーボタン（右列）
 	var key_button: Button = Button.new()
 	key_button.custom_minimum_size = Vector2(300, BUTTON_HEIGHT)
-	FontTheme.apply_to_button(key_button, FontTheme.FONT_SIZE_MEDIUM)
+	FontTheme.apply_to_button(key_button, FontTheme.FONT_SIZE_MEDIUM, true)
 	key_button.focus_mode = Control.FOCUS_NONE
 	key_button.process_mode = Node.PROCESS_MODE_ALWAYS
 	key_button.pressed.connect(_on_key_button_pressed.bind(action))
@@ -136,7 +136,7 @@ func _create_reset_button() -> void:
 
 	reset_button = Button.new()
 	reset_button.custom_minimum_size = Vector2(BUTTON_WIDTH_COMPACT, BUTTON_HEIGHT)
-	FontTheme.apply_to_button(reset_button, FontTheme.FONT_SIZE_MEDIUM)
+	FontTheme.apply_to_button(reset_button, FontTheme.FONT_SIZE_LARGE, true)
 	reset_button.focus_mode = Control.FOCUS_NONE
 	reset_button.process_mode = Node.PROCESS_MODE_ALWAYS
 	reset_button.pressed.connect(_on_reset_pressed)

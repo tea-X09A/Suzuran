@@ -198,7 +198,7 @@ func _create_menu_button(text_key: String, callback: Callable) -> Button:
 	var button: Button = Button.new()
 	button.set_meta("text_key", text_key)  # ボタンに識別用のメタデータを保存
 	button.custom_minimum_size = Vector2(400, 60)
-	FontTheme.apply_to_button(button, FontTheme.FONT_SIZE_LARGE)
+	FontTheme.apply_to_button(button, FontTheme.FONT_SIZE_LARGE, true)
 	button.focus_mode = Control.FOCUS_NONE  # キーボードフォーカスを無効化（手動管理）
 	button.process_mode = Node.PROCESS_MODE_ALWAYS
 	button.pressed.connect(callback)

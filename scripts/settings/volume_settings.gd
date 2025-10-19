@@ -26,7 +26,7 @@ func build_menu(parent_container: Control) -> void:
 	# タイトルラベル
 	var title_label: Label = Label.new()
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	FontTheme.apply_to_label(title_label, FontTheme.FONT_SIZE_XL)
+	FontTheme.apply_to_label(title_label, FontTheme.FONT_SIZE_XL, true)
 	title_label.process_mode = Node.PROCESS_MODE_ALWAYS
 	menu_container.add_child(title_label)
 	_update_title_text(title_label)
@@ -34,7 +34,7 @@ func build_menu(parent_container: Control) -> void:
 	# プレースホルダーラベル
 	var placeholder_label: Label = Label.new()
 	placeholder_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	FontTheme.apply_to_label(placeholder_label, FontTheme.FONT_SIZE_LARGE)
+	FontTheme.apply_to_label(placeholder_label, FontTheme.FONT_SIZE_LARGE, true)
 	placeholder_label.process_mode = Node.PROCESS_MODE_ALWAYS
 	menu_container.add_child(placeholder_label)
 	_update_placeholder_text(placeholder_label)
