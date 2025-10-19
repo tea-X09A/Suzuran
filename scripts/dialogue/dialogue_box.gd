@@ -12,14 +12,6 @@ extends PanelContainer
 ## テキスト表示が完了した時に発信
 signal message_completed()
 
-# ======================== フォント設定 ========================
-
-## フォントファイル（preloadで事前読み込み）
-const DIALOGUE_FONT: FontFile = preload("res://assets/fonts/NotoSansJP-Regular.ttf")
-
-## 太字バリエーション（動的に作成）
-var bold_font_variation: FontVariation
-
 # ======================== フォントサイズ設定 ========================
 
 ## 話者名のフォントサイズ
@@ -65,19 +57,9 @@ var normal_display_time: float = 0.05
 # ======================== 初期化処理 ========================
 
 func _ready() -> void:
-	# フォントバリエーションを作成してフォントを太くする
-	bold_font_variation = FontVariation.new()
-	bold_font_variation.base_font = DIALOGUE_FONT
-	# emboldプロパティでフォントを太くする（0.0-2.0、推奨値は0.5-1.2）
-	bold_font_variation.variation_embolden = 0.8
-
-	# フォントを明示的に設定（太字バリエーションを使用）
-	speaker_name_label.add_theme_font_override("font", bold_font_variation)
-	dialogue_text.add_theme_font_override("normal_font", bold_font_variation)
-
-	# フォント設定後にサイズを設定
-	speaker_name_label.add_theme_font_size_override("font_size", speaker_name_font_size)
-	dialogue_text.add_theme_font_size_override("normal_font_size", dialogue_text_font_size)
+	# FontTheme AutoLoadを使用してフォントを適用（太字バリエーションを使用）
+	FontTheme.apply_to_label(speaker_name_label, speaker_name_font_size, true)
+	FontTheme.apply_to_rich_text_label(dialogue_text, dialogue_text_font_size, true)
 
 	# 初期状態では非表示
 	visible = false

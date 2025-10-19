@@ -32,7 +32,7 @@ func _init(manager_ref: WeakRef) -> void:
 func _create_section_label(text_key: String) -> Label:
 	var label: Label = Label.new()
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 40)
+	FontTheme.apply_to_label(label, FontTheme.FONT_SIZE_XL)
 	label.process_mode = Node.PROCESS_MODE_ALWAYS
 	menu_container.add_child(label)
 	_update_text(label, text_key)

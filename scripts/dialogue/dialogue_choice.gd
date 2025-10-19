@@ -11,14 +11,6 @@ extends Button
 ## 選択肢が選択された時に発信（choice_indexを含む）
 signal choice_selected(choice_index: int)
 
-# ======================== フォント設定 ========================
-
-## フォントファイル（preloadで事前読み込み）
-const CHOICE_FONT: FontFile = preload("res://assets/fonts/NotoSansJP-Regular.ttf")
-
-## 太字バリエーション（動的に作成）
-var bold_font_variation: FontVariation
-
 # ======================== フォントサイズ設定 ========================
 
 ## 選択肢のフォントサイズ
@@ -43,17 +35,8 @@ var is_selected_state: bool = false
 # ======================== 初期化処理 ========================
 
 func _ready() -> void:
-	# フォントバリエーションを作成してフォントを太くする
-	bold_font_variation = FontVariation.new()
-	bold_font_variation.base_font = CHOICE_FONT
-	# emboldプロパティでフォントを太くする（0.0-2.0、推奨値は0.5-1.2）
-	bold_font_variation.variation_embolden = 0.8
-
-	# フォントを明示的に設定（太字バリエーションを使用）
-	add_theme_font_override("font", bold_font_variation)
-
-	# フォント設定後にサイズを設定
-	add_theme_font_size_override("font_size", choice_font_size)
+	# FontTheme AutoLoadを使用してフォントを適用（太字バリエーションを使用）
+	FontTheme.apply_to_button(self, choice_font_size, true)
 
 	# ボタンのpressedシグナルに接続
 	pressed.connect(_on_button_pressed)

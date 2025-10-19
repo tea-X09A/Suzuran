@@ -101,7 +101,7 @@ func build_menu(parent_container: Control) -> void:
 	# タイトルラベル
 	title_label = Label.new()
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.add_theme_font_size_override("font_size", 40)
+	FontTheme.apply_to_label(title_label, FontTheme.FONT_SIZE_XL)
 	title_label.process_mode = Node.PROCESS_MODE_ALWAYS
 	menu_container.add_child(title_label)
 	_update_title_text()
@@ -152,7 +152,7 @@ func _build_confirm_menu(parent_container: Control) -> void:
 	# 確認メッセージラベル
 	confirm_message_label = Label.new()
 	confirm_message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	confirm_message_label.add_theme_font_size_override("font_size", 32)
+	FontTheme.apply_to_label(confirm_message_label, FontTheme.FONT_SIZE_LARGE)
 	confirm_message_label.process_mode = Node.PROCESS_MODE_ALWAYS
 	var lang_code: String = _get_language_code()
 	confirm_message_label.text = MENU_TEXTS["confirm_save"][lang_code]
@@ -179,7 +179,7 @@ func _create_confirm_button(button_text: String, callback: Callable) -> Button:
 	var button: Button = Button.new()
 	button.text = button_text
 	button.custom_minimum_size = CONFIRM_BUTTON_SIZE
-	button.add_theme_font_size_override("font_size", 32)
+	FontTheme.apply_to_button(button, FontTheme.FONT_SIZE_LARGE)
 	button.focus_mode = Control.FOCUS_ALL
 	button.process_mode = Node.PROCESS_MODE_ALWAYS
 	button.pressed.connect(callback)
@@ -196,7 +196,7 @@ func _create_center_container(child_node: Control) -> CenterContainer:
 func _create_slot_button(slot_index: int) -> Button:
 	var button: Button = Button.new()
 	button.custom_minimum_size = Vector2(400, 80)
-	button.add_theme_font_size_override("font_size", 24)
+	FontTheme.apply_to_button(button, FontTheme.FONT_SIZE_SMALL)
 	button.focus_mode = Control.FOCUS_ALL
 	button.process_mode = Node.PROCESS_MODE_ALWAYS
 	button.pressed.connect(_on_slot_pressed.bind(slot_index))

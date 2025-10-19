@@ -110,7 +110,7 @@ func _create_button_binding_row(grid: GridContainer, action: String) -> void:
 	var label: Label = Label.new()
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 28)
+	FontTheme.apply_to_label(label, FontTheme.FONT_SIZE_MEDIUM)
 	label.custom_minimum_size = Vector2(200, BUTTON_HEIGHT)
 	label.process_mode = Node.PROCESS_MODE_ALWAYS
 	label.set_meta("text_key", action)
@@ -120,7 +120,7 @@ func _create_button_binding_row(grid: GridContainer, action: String) -> void:
 	# ボタン表示用のButton（右列）
 	var button_btn: Button = Button.new()
 	button_btn.custom_minimum_size = Vector2(300, BUTTON_HEIGHT)
-	button_btn.add_theme_font_size_override("font_size", 28)
+	FontTheme.apply_to_button(button_btn, FontTheme.FONT_SIZE_MEDIUM)
 	button_btn.focus_mode = Control.FOCUS_NONE
 	button_btn.process_mode = Node.PROCESS_MODE_ALWAYS
 	button_btn.pressed.connect(_on_button_button_pressed.bind(action))
@@ -139,7 +139,7 @@ func _create_reset_button() -> void:
 
 	reset_button = Button.new()
 	reset_button.custom_minimum_size = Vector2(BUTTON_WIDTH_COMPACT, BUTTON_HEIGHT)
-	reset_button.add_theme_font_size_override("font_size", 28)
+	FontTheme.apply_to_button(reset_button, FontTheme.FONT_SIZE_MEDIUM)
 	reset_button.focus_mode = Control.FOCUS_NONE
 	reset_button.process_mode = Node.PROCESS_MODE_ALWAYS
 	reset_button.pressed.connect(_on_reset_pressed)

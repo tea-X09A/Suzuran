@@ -26,6 +26,7 @@ KunaiPoolManager="*res://scripts/autoload/kunai_pool_manager.gd"
 MenuManager="*res://scripts/autoload/menu_manager.gd"
 SaveLoadManager="*res://scripts/autoload/save_load_manager.gd"
 EventManager="*res://scripts/autoload/event_manager.gd"
+FontTheme="*res://scripts/autoload/font_theme.gd"
 
 [display]
 

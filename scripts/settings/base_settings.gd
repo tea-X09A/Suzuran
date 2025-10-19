@@ -148,7 +148,7 @@ func _create_button(label_text: String, callback: Callable) -> Button:
 	var button: Button = Button.new()
 	button.text = label_text
 	button.custom_minimum_size = Vector2(BUTTON_WIDTH_STANDARD, BUTTON_HEIGHT)
-	button.add_theme_font_size_override("font_size", 32)
+	FontTheme.apply_to_button(button, FontTheme.FONT_SIZE_LARGE)
 	button.focus_mode = Control.FOCUS_NONE
 	button.process_mode = Node.PROCESS_MODE_ALWAYS
 	button.pressed.connect(callback)
@@ -179,7 +179,7 @@ func _create_horizontal_button(label_text: String, callback: Callable, container
 	var button: Button = Button.new()
 	button.text = label_text
 	button.custom_minimum_size = Vector2(BUTTON_WIDTH_COMPACT, BUTTON_HEIGHT)
-	button.add_theme_font_size_override("font_size", 32)
+	FontTheme.apply_to_button(button, FontTheme.FONT_SIZE_LARGE)
 	button.focus_mode = Control.FOCUS_NONE
 	button.process_mode = Node.PROCESS_MODE_ALWAYS
 	button.pressed.connect(callback)
@@ -351,7 +351,7 @@ func _create_back_button() -> void:
 	back_button = Button.new()
 	back_button.text = ""
 	back_button.custom_minimum_size = Vector2(BUTTON_WIDTH_COMPACT, BUTTON_HEIGHT)
-	back_button.add_theme_font_size_override("font_size", 32)
+	FontTheme.apply_to_button(back_button, FontTheme.FONT_SIZE_LARGE)
 	back_button.focus_mode = Control.FOCUS_NONE
 	back_button.process_mode = Node.PROCESS_MODE_ALWAYS
 	back_button.pressed.connect(_on_back_pressed)
@@ -413,7 +413,7 @@ func _create_arrow_selector(
 	# 左矢印ラベル
 	selector.left_arrow = Label.new()
 	selector.left_arrow.text = "<"
-	selector.left_arrow.add_theme_font_size_override("font_size", 48)
+	FontTheme.apply_to_label(selector.left_arrow, FontTheme.FONT_SIZE_XXL)
 	selector.left_arrow.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	selector.left_arrow.custom_minimum_size = Vector2(40, 0)
 	selector.left_arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -426,7 +426,7 @@ func _create_arrow_selector(
 	# 右矢印ラベル
 	selector.right_arrow = Label.new()
 	selector.right_arrow.text = ">"
-	selector.right_arrow.add_theme_font_size_override("font_size", 48)
+	FontTheme.apply_to_label(selector.right_arrow, FontTheme.FONT_SIZE_XXL)
 	selector.right_arrow.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	selector.right_arrow.custom_minimum_size = Vector2(40, 0)
 	selector.right_arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
