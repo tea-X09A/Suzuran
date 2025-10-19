@@ -2,7 +2,7 @@ extends PanelContainer
 
 ## 会話システムのメッセージウィンドウ
 ##
-## 話者名、メッセージテキスト、顔画像を表示します。
+## 話者名、メッセージテキストを表示します。
 ## テキストアニメーション（1文字ずつ表示）、Enter/z長押しによる高速表示、
 ## Shiftキーによる自動スキップに対応します。
 ## sow.mdの要件に基づいて実装されています。
@@ -32,7 +32,6 @@ var bold_font_variation: FontVariation
 
 @onready var speaker_name_label: Label = $MarginContainer/VBoxContainer/SpeakerRow/TextColumn/SpeakerName
 @onready var dialogue_text: RichTextLabel = $MarginContainer/VBoxContainer/SpeakerRow/TextColumn/DialogueText
-@onready var face_image: TextureRect = $MarginContainer/VBoxContainer/SpeakerRow/FaceImage
 
 # ======================== 状態管理変数 ========================
 
@@ -122,9 +121,8 @@ func _process(delta: float) -> void:
 ##
 ## @param speaker_name String 話者名
 ## @param message_text String メッセージテキスト
-## @param face_path String 顔画像のパス（空文字列の場合は非表示）
 ## @param text_speed float テキスト表示速度（1文字あたりの秒数）
-func show_message(speaker_name: String, message_text: String, face_path: String, text_speed: float) -> void:
+func show_message(speaker_name: String, message_text: String, text_speed: float) -> void:
 	# 表示速度を設定
 	normal_display_time = text_speed
 
@@ -152,9 +150,6 @@ func show_message(speaker_name: String, message_text: String, face_path: String,
 	current_text = message_text
 	dialogue_text.text = current_text
 	dialogue_text.visible_characters = 0
-
-	# 顔画像を設定
-	_set_face_image(face_path)
 
 	# アニメーション開始
 	visible_characters = 0
@@ -206,20 +201,3 @@ func _update_text_animation(delta: float) -> void:
 			is_animating = false
 			is_text_complete = true
 			message_completed.emit()
-
-## 顔画像を設定
-func _set_face_image(face_path: String) -> void:
-	if face_path.is_empty():
-		# 顔画像を透明化（スペースは確保したまま非表示）
-		face_image.modulate = Color(1, 1, 1, 0)
-		face_image.texture = null
-	else:
-		# 顔画像を読み込んで表示
-		var texture: Texture2D = load(face_path)
-		if texture:
-			face_image.texture = texture
-			face_image.modulate = Color(1, 1, 1, 1)
-		else:
-			push_warning("DialogueBox: Failed to load face image: " + face_path)
-			face_image.modulate = Color(1, 1, 1, 0)
-			face_image.texture = null

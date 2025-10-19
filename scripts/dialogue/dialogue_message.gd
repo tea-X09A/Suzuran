@@ -15,9 +15,6 @@ extends Resource
 ## メッセージテキスト（多言語対応）
 @export var text: Dictionary = {"ja": "", "en": ""}
 
-## 話者の表情（例: "normal", "happy", "sad"）
-@export var emotion: String = ""
-
 ## 選択肢リスト（分岐がある場合）
 @export var choices: Array[DialogueChoiceData] = []
 

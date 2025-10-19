@@ -130,7 +130,6 @@ func _show_next_message() -> void:
 
 	# 話者情報を取得
 	var speaker_name: String = ""
-	var face_path: String = ""
 
 	# 現在の言語設定を取得（最初に1回のみ）
 	var language: String = _get_current_language()
@@ -141,17 +140,12 @@ func _show_next_message() -> void:
 			# 話者名を取得
 			speaker_name = character.speaker_name.get(language, "")
 
-			# 表情に基づいて顔画像パスを構築
-			var emotion: String = message.emotion if not message.emotion.is_empty() else character.default_emotion
-			if not character.face_image_path.is_empty():
-				face_path = character.face_image_path + emotion + ".png"
-
 	# メッセージテキストを取得
 	var message_text: String = message.text.get(language, "")
 
 	# DialogueBoxにメッセージを表示
 	if dialogue_box and dialogue_box.has_method("show_message"):
-		dialogue_box.show_message(speaker_name, message_text, face_path, dialogue_data.text_speed)
+		dialogue_box.show_message(speaker_name, message_text, dialogue_data.text_speed)
 
 	# 選択肢があるか確認
 	if message.choices.size() > 0:
