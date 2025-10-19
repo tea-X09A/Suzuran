@@ -3,9 +3,6 @@ extends Node
 ## メニュー表示を管理するマネージャー
 ## ゲームの一時停止自体はPauseManagerが担当
 
-# 設定メニュースクリプトの参照
-const BaseSettingsScript = preload("res://scripts/settings/base_settings.gd")
-
 # メニューUI要素
 var pause_menu: CanvasLayer = null
 var center_container: CenterContainer = null
@@ -14,7 +11,7 @@ var buttons: Array[Button] = []
 var current_selection: int = 0
 
 # サブメニュー管理
-var settings_menu: BaseSettingsScript.SettingsMenu = null
+var settings_menu: SettingsMenu = null
 var volume_menu: VolumeSettingsMenu = null
 var display_menu: DisplaySettingsMenu = null
 var language_menu: LanguageSettingsMenu = null
@@ -161,7 +158,7 @@ func _build_main_menu() -> void:
 func _build_submenus() -> void:
 	"""サブメニューを構築"""
 	# 設定メニュー
-	settings_menu = BaseSettingsScript.SettingsMenu.new(weakref(self))
+	settings_menu = SettingsMenu.new(weakref(self))
 	settings_menu.build_menu(center_container)
 
 	# 音量設定

@@ -69,11 +69,7 @@ var previous_key_states: Dictionary = {}
 func build_menu(parent_container: Control) -> void:
 	"""キーボード設定メニューを構築"""
 	# VBoxContainerを作成
-	menu_container = VBoxContainer.new()
-	menu_container.add_theme_constant_override("separation", 20)
-	menu_container.process_mode = Node.PROCESS_MODE_ALWAYS
-	menu_container.visible = false
-	parent_container.add_child(menu_container)
+	_init_menu_container(parent_container)
 
 	# スペーサー
 	_create_spacer(20)
@@ -103,9 +99,7 @@ func build_menu(parent_container: Control) -> void:
 	_create_back_button()
 
 	# 言語変更シグナルに接続
-	if GameSettings.language_changed.is_connected(_on_language_changed):
-		GameSettings.language_changed.disconnect(_on_language_changed)
-	GameSettings.language_changed.connect(_on_language_changed)
+	_connect_language_signal()
 
 func _create_key_binding_row(grid: GridContainer, action: String) -> void:
 	"""キーバインド設定の行を作成（ラベル + キーボタン）"""
@@ -158,7 +152,7 @@ func _on_key_button_pressed(action: String) -> void:
 
 	# ボタンのテキストを「キーを押してください...」に変更
 	var button: Button = key_buttons[action]
-	var lang_code: String = "ja" if GameSettings.current_language == GameSettings.Language.JAPANESE else "en"
+	var lang_code: String = get_language_code()
 	button.text = MENU_TEXTS["waiting"][lang_code]
 
 	# 現在のキー状態を記録（決定キーの誤検出を防ぐため）
@@ -183,7 +177,7 @@ func _on_reset_pressed() -> void:
 
 func _update_label_text(label: Label, text_key: String) -> void:
 	"""ラベルテキストを更新"""
-	var lang_code: String = "ja" if GameSettings.current_language == GameSettings.Language.JAPANESE else "en"
+	var lang_code: String = get_language_code()
 	label.text = MENU_TEXTS[text_key][lang_code]
 
 func _update_key_button_text(action: String) -> void:
@@ -196,7 +190,7 @@ func _update_key_button_text(action: String) -> void:
 func _update_reset_button_text() -> void:
 	"""リセットボタンのテキストを更新"""
 	if reset_button:
-		var lang_code: String = "ja" if GameSettings.current_language == GameSettings.Language.JAPANESE else "en"
+		var lang_code: String = get_language_code()
 		reset_button.text = MENU_TEXTS["reset"][lang_code]
 
 func _on_language_changed(_new_language: String) -> void:
@@ -323,8 +317,7 @@ func is_handling_input() -> bool:
 
 func cleanup() -> void:
 	"""クリーンアップ処理"""
-	if GameSettings.language_changed.is_connected(_on_language_changed):
-		GameSettings.language_changed.disconnect(_on_language_changed)
+	_disconnect_language_signal()
 
 	key_buttons.clear()
 	reset_button = null

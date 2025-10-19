@@ -28,10 +28,6 @@ func _init(manager_ref: WeakRef) -> void:
 	super._init(manager_ref)
 	use_2d_navigation = true
 
-## 現在の言語コードを取得
-func _get_language_code() -> String:
-	return "ja" if GameSettings.current_language == GameSettings.Language.JAPANESE else "en"
-
 ## セクションラベルを作成
 func _create_section_label(text_key: String) -> Label:
 	var label: Label = Label.new()
@@ -48,11 +44,7 @@ func build_menu(parent_container: Control) -> void:
 	navigation_rows.clear()
 
 	# VBoxContainerを作成
-	menu_container = VBoxContainer.new()
-	menu_container.add_theme_constant_override("separation", 20)
-	menu_container.process_mode = Node.PROCESS_MODE_ALWAYS
-	menu_container.visible = false
-	parent_container.add_child(menu_container)
+	_init_menu_container(parent_container)
 
 	# 常時ダッシュセクション
 	always_dash_section_label = _create_section_label("always_dash_section")
@@ -76,13 +68,11 @@ func build_menu(parent_container: Control) -> void:
 	navigation_rows.append(back_button_indices)
 
 	# 言語変更シグナルに接続
-	if GameSettings.language_changed.is_connected(_on_language_changed):
-		GameSettings.language_changed.disconnect(_on_language_changed)
-	GameSettings.language_changed.connect(_on_language_changed)
+	_connect_language_signal()
 
 func _update_text(label: Label, key: String) -> void:
 	## ラベルテキストを多言語対応で更新
-	var lang_code: String = _get_language_code()
+	var lang_code: String = get_language_code()
 	label.text = MENU_TEXTS[key][lang_code]
 
 func _update_always_dash_button_text() -> void:
@@ -90,7 +80,7 @@ func _update_always_dash_button_text() -> void:
 	if always_dash_button_index >= buttons.size():
 		return
 
-	var lang_code: String = _get_language_code()
+	var lang_code: String = get_language_code()
 	# 常時ダッシュの状態に応じて表示（ONならON、OFFならOFF）
 	if GameSettings.always_dash:
 		buttons[always_dash_button_index].text = MENU_TEXTS["on"][lang_code]
@@ -140,8 +130,7 @@ func _on_language_changed(_new_language: String) -> void:
 
 func cleanup() -> void:
 	## クリーンアップ処理
-	if GameSettings.language_changed.is_connected(_on_language_changed):
-		GameSettings.language_changed.disconnect(_on_language_changed)
+	_disconnect_language_signal()
 
 	# 参照をクリア
 	always_dash_section_label = null
