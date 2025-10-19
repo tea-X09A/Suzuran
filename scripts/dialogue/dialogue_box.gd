@@ -12,9 +12,6 @@ extends PanelContainer
 ## テキスト表示が完了した時に発信
 signal message_completed()
 
-## 自動スキップモードでテキスト表示が完了した時に発信
-signal auto_skip_requested()
-
 # ======================== フォントサイズ設定 ========================
 
 ## 話者名のフォントサイズ
@@ -191,10 +188,6 @@ func _update_text_animation(delta: float) -> void:
 			is_animating = false
 			is_text_complete = true
 			message_completed.emit()
-
-			# 自動スキップモードの場合は専用シグナルを発信
-			if is_auto_skip_mode:
-				auto_skip_requested.emit()
 
 ## 顔画像を設定
 func _set_face_image(face_path: String) -> void:

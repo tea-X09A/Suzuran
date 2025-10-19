@@ -118,10 +118,6 @@ func _setup_dialogue_system() -> void:
 	if dialogue_box and dialogue_box.has_signal("message_completed"):
 		dialogue_box.message_completed.connect(_on_message_completed)
 
-	# 自動スキップ用シグナルに接続
-	if dialogue_box and dialogue_box.has_signal("auto_skip_requested"):
-		dialogue_box.auto_skip_requested.connect(_on_auto_skip_requested)
-
 ## 次のメッセージを表示
 func _show_next_message() -> void:
 	# 現在のインデックスに対応するメッセージを取得
@@ -176,16 +172,6 @@ func _on_message_completed() -> void:
 		# 入力待ち状態に移行
 		waiting_for_input = true
 		_start_next_input_monitoring()
-
-## 自動スキップモードでテキスト表示完了時の処理
-func _on_auto_skip_requested() -> void:
-	# 選択肢がある場合は自動スキップしない
-	if showing_choices:
-		return
-
-	# テキスト表示が完了している場合のみ次へ進む
-	if dialogue_box and dialogue_box.has_method("get_is_text_complete") and dialogue_box.get_is_text_complete():
-		_advance_to_next_message()
 
 ## 選択肢を表示
 func _show_choices(choices: Array[DialogueChoiceData]) -> void:
@@ -287,6 +273,15 @@ func _stop_next_input_monitoring() -> void:
 func _process_next_input() -> void:
 	if not waiting_for_input:
 		return
+
+	# Shiftキー（自動スキップモード）で次へ
+	# 選択肢がある場合は自動スキップしない
+	if Input.is_key_pressed(KEY_SHIFT):
+		if not showing_choices:
+			# テキスト表示が完了しているか確認
+			if dialogue_box and dialogue_box.has_method("get_is_text_complete") and dialogue_box.get_is_text_complete():
+				_advance_to_next_message()
+		return  # Shiftキー処理後は他の入力チェックをスキップ
 
 	# Zキー / Enterキーで次へ
 	if Input.is_action_just_pressed("ui_menu_accept"):
