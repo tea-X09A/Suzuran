@@ -77,6 +77,8 @@ var ammo_gauge: Control = null
 var disable_input: bool = false
 # Examine機能のインジケーター（ActionIndicator）
 var examine_indicator: ActionIndicator = null
+# Examineエリア内にいるかどうかのフラグ（エリア内では一部のアクション入力を抑制）
+var in_examine_area: bool = false
 
 # ======================== ステート管理システム ========================
 

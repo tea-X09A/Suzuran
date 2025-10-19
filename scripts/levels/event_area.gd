@@ -57,8 +57,8 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	# プレイヤーがエリア内にいる場合のみ入力をチェック
 	if player_in_area and not EventManager.is_event_running:
-		# Zキー（ui_menu_accept）が押されたらイベントを発動
-		if Input.is_action_just_pressed("ui_menu_accept"):
+		# GameSettingsの言語別入力判定を使用
+		if GameSettings.is_action_menu_accept_pressed():
 			_trigger_event()
 
 ## クリーンアップ処理
@@ -82,6 +82,8 @@ func _on_body_entered(body: Node2D) -> void:
 		if event_type == EventType.EXAMINE:
 			player_in_area = true
 			player_reference = body as Player
+			# examineエリア内フラグをONにして一部のアクション入力を抑制
+			player_reference.in_examine_area = true
 			# one_shotが有効で既に発火済みの場合は表示しない
 			if not (one_shot and is_activated):
 				player_reference.show_examine_indicator()
@@ -94,8 +96,9 @@ func _on_body_entered(body: Node2D) -> void:
 func _on_body_exited(body: Node2D) -> void:
 	if body is Player:
 		player_in_area = false
-		# インジケーターを非表示
+		# インジケーターを非表示し、examineエリア内フラグをOFF
 		if player_reference:
+			player_reference.in_examine_area = false
 			player_reference.hide_examine_indicator()
 		player_reference = null
 
@@ -159,8 +162,9 @@ func _trigger_event() -> void:
 func reset() -> void:
 	is_activated = false
 	player_in_area = false
-	# インジケーターを非表示にしてプレイヤー参照をクリア
+	# インジケーターを非表示にし、examineエリア内フラグをOFFにしてプレイヤー参照をクリア
 	if player_reference:
+		player_reference.in_examine_area = false
 		player_reference.hide_examine_indicator()
 		player_reference = null
 
