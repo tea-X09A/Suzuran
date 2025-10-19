@@ -16,9 +16,6 @@ extends Control
 
 # ======================== エクスポートプロパティ ========================
 
-## 表示するキーテキスト
-@export var action_key_text: String = "Z"
-
 ## 背景色
 @export var background_color: Color = Color(0.2, 0.2, 0.2, 0.9)
 
@@ -54,6 +51,15 @@ func _ready() -> void:
 	_create_ui()
 	visible = false  # デフォルトは非表示
 
+	# 初期キーテキストを設定
+	_update_key_text()
+
+	# 入力デバイス変更シグナルに接続
+	GameSettings.input_device_changed.connect(_on_input_device_changed)
+
+	# 言語変更シグナルに接続
+	GameSettings.language_changed.connect(_on_language_changed)
+
 ## UI要素を作成
 func _create_ui() -> void:
 	# PanelContainer作成
@@ -76,7 +82,6 @@ func _create_ui() -> void:
 
 	# Label作成
 	_label = Label.new()
-	_label.text = action_key_text
 	_label.add_theme_color_override("font_color", text_color)
 	_label.add_theme_font_size_override("font_size", font_size)
 	_label.custom_minimum_size = Vector2(24, 24)
@@ -85,6 +90,18 @@ func _create_ui() -> void:
 
 	_panel.add_child(_label)
 	add_child(_panel)
+
+	# パネルサイズ変更時に位置を自動更新
+	_panel.resized.connect(_on_panel_resized)
+
+func _exit_tree() -> void:
+	# シグナルの切断
+	if _panel and _panel.resized.is_connected(_on_panel_resized):
+		_panel.resized.disconnect(_on_panel_resized)
+	if GameSettings.input_device_changed.is_connected(_on_input_device_changed):
+		GameSettings.input_device_changed.disconnect(_on_input_device_changed)
+	if GameSettings.language_changed.is_connected(_on_language_changed):
+		GameSettings.language_changed.disconnect(_on_language_changed)
 
 # ======================== 表示制御 ========================
 
@@ -113,13 +130,23 @@ func update_position(target_sprite: Sprite2D = null) -> void:
 	# インジケーターの中心がSpriteの上に来るように調整
 	position = Vector2(-indicator_width / 2.0, offset_y)
 
+## パネルリサイズ時のコールバック
+##
+## テキスト変更によりパネルサイズが変わった際、自動的に位置を再計算して中央揃えを維持します。
+func _on_panel_resized() -> void:
+	# 親ノード（Player）からSprite2Dを取得
+	var parent_node: Node = get_parent()
+	if parent_node:
+		var player_sprite: Sprite2D = parent_node.get_node_or_null("Sprite2D")
+		if player_sprite:
+			update_position(player_sprite)
+
 # ======================== カスタマイズ ========================
 
 ## キーテキストを動的に変更
 ##
 ## @param new_key 新しいキーテキスト
 func set_action_key(new_key: String) -> void:
-	action_key_text = new_key
 	if _label:
 		_label.text = new_key
 
@@ -140,3 +167,36 @@ func set_text_color(new_color: Color) -> void:
 	text_color = new_color
 	if _label:
 		_label.add_theme_color_override("font_color", new_color)
+
+# ======================== 入力デバイス・言語対応 ========================
+
+## 入力デバイス変更時のコールバック
+func _on_input_device_changed(_device_type: int) -> void:
+	_update_key_text()
+
+## 言語変更時のコールバック
+func _on_language_changed(_new_language: String) -> void:
+	_update_key_text()
+
+## デバイスと言語に応じたキーテキストを更新
+func _update_key_text() -> void:
+	var key_text: String = _get_appropriate_key_text()
+	set_action_key(key_text)
+
+## 現在のデバイスと言語に応じた適切なキーテキストを取得
+func _get_appropriate_key_text() -> String:
+	var device: GameSettings.InputDevice = GameSettings.get_last_used_device()
+	var language: GameSettings.Language = GameSettings.current_language
+
+	# キーボードの場合
+	if device == GameSettings.InputDevice.KEYBOARD:
+		if language == GameSettings.Language.JAPANESE:
+			return "Z"
+		else:  # English
+			return " Enter "
+	# ゲームパッドの場合
+	else:  # GAMEPAD
+		if language == GameSettings.Language.JAPANESE:
+			return "⚪︎"
+		else:  # English
+			return "×"

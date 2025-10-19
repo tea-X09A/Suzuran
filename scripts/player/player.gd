@@ -223,6 +223,8 @@ func _initialize_examine_indicator() -> void:
 	examine_indicator = ActionIndicator.new()
 	# Playerの子として追加
 	add_child(examine_indicator)
+	# 初期位置を設定
+	examine_indicator.update_position(sprite_2d)
 
 ## UIシステムの初期化
 func _initialize_ui() -> void:
@@ -273,10 +275,6 @@ func _physics_process(delta: float) -> void:
 
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
-
-	# Examineインジケーターの位置を更新
-	if examine_indicator:
-		examine_indicator.update_position(sprite_2d)
 
 	# 次フレーム用にキー状態を記録（フレームの最後に更新）
 	if current_state:

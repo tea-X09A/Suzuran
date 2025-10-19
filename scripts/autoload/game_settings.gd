@@ -12,10 +12,19 @@ signal always_dash_changed(is_enabled: bool)
 signal key_bindings_changed()
 signal gamepad_bindings_changed()
 
+# 入力デバイスが変更された時に発信するシグナル
+signal input_device_changed(device_type: int)
+
 # サポートする言語
 enum Language {
 	JAPANESE,
 	ENGLISH
+}
+
+# 入力デバイスの種類
+enum InputDevice {
+	KEYBOARD,
+	GAMEPAD
 }
 
 # ウィンドウモード
@@ -77,8 +86,29 @@ var key_bindings: Dictionary = DEFAULT_KEY_BINDINGS.duplicate()
 # ゲームパッドバインド設定
 var gamepad_bindings: Dictionary = DEFAULT_GAMEPAD_BINDINGS.duplicate()
 
+# 最後に使用された入力デバイス
+var last_used_device: InputDevice = InputDevice.KEYBOARD
+
 func _ready() -> void:
 	load_settings()
+
+func _input(event: InputEvent) -> void:
+	## 入力イベントを監視して、使用中の入力デバイスを検知する
+	var new_device: InputDevice = last_used_device
+
+	if event is InputEventKey:
+		new_device = InputDevice.KEYBOARD
+	elif event is InputEventJoypadButton or event is InputEventJoypadMotion:
+		new_device = InputDevice.GAMEPAD
+
+	# デバイスが変更された場合、シグナルを発信
+	if new_device != last_used_device:
+		last_used_device = new_device
+		input_device_changed.emit(new_device)
+
+func get_last_used_device() -> InputDevice:
+	## 最後に使用された入力デバイスを取得する
+	return last_used_device
 
 ## 統一された設定変更メソッド（値が変更された場合のみシグナル発行と保存を実行）
 func _change_setting(current_value: Variant, new_value: Variant, setter: Callable, signal_emitter: Callable) -> bool:
