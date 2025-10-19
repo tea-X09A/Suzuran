@@ -10,6 +10,9 @@ var menu_container: VBoxContainer = null
 var buttons: Array[Button] = []
 var current_selection: int = 0
 
+# 選択位置の記憶（メニュー名 -> 選択インデックス）
+var last_selections: Dictionary = {}
+
 # サブメニュー管理
 var settings_menu: SettingsMenu = null
 var volume_menu: VolumeSettingsMenu = null
@@ -337,11 +340,16 @@ func show_main_menu() -> void:
 	if menu_container:
 		menu_container.visible = true
 	current_menu_state = "main"
-	current_selection = 0
+
+	# 記憶された選択位置を復元（なければ0）
+	current_selection = last_selections.get("main", 0)
 	_update_button_selection()
 
 func show_settings_menu() -> void:
 	"""設定メニューを表示"""
+	# 現在のメニューの選択位置を保存
+	_save_current_selection()
+
 	# メインメニューを非表示
 	if menu_container:
 		menu_container.visible = false
@@ -351,11 +359,16 @@ func show_settings_menu() -> void:
 
 	# 設定メニューを表示
 	if settings_menu:
-		settings_menu.show_menu()
+		var saved_state: Dictionary = last_selections.get("settings", {})
+		var selection: int = saved_state.get("selection", 0)
+		settings_menu.show_menu(selection)
 	current_menu_state = "settings"
 
 func show_submenu(submenu_name: String) -> void:
 	"""指定されたサブメニューを表示"""
+	# 現在のメニューの選択位置を保存
+	_save_current_selection()
+
 	# すべてのメニューを非表示
 	if menu_container:
 		menu_container.visible = false
@@ -390,7 +403,12 @@ func show_submenu(submenu_name: String) -> void:
 			current_menu_state = "load"
 
 	if submenu:
-		submenu.show_menu()
+		# 記憶された選択位置を復元
+		var saved_state: Dictionary = last_selections.get(submenu_name, {})
+		var selection: int = saved_state.get("selection", 0)
+		var row: int = saved_state.get("row", 0)
+		var column: int = saved_state.get("column", 0)
+		submenu.show_menu(selection, row, column)
 
 func _hide_all_submenus() -> void:
 	"""すべてのサブメニューを非表示"""
@@ -463,7 +481,20 @@ func _on_pause_state_changed(is_paused: bool) -> void:
 		# ゲームが再開したらメニューを非表示
 		pause_menu.visible = false
 		menu_just_opened = false
+		# 選択位置の記憶をクリア
+		last_selections.clear()
 
 func _on_window_mode_changed(_is_fullscreen: bool) -> void:
 	"""ウィンドウモードが変更されたときに呼ばれるコールバック"""
 	window_mode_skip_frames = 1  # 1フレームスキップで十分
+
+func _save_current_selection() -> void:
+	"""現在のメニューの選択位置を保存"""
+	if current_menu_state == "main":
+		# メインメニューの選択位置を保存
+		last_selections["main"] = current_selection
+	else:
+		# サブメニューの選択位置を保存
+		var current_submenu: BaseSettingsMenu = _get_current_submenu()
+		if current_submenu:
+			last_selections[current_menu_state] = current_submenu.get_selection_state()

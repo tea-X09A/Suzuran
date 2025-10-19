@@ -211,7 +211,7 @@ func _create_slot_button(slot_index: int) -> Button:
 	return button
 
 ## メニュー表示時に呼ばれる
-func show_menu() -> void:
+func show_menu(initial_selection: int = 0, _initial_row: int = 0, _initial_column: int = 0) -> void:
 	# 表示モードをリセット
 	current_display_mode = DisplayMode.SLOT_SELECT
 
@@ -226,11 +226,15 @@ func show_menu() -> void:
 	# スロット情報を更新
 	_update_all_slot_buttons()
 
-	# LOADモードの場合、最初の有効なボタンを選択
+	# LOADモードの場合、記憶された選択位置がある場合はそれを使用、なければ最初の有効なボタンを選択
 	if current_mode == Mode.LOAD:
-		current_selection = _find_next_enabled_button(-1, 1)
+		if initial_selection > 0:
+			current_selection = initial_selection
+		else:
+			current_selection = _find_next_enabled_button(-1, 1)
 	else:
-		current_selection = 0
+		# SAVEモードでは記憶された選択位置を使用
+		current_selection = initial_selection
 
 	_update_button_selection()
 

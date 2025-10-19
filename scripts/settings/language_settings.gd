@@ -55,7 +55,7 @@ func build_menu(parent_container: Control) -> void:
 		GameSettings.language_changed.disconnect(_on_language_changed)
 	GameSettings.language_changed.connect(_on_language_changed)
 
-func show_menu() -> void:
+func show_menu(initial_selection: int = 0, initial_row: int = 0, initial_column: int = 0) -> void:
 	## メニューを表示し、現在の言語に応じて選択状態を設定
 	if menu_container:
 		menu_container.visible = true
@@ -70,9 +70,10 @@ func show_menu() -> void:
 	if language_button:
 		language_button.text = LANGUAGES[current_language_index]["name"]
 
-	# 言語行から開始
-	current_row = 0
-	current_column = 0
+	# 選択位置を設定（MenuManagerから渡された値を使用）
+	current_row = initial_row
+	current_column = initial_column
+	current_selection = initial_selection
 
 	_update_2d_selection()
 

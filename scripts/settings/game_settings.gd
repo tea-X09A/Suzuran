@@ -87,7 +87,7 @@ func _update_always_dash_button_text() -> void:
 	else:
 		buttons[always_dash_button_index].text = MENU_TEXTS["off"][lang_code]
 
-func show_menu() -> void:
+func show_menu(initial_selection: int = 0, initial_row: int = 0, initial_column: int = 0) -> void:
 	## メニューを表示し、現在の設定に応じて選択状態を設定
 	if menu_container:
 		menu_container.visible = true
@@ -95,9 +95,10 @@ func show_menu() -> void:
 	# 常時ダッシュボタンのテキストを更新
 	_update_always_dash_button_text()
 
-	# 常時ダッシュ行から開始
-	current_row = 0
-	current_column = 0
+	# 選択位置を設定（MenuManagerから渡された値を使用）
+	current_row = initial_row
+	current_column = initial_column
+	current_selection = initial_selection
 
 	_update_2d_selection()
 

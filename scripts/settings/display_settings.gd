@@ -139,18 +139,18 @@ func _update_text(label: Label, key: String) -> void:
 	label.text = MENU_TEXTS[key][lang_code]
 
 func _update_fullscreen_button_text() -> void:
-	## フルスクリーンボタンのテキストを現在の状態の逆に更新
+	## フルスクリーンボタンのテキストを現在の状態と同期して更新
 	if fullscreen_button_index >= buttons.size():
 		return
 
 	var lang_code: String = _get_language_code()
-	# 現在の状態の逆を表示（WINDOWEDなら「ON」、FULLSCREENなら「OFF」）
+	# 現在の状態を表示（WINDOWEDなら「OFF」、FULLSCREENなら「ON」）
 	if GameSettings.window_mode == GameSettings.WindowMode.WINDOWED:
-		buttons[fullscreen_button_index].text = MENU_TEXTS["fullscreen_on"][lang_code]
-	else:
 		buttons[fullscreen_button_index].text = MENU_TEXTS["fullscreen_off"][lang_code]
+	else:
+		buttons[fullscreen_button_index].text = MENU_TEXTS["fullscreen_on"][lang_code]
 
-func show_menu() -> void:
+func show_menu(initial_selection: int = 0, initial_row: int = 0, initial_column: int = 0) -> void:
 	## メニューを表示し、現在の設定に応じて選択状態を設定
 	if menu_container:
 		menu_container.visible = true
@@ -170,9 +170,10 @@ func show_menu() -> void:
 		resolution_button.text = "%d×%d" % [current_res.x, current_res.y]
 	_update_resolution_arrows()
 
-	# 解像度行から開始
-	current_row = 0
-	current_column = 0
+	# 選択位置を設定（MenuManagerから渡された値を使用）
+	current_row = initial_row
+	current_column = initial_column
+	current_selection = initial_selection
 
 	_update_2d_selection()
 

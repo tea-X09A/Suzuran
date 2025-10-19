@@ -71,16 +71,36 @@ func build_menu(_parent_container: Control) -> void:
 	pass
 
 ## メニューを表示
-func show_menu() -> void:
+func show_menu(initial_selection: int = 0, initial_row: int = 0, initial_column: int = 0) -> void:
 	if menu_container:
 		menu_container.visible = true
-		current_selection = 0
-		_update_button_selection()
+		current_selection = initial_selection
+
+		# 2Dナビゲーションの場合は行と列も復元
+		if use_2d_navigation:
+			current_row = initial_row
+			current_column = initial_column
+			_update_2d_selection()
+		else:
+			_update_button_selection()
 
 ## メニューを非表示
 func hide_menu() -> void:
 	if menu_container:
 		menu_container.visible = false
+
+## 現在の選択状態を取得
+func get_selection_state() -> Dictionary:
+	if use_2d_navigation:
+		return {
+			"selection": current_selection,
+			"row": current_row,
+			"column": current_column
+		}
+	else:
+		return {
+			"selection": current_selection
+		}
 
 ## サブメニューが独自に入力を処理する必要があるかどうか
 ## （例: 確認ダイアログ表示中など、親の入力処理をスキップしたい場合）
