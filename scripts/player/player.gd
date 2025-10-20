@@ -14,6 +14,8 @@ enum PLAYER_CONDITION { NORMAL, EXPANSION }
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 # アニメーションツリー
 @onready var animation_tree: AnimationTree = $AnimationTree
+# アニメーションツリーのPlayback参照（パフォーマンス最適化のためキャッシュ）
+var animation_tree_playback: AnimationNodeStateMachinePlayback = null
 # 当たり判定用コリジョン
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
 
@@ -176,10 +178,10 @@ func _initialize_systems() -> void:
 func _initialize_animation_system() -> void:
 	# アニメーションツリーを有効化
 	animation_tree.active = true
-	# State MachineのPlaybackを取得して初期状態をIDLEに設定
-	var state_machine: AnimationNodeStateMachinePlayback = animation_tree.get("parameters/playback")
-	if state_machine:
-		state_machine.start("IDLE")
+	# State MachineのPlaybackを取得してキャッシュ（パフォーマンス最適化）
+	animation_tree_playback = animation_tree.get("parameters/playback")
+	if animation_tree_playback:
+		animation_tree_playback.start("IDLE")
 
 ## ステート管理システムの初期化
 func _initialize_state_system() -> void:
@@ -284,9 +286,8 @@ func _physics_process(delta: float) -> void:
 
 ## アニメーション状態更新
 func update_animation_state(state_name: String) -> void:
-	var state_machine: AnimationNodeStateMachinePlayback = animation_tree.get("parameters/playback")
-	if state_machine:
-		state_machine.travel(state_name)
+	if animation_tree_playback:
+		animation_tree_playback.travel(state_name)
 	# 現在のステートインスタンスを更新
 	_update_current_state(state_name)
 
@@ -513,9 +514,8 @@ func start_event() -> void:
 	disable_input = true
 
 	# 現在のアニメーション状態を取得
-	var state_machine: AnimationNodeStateMachinePlayback = animation_tree.get("parameters/playback")
-	if state_machine:
-		var current_anim_state: String = state_machine.get_current_node()
+	if animation_tree_playback:
+		var current_anim_state: String = animation_tree_playback.get_current_node()
 
 		# 空中状態（JUMP/FALL）の場合は水平速度をゼロに（垂直落下）
 		if current_anim_state in ["JUMP", "FALL"]:

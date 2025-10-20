@@ -7,9 +7,17 @@ extends BaseState
 # 射撃状態管理
 var shooting_timer: float = 0.0
 var is_shooting_02: bool = false  # shooting_02アニメーションを使用中かのフラグ
+# AnimationTreeのSHOOTINGノード参照（パフォーマンス最適化のためキャッシュ）
+var shooting_animation_node: AnimationNodeAnimation = null
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
+	# SHOOTINGノードの参照をキャッシュ（パフォーマンス最適化）
+	if animation_tree and animation_tree.tree_root:
+		var state_machine_node: AnimationNodeStateMachine = animation_tree.tree_root as AnimationNodeStateMachine
+		if state_machine_node:
+			shooting_animation_node = state_machine_node.get_node("SHOOTING") as AnimationNodeAnimation
+
 	handle_shooting()
 
 ## AnimationTree状態終了時の処理
@@ -21,6 +29,8 @@ func cleanup_state() -> void:
 	# 状態のリセット
 	shooting_timer = 0.0
 	is_shooting_02 = false
+	# キャッシュされたノード参照をクリア
+	shooting_animation_node = null
 
 ## 入力処理
 func handle_input(_delta: float) -> void:
@@ -136,12 +146,9 @@ func _on_shooting_animation_finished() -> void:
 
 ## SHOOTINGノードのアニメーションを変更する
 func _set_shooting_animation(animation_name: String) -> void:
-	if animation_tree and animation_tree.tree_root:
-		var state_machine_node: AnimationNodeStateMachine = animation_tree.tree_root as AnimationNodeStateMachine
-		if state_machine_node:
-			var shooting_node: AnimationNodeAnimation = state_machine_node.get_node("SHOOTING") as AnimationNodeAnimation
-			if shooting_node:
-				shooting_node.animation = animation_name
-				# アニメーション変更後、再度SHOOTINGステートに遷移して新しいアニメーションを適用
-				if state_machine:
-					state_machine.start("SHOOTING")
+	# キャッシュされた参照を使用（パフォーマンス最適化）
+	if shooting_animation_node:
+		shooting_animation_node.animation = animation_name
+		# アニメーション変更後、再度SHOOTINGステートに遷移して新しいアニメーションを適用
+		if state_machine:
+			state_machine.start("SHOOTING")

@@ -111,8 +111,8 @@ func _end_event() -> void:
 
 ## 着地待機処理（空中状態の場合のみ）
 func _wait_for_landing(player: Node) -> void:
-	# AnimationTreeから現在のアニメーション状態を取得
-	var animation_tree: AnimationTree = player.get("animation_tree")
+	# AnimationTreeから現在のアニメーション状態を取得（直接プロパティアクセス）
+	var animation_tree: AnimationTree = player.animation_tree if player.get("animation_tree") != null else null
 	if not animation_tree:
 		return
 
