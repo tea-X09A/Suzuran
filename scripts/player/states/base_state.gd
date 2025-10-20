@@ -15,7 +15,7 @@ const ALWAYS_ALLOWED_RIGHT_KEYS: Array[int] = [KEY_RIGHT]
 # プレイヤーへの弱参照（CLAUDE.md準拠：循環参照防止）
 var player_ref: WeakRef = null
 
-# 後方互換性のためのプロパティゲッター（既存コードを変更せずに弱参照化）
+# 弱参照の透過的アクセスを提供するプロパティゲッター（CLAUDE.md準拠：循環参照を防ぎつつ可読性を維持）
 var player: CharacterBody2D:
 	get:
 		return get_player()
