@@ -51,4 +51,4 @@ func physics_update(delta: float) -> void:
 
 	# 落下開始（速度が0以上）したらFALL状態に遷移
 	if player.velocity.y >= 0.0:
-		player.update_animation_state("FALL")
+		player.change_state("FALL")

@@ -54,7 +54,7 @@ func physics_update(delta: float) -> void:
 	if not update_down_state(delta):
 		# ダウン終了時の状態遷移
 		if not player.is_grounded:
-			player.update_animation_state("FALL")
+			player.change_state("FALL")
 		else:
 			handle_landing_transition()
 			return
@@ -97,7 +97,7 @@ func handle_damage(_damage: int, animation_type: String, direction: Vector2, for
 		invincibility_timer = 0.0
 
 	# KNOCKBACKステートへ遷移
-	player.update_animation_state("KNOCKBACK")
+	player.change_state("KNOCKBACK")
 
 
 ## ダウン状態更新
@@ -149,13 +149,13 @@ func start_down_state() -> void:
 		recovery_invincibility_timer = get_parameter("recovery_invincibility_duration")
 		player.invincibility_effect.set_invincible(recovery_invincibility_timer)
 
-		player.update_animation_state("IDLE")
+		player.change_state("IDLE")
 		down_finished.emit()
 	else:
 		# down効果: DOWN状態へ遷移
 		is_in_down_state = true
 		down_timer = get_parameter("down_duration")
-		player.update_animation_state("DOWN")
+		player.change_state("DOWN")
 
 
 ## ダウン状態終了
@@ -225,7 +225,7 @@ func handle_recovery_jump() -> void:
 		knockback_force_value = 0.0
 
 	finish_down()
-	player.update_animation_state("JUMP")
+	player.change_state("JUMP")
 
 
 # ============================================================

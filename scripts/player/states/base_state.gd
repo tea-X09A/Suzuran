@@ -12,7 +12,14 @@ const ALWAYS_ALLOWED_LEFT_KEYS: Array[int] = [KEY_LEFT]
 const ALWAYS_ALLOWED_RIGHT_KEYS: Array[int] = [KEY_RIGHT]
 
 # ======================== 基本参照 ========================
-var player: CharacterBody2D
+# プレイヤーへの弱参照（CLAUDE.md準拠：循環参照防止）
+var player_ref: WeakRef = null
+
+# 後方互換性のためのプロパティゲッター（既存コードを変更せずに弱参照化）
+var player: CharacterBody2D:
+	get:
+		return get_player()
+
 var sprite_2d: Sprite2D
 var animation_player: AnimationPlayer
 var animation_tree: AnimationTree
@@ -35,13 +42,22 @@ const GAMEPAD_DEVICE: int = 0
 
 # ======================== 初期化処理 ========================
 func _init(player_instance: CharacterBody2D) -> void:
-	player = player_instance
+	# CLAUDE.md準拠：循環参照を避けるため弱参照を使用
+	player_ref = weakref(player_instance)
 	# 安全な参照取得: プレイヤーのキャッシュされた各ノードを利用
-	sprite_2d = player.sprite_2d
-	animation_player = player.animation_player
-	animation_tree = player.animation_tree
+	sprite_2d = player_instance.sprite_2d
+	animation_player = player_instance.animation_player
+	animation_tree = player_instance.animation_tree
 	state_machine = animation_tree.get("parameters/playback") as AnimationNodeStateMachinePlayback
-	condition = player.condition
+	condition = player_instance.condition
+
+## プレイヤーインスタンスを取得（弱参照から実体を取得）
+func get_player() -> CharacterBody2D:
+	if player_ref:
+		var player_instance = player_ref.get_ref()
+		if player_instance:
+			return player_instance as CharacterBody2D
+	return null
 
 # ======================== AnimationTree連携メソッド ========================
 ## 状態初期化（AnimationTreeからのコールバック用）
@@ -317,7 +333,7 @@ func perform_jump() -> void:
 	# パラメータから初速を取得し、垂直方向の速度のみを設定
 	# 水平方向の速度（velocity.x）は保持されるため、走行中のジャンプに慣性が乗る
 	player.velocity.y = get_parameter("jump_initial_velocity")
-	player.update_animation_state("JUMP")
+	player.change_state("JUMP")
 
 # ======================== 重複処理統合メソッド ========================
 
@@ -326,7 +342,7 @@ func handle_ground_physics(delta: float) -> bool:
 	# 地面にいない場合はFALL状態に遷移
 	if not player.is_grounded:
 		apply_gravity(delta)
-		player.update_animation_state("FALL")
+		player.change_state("FALL")
 		return true
 	return false
 
@@ -339,17 +355,17 @@ func handle_common_inputs() -> bool:
 
 	# しゃがみ入力チェック（遷移用）
 	if can_transition_to_squat():
-		player.update_animation_state("SQUAT")
+		player.change_state("SQUAT")
 		return true
 
 	# 攻撃入力チェック
 	if is_fight_input():
-		player.update_animation_state("FIGHTING")
+		player.change_state("FIGHTING")
 		return true
 
 	# 射撃入力チェック
 	if is_shooting_input():
-		player.update_animation_state("SHOOTING")
+		player.change_state("SHOOTING")
 		return true
 
 	return false
@@ -357,52 +373,52 @@ func handle_common_inputs() -> bool:
 ## アクション終了時の状態遷移処理（fighting, shooting状態で共通）
 func handle_action_end_transition() -> void:
 	if not player.is_grounded:
-		player.update_animation_state("FALL")
+		player.change_state("FALL")
 	else:
 		# アニメーション終了時、squatボタンが押されていればsquat状態へ遷移
 		if is_squat_input():
 			player.squat_was_cancelled = false  # フラグをクリア
-			player.update_animation_state("SQUAT")
+			player.change_state("SQUAT")
 			return
 
 		# 地上での状態判定（移動入力に応じて遷移）
 		var movement_input: float = get_movement_input()
 		if movement_input != 0.0:
 			if is_dash_input():
-				player.update_animation_state("RUN")
+				player.change_state("RUN")
 			else:
-				player.update_animation_state("WALK")
+				player.change_state("WALK")
 		else:
-			player.update_animation_state("IDLE")
+			player.change_state("IDLE")
 
 ## 着地時の状態遷移処理（共通ヘルパー）
 func handle_landing_transition() -> void:
 	# squatボタンが押されていればsquat状態へ遷移
 	if is_squat_input():
 		player.squat_was_cancelled = false
-		player.update_animation_state("SQUAT")
+		player.change_state("SQUAT")
 		return
 
 	# 移動入力チェック
 	var movement_input: float = get_movement_input()
 	if movement_input != 0.0:
 		if is_dash_input():
-			player.update_animation_state("RUN")
+			player.change_state("RUN")
 		else:
-			player.update_animation_state("WALK")
+			player.change_state("WALK")
 	else:
-		player.update_animation_state("IDLE")
+		player.change_state("IDLE")
 
 ## 空中でのアクション入力処理（攻撃・射撃）
 func handle_air_action_input() -> bool:
 	# 攻撃入力チェック（空中攻撃）
 	if is_fight_input():
-		player.update_animation_state("FIGHTING")
+		player.change_state("FIGHTING")
 		return true
 
 	# 射撃入力チェック（空中射撃）
 	if is_shooting_input():
-		player.update_animation_state("SHOOTING")
+		player.change_state("SHOOTING")
 		return true
 
 	return false
@@ -436,17 +452,17 @@ func handle_movement_input_common(current_state: String, delta: float) -> void:
 
 		# 状態遷移判定
 		if current_state == "WALK" and is_running:
-			player.update_animation_state("RUN")
+			player.change_state("RUN")
 			return
 		elif current_state == "RUN" and not is_running:
-			player.update_animation_state("WALK")
+			player.change_state("WALK")
 			return
 
 		apply_movement(movement_input, speed)
 	else:
 		# 移動入力がない場合はIDLEに遷移
 		apply_friction(delta)
-		player.update_animation_state("IDLE")
+		player.change_state("IDLE")
 
 ## 共通入力処理（walk, run状態で共通）
 func handle_movement_state_input(current_state: String, delta: float) -> void:

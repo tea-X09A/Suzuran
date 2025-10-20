@@ -284,23 +284,23 @@ func _physics_process(delta: float) -> void:
 	if current_state:
 		current_state.update_key_states()
 
-## アニメーション状態更新
-func update_animation_state(state_name: String) -> void:
-	if animation_tree_playback:
-		animation_tree_playback.travel(state_name)
-	# 現在のステートインスタンスを更新
-	_update_current_state(state_name)
+## 状態遷移（CLAUDE.md推奨形式）
+func change_state(new_state_name: String) -> void:
+	if not state_instances.has(new_state_name):
+		return
 
-## 現在のステートインスタンスを更新
-func _update_current_state(state_name: String) -> void:
-	if state_instances.has(state_name):
-		var new_state: BaseState = state_instances[state_name]
-		# 前のステートのクリーンアップ
-		if current_state:
-			current_state.cleanup_state()
-		# 新しいステートに変更
-		current_state = new_state
-		current_state.initialize_state()
+	var new_state: BaseState = state_instances[new_state_name]
+	# 前のステートのクリーンアップ
+	if current_state:
+		current_state.cleanup_state()
+	# 新しいステートに変更
+	current_state = new_state
+	current_state.initialize_state()
+
+	# アニメーション状態も更新
+	if animation_tree_playback:
+		animation_tree_playback.travel(new_state_name)
+
 
 ## スプライト方向制御
 func update_sprite_direction(input_direction_x: float) -> void:
@@ -523,7 +523,7 @@ func start_event() -> void:
 		# 地上状態の場合は即座にIDLEに遷移
 		elif is_grounded:
 			velocity.x = 0.0
-			update_animation_state("IDLE")
+			change_state("IDLE")
 
 ## イベント終了時の処理（EventManagerから呼び出される）
 ##

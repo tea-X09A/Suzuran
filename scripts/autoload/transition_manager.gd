@@ -96,7 +96,7 @@ func change_scene(target_scene_path: String, direction: String = "") -> void:
 
 			# 自動移動モードを有効化してWALKアニメーション開始
 			player.auto_move_mode = true
-			player.update_animation_state("WALK")
+			player.change_state("WALK")
 			var walk_speed: float = PlayerParameters.get_parameter(player.condition, "move_walk_speed")
 			player.velocity.x = player.direction_x * walk_speed
 
@@ -157,7 +157,7 @@ func _set_player_walk_animation_if_grounded(move_direction: float) -> void:
 	if player.is_on_floor():
 		player.auto_move_mode = true
 		player.update_sprite_direction(move_direction)
-		player.update_animation_state("WALK")
+		player.change_state("WALK")
 
 		var walk_speed: float = PlayerParameters.get_parameter(player.condition, "move_walk_speed")
 		player.velocity.x = move_direction * walk_speed

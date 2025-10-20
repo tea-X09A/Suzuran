@@ -402,8 +402,8 @@ func _transition_to_capture(body: Node2D) -> void:
 	body.capture_animation_name = capture_animation
 
 	# プレイヤーをCAPTURE状態に遷移
-	if body.has_method("update_animation_state"):
-		body.update_animation_state("CAPTURE")
+	if body.has_method("change_state"):
+		body.change_state("CAPTURE")
 
 	print("敵がプレイヤーをキャプチャ: アニメーション=", capture_animation)
 

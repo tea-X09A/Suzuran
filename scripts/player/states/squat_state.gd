@@ -23,18 +23,18 @@ func handle_input(delta: float) -> void:
 	# 攻撃入力チェック（しゃがみキャンセル）
 	if is_fight_input():
 		player.squat_was_cancelled = true  # キャンセルフラグを設定
-		player.update_animation_state("FIGHTING")
+		player.change_state("FIGHTING")
 		return
 
 	# 射撃入力チェック（しゃがみキャンセル）
 	if is_shooting_input():
 		player.squat_was_cancelled = true  # キャンセルフラグを設定
-		player.update_animation_state("SHOOTING")
+		player.change_state("SHOOTING")
 		return
 
 	# しゃがみ入力チェック - 離されたらIDLE状態に遷移
 	if not is_squat_input():
-		player.update_animation_state("IDLE")
+		player.change_state("IDLE")
 		return
 
 	# 移動入力の処理（方向転換のみ、実際の移動はしない）

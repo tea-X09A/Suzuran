@@ -87,7 +87,7 @@ func handle_input(_delta: float) -> void:
 			perform_jump()
 		else:
 			# 空中の場合はFALL状態に遷移
-			player.update_animation_state("FALL")
+			player.change_state("FALL")
 
 # ======================== 地面着地処理 ========================
 

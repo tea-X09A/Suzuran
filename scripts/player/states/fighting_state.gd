@@ -83,7 +83,7 @@ func handle_input(_delta: float) -> void:
 		return
 
 	if can_transition_to_squat():
-		player.update_animation_state("SQUAT")
+		player.change_state("SQUAT")
 		return
 
 ## 物理演算処理

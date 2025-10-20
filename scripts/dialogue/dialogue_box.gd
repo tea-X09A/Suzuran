@@ -67,6 +67,14 @@ func _ready() -> void:
 	# RichTextLabelの初期設定
 	dialogue_text.visible_characters = 0
 
+## クリーンアップ処理（CLAUDE.md準拠：メモリリーク防止）
+func _exit_tree() -> void:
+	# message_completedシグナルに接続しているすべてのコールバックを切断
+	# 注: 自身が発信するシグナルだが、外部からの接続が残っている場合に備えて明示的に切断
+	if message_completed.get_connections().size() > 0:
+		for connection in message_completed.get_connections():
+			message_completed.disconnect(connection["callable"])
+
 # ======================== フレーム更新処理 ========================
 
 func _process(delta: float) -> void:
