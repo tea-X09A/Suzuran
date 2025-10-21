@@ -1,11 +1,15 @@
 class_name SquatState
 extends BaseState
 
+# ======================== 状態初期化・クリーンアップ ========================
+
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
 	set_animation_state("SQUAT")
 	if player:
 		player.velocity.x = 0.0
+
+# ======================== 入力処理 ========================
 
 ## 入力処理（SQUAT状態固有）
 func handle_input(delta: float) -> void:
@@ -43,7 +47,9 @@ func handle_input(delta: float) -> void:
 		update_sprite_direction(movement_input)
 		apply_friction(delta)
 
-## SQUAT状態での物理更新処理
+# ======================== 物理演算処理 ========================
+
+## 物理演算処理
 func physics_update(delta: float) -> void:
 	if not player:
 		return

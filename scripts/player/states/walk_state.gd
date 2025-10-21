@@ -1,6 +1,8 @@
 class_name WalkState
 extends BaseState
 
+# ======================== 入力処理 ========================
+
 ## 入力処理（WALK状態固有）
 func handle_input(delta: float) -> void:
 	# 基底クラスのdisable_inputチェックを実行（イベント中の入力無効化）
@@ -9,6 +11,8 @@ func handle_input(delta: float) -> void:
 		return
 
 	handle_movement_state_input("WALK", delta)
+
+# ======================== 物理演算処理 ========================
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:

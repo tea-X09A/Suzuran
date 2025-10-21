@@ -1,10 +1,14 @@
 class_name KnockbackState
 extends BaseState
 
+# ======================== 状態初期化・クリーンアップ ========================
+
 ## ノックバック状態初期化
 func initialize_state() -> void:
 	if player.down_state:
 		player.down_state.was_in_air = false
+
+# ======================== 入力処理 ========================
 
 ## 入力処理
 func handle_input(_delta: float) -> void:
@@ -15,6 +19,8 @@ func handle_input(_delta: float) -> void:
 
 	if player.down_state:
 		player.down_state.try_recovery_jump()
+
+# ======================== 物理演算処理 ========================
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:

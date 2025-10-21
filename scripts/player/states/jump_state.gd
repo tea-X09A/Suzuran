@@ -1,8 +1,12 @@
 class_name JumpState
 extends BaseState
 
-# ジャンプ開始時刻
+# ======================== 変数定義 ========================
+
+## ジャンプ開始時刻
 var jump_start_time: float = 0.0
+
+# ======================== 状態初期化・クリーンアップ ========================
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
@@ -15,6 +19,8 @@ func cleanup_state() -> void:
 	jump_start_time = 0.0
 	# 慣性保持のクリーンアップ（BaseStateの共通メソッド使用）
 	cleanup_airborne_inertia()
+
+# ======================== 入力処理 ========================
 
 ## 入力処理
 func handle_input(_delta: float) -> void:
@@ -29,6 +35,8 @@ func handle_input(_delta: float) -> void:
 
 	# 空中での移動入力処理（慣性保持考慮 - BaseStateの共通メソッド使用）
 	handle_airborne_movement_input()
+
+# ======================== 物理演算処理 ========================
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:

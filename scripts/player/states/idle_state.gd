@@ -1,6 +1,8 @@
 class_name IdleState
 extends BaseState
 
+# ======================== 状態初期化・クリーンアップ ========================
+
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
 	# 着地時の慣性を抑制（高速移動からの着地時のみ）
@@ -8,6 +10,8 @@ func initialize_state() -> void:
 	if abs(player.velocity.x) > threshold:
 		var retention: float = get_parameter("landing_speed_retention")
 		player.velocity.x *= retention
+
+# ======================== 入力処理 ========================
 
 ## 入力処理（IDLE状態固有）
 func handle_input(delta: float) -> void:
@@ -22,6 +26,15 @@ func handle_input(delta: float) -> void:
 
 	# 移動入力処理
 	handle_movement_input(delta)
+
+# ======================== 物理演算処理 ========================
+
+## 物理演算処理
+func physics_update(delta: float) -> void:
+	# 地面チェック処理（共通メソッド使用）
+	handle_ground_physics(delta)
+
+# ======================== ヘルパーメソッド ========================
 
 ## 移動入力処理
 func handle_movement_input(delta: float) -> void:
@@ -41,8 +54,3 @@ func handle_movement_input(delta: float) -> void:
 	else:
 		# 移動入力がない場合は摩擦を適用
 		apply_friction(delta)
-
-## 物理演算処理
-func physics_update(delta: float) -> void:
-	# 地面チェック処理（共通メソッド使用）
-	handle_ground_physics(delta)
