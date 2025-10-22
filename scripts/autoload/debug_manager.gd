@@ -29,6 +29,11 @@ func _ready() -> void:
 	_setup_default_debug_items()
 
 func _process(_delta: float) -> void:
+	# F5キーでシーンをリロード
+	if Input.is_action_just_pressed("reload_scene"):
+		get_tree().reload_current_scene()
+		return
+
 	# F12キーでデバッグメニューを開閉
 	if Input.is_action_just_pressed("debug_menu"):
 		toggle_debug_menu()
