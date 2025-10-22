@@ -59,8 +59,8 @@ var ignore_jump_horizontal_velocity: bool = false
 var squat_was_cancelled: bool = false
 # Hurtbox/Hitboxの初期X位置を保存（反転処理用）
 var original_box_positions: Dictionary = {}
-# CAPTURE状態時に使用するアニメーション名
-var capture_animation_name: String = "enemy_01_normal_idle"
+# CAPTURE状態時に使用するアニメーション名（enemy.gdが動的に設定）
+var capture_animation_name: String = ""
 # HP残量（初期値3）
 var hp_count: int = 3
 # 現在のEP（初期値0、最大32）
@@ -232,11 +232,13 @@ func _initialize_examine_indicator() -> void:
 
 ## UIシステムの初期化
 func _initialize_ui() -> void:
-	# CanvasLayerからEPGaugeノードを探す（Level0またはLevel1）
-	var canvas_layer: CanvasLayer = get_tree().root.get_node_or_null("Level0/CanvasLayer")
-	if not canvas_layer:
-		canvas_layer = get_tree().root.get_node_or_null("Level1/CanvasLayer")
+	# "ui_layer"グループに属するCanvasLayerを検索
+	var ui_layers: Array = get_tree().get_nodes_in_group("ui_layer")
+	if ui_layers.is_empty():
+		push_warning("[Player] ui_layerグループに属するCanvasLayerが見つかりません。")
+		return
 
+	var canvas_layer: CanvasLayer = ui_layers[0] as CanvasLayer
 	if canvas_layer:
 		ep_gauge = canvas_layer.get_node_or_null("EPGauge")
 		if ep_gauge:

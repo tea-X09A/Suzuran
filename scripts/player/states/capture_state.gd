@@ -145,9 +145,17 @@ func _land_on_ground() -> void:
 func _play_capture_animation() -> void:
 	# プレイヤーに設定されたアニメーション名を取得
 	var animation_name: String = player.capture_animation_name
+
+	# アニメーション名が空の場合はエラーを出力して処理を中断
+	if animation_name.is_empty():
+		push_error("[CaptureState] capture_animation_nameが設定されていません。enemyがキャプチャ時に設定する必要があります。")
+		return
+
 	# AnimationPlayerで直接再生
 	if player.animation_player and player.animation_player.has_animation(animation_name):
 		player.animation_player.play(animation_name)
+	else:
+		push_warning("[CaptureState] アニメーション '%s' が見つかりません。" % animation_name)
 
 # ======================== 無敵状態処理 ========================
 

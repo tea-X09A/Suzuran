@@ -307,7 +307,7 @@ offset = Vector2(0, -570)
 scale = Vector2(0.7, 0.7)
 transform = Transform2D(0.7, 0, 0, 0.7, 0, -570)
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
+[node name="CanvasLayer" type="CanvasLayer" parent="." groups=["ui_layer"]]
 
 [node name="EPGauge" type="Control" parent="CanvasLayer"]
 layout_mode = 3
