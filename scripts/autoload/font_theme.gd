@@ -3,17 +3,18 @@ extends Node
 ## グローバルなフォントテーマ管理システム
 ## NotoSansJP フォントの適用とサイズ管理を一元化する
 
-# フォントリソースのプリロード
+# ======================== 定数 ========================
+## フォントリソースのプリロード
 const NOTO_SANS_JP: FontFile = preload("res://assets/fonts/NotoSansJP-Regular.ttf")
 
-# 共通フォントサイズの定数定義
+## 共通フォントサイズの定数定義
 const FONT_SIZE_SMALL: int = 24
 const FONT_SIZE_MEDIUM: int = 28
 const FONT_SIZE_LARGE: int = 32
 const FONT_SIZE_XL: int = 36
 const FONT_SIZE_XXL: int = 42
 
-
+# ======================== フォント読み込み ========================
 ## 太字フォントバリエーションを生成する
 ## @param base_font ベースとなるフォント（デフォルトは NOTO_SANS_JP）
 ## @return 太字化された FontVariation
@@ -23,7 +24,7 @@ func create_bold_font(base_font: FontFile = NOTO_SANS_JP) -> FontVariation:
 	bold_font.variation_embolden = 0.8
 	return bold_font
 
-
+# ======================== テーマ生成 ========================
 ## Label にフォントとサイズを適用する
 ## @param label 対象の Label ノード
 ## @param font_size フォントサイズ
@@ -40,7 +41,6 @@ func apply_to_label(label: Label, font_size: int, use_bold: bool = false) -> voi
 
 	label.add_theme_font_size_override("font_size", font_size)
 
-
 ## Button にフォントとサイズを適用する
 ## @param button 対象の Button ノード
 ## @param font_size フォントサイズ
@@ -56,7 +56,6 @@ func apply_to_button(button: Button, font_size: int, use_bold: bool = false) -> 
 		button.add_theme_font_override("font", NOTO_SANS_JP)
 
 	button.add_theme_font_size_override("font_size", font_size)
-
 
 ## RichTextLabel にフォントとサイズを適用する
 ## @param rich_label 対象の RichTextLabel ノード
@@ -77,7 +76,7 @@ func apply_to_rich_text_label(rich_label: RichTextLabel, font_size: int, use_bol
 	rich_label.add_theme_font_size_override("normal_font_size", font_size)
 	rich_label.add_theme_font_size_override("bold_font_size", font_size)
 
-
+# ======================== ユーティリティ ========================
 ## 任意の Control ノードにフォントとサイズを適用する汎用関数
 ## @param control 対象の Control ノード
 ## @param font_size フォントサイズ

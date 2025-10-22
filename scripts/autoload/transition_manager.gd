@@ -2,11 +2,13 @@ extends CanvasLayer
 ## シーン遷移を管理するAutoLoadシングルトン
 ## フェードアウト→シーン切り替え→フェードインの処理を一元管理
 
+# ======================== 変数 ========================
 @onready var color_rect: ColorRect = $ColorRect
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 
 var is_transitioning: bool = false
 
+# ======================== 初期化処理 ========================
 func _ready() -> void:
 	# ポーズ中でも動作するように設定
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -15,6 +17,7 @@ func _ready() -> void:
 	color_rect.modulate.a = 0.0
 	color_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+# ======================== シーン遷移処理 ========================
 func change_scene(target_scene_path: String, direction: String = "") -> void:
 	if is_transitioning:
 		return
@@ -141,10 +144,58 @@ func fade_in() -> void:
 	color_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	is_transitioning = false
 
+# ======================== 共通ヘルパー関数 ========================
+## Playerノードを取得
+## @return Player型のノード、見つからない場合はnull
+func _get_player() -> Player:
+	var player_nodes: Array[Node] = get_tree().get_nodes_in_group("player")
+	return player_nodes[0] as Player if player_nodes.size() > 0 else null
+
+## 現在のシーンルートを取得
+## @return 現在のシーンのルートノード、存在しない場合はnull
+func _get_scene_root() -> Node:
+	return get_tree().current_scene
+
 ## 指定した型のノードをシーンツリーから探す汎用関数
 func _find_node_of_type(node_type: Variant) -> Node:
 	var scene_root: Node = _get_scene_root()
 	return _find_nodes_by_type(scene_root, node_type, false) as Node
+
+## 指定された型のノードを再帰的に検索
+## @param start_node 検索開始ノード（通常はcurrent_scene）
+## @param node_type 検索する型
+## @param find_all trueの場合は全て収集、falseの場合は最初の1つのみ
+## @return find_all=trueの場合はArray[Node]、falseの場合はNode or null
+func _find_nodes_by_type(start_node: Node, node_type: Variant, find_all: bool = false) -> Variant:
+	if not start_node:
+		if find_all:
+			return []
+		else:
+			return null
+
+	var results: Array[Node] = []
+	_collect_nodes_recursive(start_node, node_type, results, find_all)
+
+	if find_all:
+		return results
+	else:
+		return results[0] if results.size() > 0 else null
+
+## 再帰的にノードを収集する内部ヘルパー
+func _collect_nodes_recursive(node: Node, node_type: Variant, results: Array[Node], find_all: bool) -> bool:
+	# 型チェック（is_instance_of を使用して汎用性を保つ）
+	if is_instance_of(node, node_type):
+		results.append(node)
+		if not find_all:
+			return true  # 最初の1つで終了
+
+	# 子ノードを再帰的に探索
+	for child in node.get_children():
+		if _collect_nodes_recursive(child, node_type, results, find_all):
+			if not find_all:
+				return true  # 見つかったら早期終了
+
+	return false
 
 func _set_player_walk_animation_if_grounded(move_direction: float) -> void:
 	# グループからPlayerを取得（再帰探索より高速）
@@ -203,53 +254,3 @@ func _get_area_bottom_position(area: Area2D) -> float:
 
 	# CollisionShape2Dが見つからない場合はArea2Dの位置を返す
 	return area.global_position.y
-
-
-## ===== 共通ヘルパー関数群 =====
-
-## Playerノードを取得
-## @return Player型のノード、見つからない場合はnull
-func _get_player() -> Player:
-	var player_nodes: Array[Node] = get_tree().get_nodes_in_group("player")
-	return player_nodes[0] as Player if player_nodes.size() > 0 else null
-
-## 現在のシーンルートを取得
-## @return 現在のシーンのルートノード、存在しない場合はnull
-func _get_scene_root() -> Node:
-	return get_tree().current_scene
-
-## 指定された型のノードを再帰的に検索
-## @param start_node 検索開始ノード（通常はcurrent_scene）
-## @param node_type 検索する型
-## @param find_all trueの場合は全て収集、falseの場合は最初の1つのみ
-## @return find_all=trueの場合はArray[Node]、falseの場合はNode or null
-func _find_nodes_by_type(start_node: Node, node_type: Variant, find_all: bool = false) -> Variant:
-	if not start_node:
-		if find_all:
-			return []
-		else:
-			return null
-
-	var results: Array[Node] = []
-	_collect_nodes_recursive(start_node, node_type, results, find_all)
-
-	if find_all:
-		return results
-	else:
-		return results[0] if results.size() > 0 else null
-
-## 再帰的にノードを収集する内部ヘルパー
-func _collect_nodes_recursive(node: Node, node_type: Variant, results: Array[Node], find_all: bool) -> bool:
-	# 型チェック（is_instance_of を使用して汎用性を保つ）
-	if is_instance_of(node, node_type):
-		results.append(node)
-		if not find_all:
-			return true  # 最初の1つで終了
-
-	# 子ノードを再帰的に探索
-	for child in node.get_children():
-		if _collect_nodes_recursive(child, node_type, results, find_all):
-			if not find_all:
-				return true  # 見つかったら早期終了
-
-	return false
