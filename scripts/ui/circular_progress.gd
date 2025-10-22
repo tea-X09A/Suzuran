@@ -1,23 +1,8 @@
 extends Control
 
-@export var progress: float = 1.0:
-	set(value):
-		progress = clamp(value, 0.0, 1.0)
-		queue_redraw()
+# ======================== 定数定義 ========================
 
-@export var ep_value: int = 3:
-	set(value):
-		ep_value = value
-		queue_redraw()
-
-@export var radius: float = 75.0
-@export var thickness: float = 12.0
-@export var gauge_color: Color = Color(0.2, 0.2, 0.2, 1.0)  # グレー
-@export var background_color: Color = Color(1.0, 0.4, 0.7, 1.0)  # ピンク色
-@export var heart_color: Color = Color(1.0, 0.2, 0.2, 1.0)  # 赤色
-@export var dot_color: Color = Color.WHITE
-
-# ハートのドットパターン（11x11）
+## ハートのドットパターン（11x11）
 const HEART_PATTERN: Array = [
 	[0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0],
 	[0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0],
@@ -32,7 +17,7 @@ const HEART_PATTERN: Array = [
 	[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 ]
 
-# 数字のドットパターン（5x7）
+## 数字のドットパターン（5x7）
 const DIGIT_PATTERNS: Dictionary = {
 	0: [
 		[1, 1, 1, 1, 1],
@@ -126,9 +111,41 @@ const DIGIT_PATTERNS: Dictionary = {
 	]
 }
 
+# ======================== エクスポートプロパティ ========================
+
+## プログレスの進行度（0.0 ~ 1.0）
+@export var progress: float = 1.0:
+	set(value):
+		progress = clamp(value, 0.0, 1.0)
+		queue_redraw()
+
+## EP値
+@export var ep_value: int = 3:
+	set(value):
+		ep_value = value
+		queue_redraw()
+
+## ゲージの半径
+@export var radius: float = 75.0
+## ゲージの太さ
+@export var thickness: float = 12.0
+## ゲージの色（未達成部分）
+@export var gauge_color: Color = Color(0.2, 0.2, 0.2, 1.0)
+## ゲージの色（達成部分）
+@export var background_color: Color = Color(1.0, 0.4, 0.7, 1.0)
+## ハートの色
+@export var heart_color: Color = Color(1.0, 0.2, 0.2, 1.0)
+## ドットの色
+@export var dot_color: Color = Color.WHITE
+
+# ======================== 初期化処理 ========================
+
 func _ready() -> void:
 	queue_redraw()
 
+# ======================== 描画処理 ========================
+
+## メイン描画処理
 func _draw() -> void:
 	var center: Vector2 = size / 2.0
 	var start_angle: float = -PI / 2  # 12時の位置から開始
@@ -142,6 +159,9 @@ func _draw() -> void:
 	# ドット数字の描画
 	_draw_dot_number(center, ep_value)
 
+# ======================== ヘルパーメソッド ========================
+
+## ドット状の円形ゲージを描画
 func _draw_dotted_gauge(center: Vector2, start_angle: float) -> void:
 	var dot_count: int = 32  # 円周上に配置するドットの総数
 	var dot_size: float = 15.0  # ドットのサイズ（ピクセル）
@@ -164,6 +184,7 @@ func _draw_dotted_gauge(center: Vector2, start_angle: float) -> void:
 			var rect: Rect2 = Rect2(pos - Vector2(dot_size / 2.0, dot_size / 2.0), Vector2(dot_size, dot_size))
 			draw_rect(rect, background_color)
 
+## ハートを描画
 func _draw_heart(center: Vector2) -> void:
 	var dot_size: float = 7.5  # 各ドットのサイズ
 	var spacing: float = 7.5  # ドット間の間隔
@@ -201,6 +222,7 @@ func _draw_heart(center: Vector2) -> void:
 		var rect: Rect2 = Rect2(pos - Vector2(dot_size / 2.0, dot_size / 2.0), Vector2(dot_size, dot_size))
 		draw_rect(rect, highlight_color)
 
+## ドット数字を描画
 func _draw_dot_number(center: Vector2, number: int) -> void:
 	if number < 0 or number > 9:
 		return

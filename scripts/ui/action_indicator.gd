@@ -45,7 +45,7 @@ var _panel: PanelContainer = null
 ## Labelへの参照
 var _label: Label = null
 
-# ======================== 初期化処理 ========================
+# ======================== 初期化・クリーンアップ ========================
 
 func _ready() -> void:
 	_create_ui()
@@ -59,6 +59,15 @@ func _ready() -> void:
 
 	# 言語変更シグナルに接続
 	GameSettings.language_changed.connect(_on_language_changed)
+
+func _exit_tree() -> void:
+	# シグナルの切断
+	if _panel and _panel.resized.is_connected(_on_panel_resized):
+		_panel.resized.disconnect(_on_panel_resized)
+	if GameSettings.input_device_changed.is_connected(_on_input_device_changed):
+		GameSettings.input_device_changed.disconnect(_on_input_device_changed)
+	if GameSettings.language_changed.is_connected(_on_language_changed):
+		GameSettings.language_changed.disconnect(_on_language_changed)
 
 ## UI要素を作成
 func _create_ui() -> void:
@@ -96,15 +105,6 @@ func _create_ui() -> void:
 	# パネルサイズ変更時に位置を自動更新
 	_panel.resized.connect(_on_panel_resized)
 
-func _exit_tree() -> void:
-	# シグナルの切断
-	if _panel and _panel.resized.is_connected(_on_panel_resized):
-		_panel.resized.disconnect(_on_panel_resized)
-	if GameSettings.input_device_changed.is_connected(_on_input_device_changed):
-		GameSettings.input_device_changed.disconnect(_on_input_device_changed)
-	if GameSettings.language_changed.is_connected(_on_language_changed):
-		GameSettings.language_changed.disconnect(_on_language_changed)
-
 # ======================== 表示制御 ========================
 
 ## インジケーターを表示
@@ -131,6 +131,8 @@ func update_position(target_sprite: Sprite2D = null) -> void:
 	var indicator_width: float = _panel.size.x if _panel and _panel.size.x > 0 else 30.0
 	# インジケーターの中心がSpriteの上に来るように調整
 	position = Vector2(-indicator_width / 2.0, offset_y)
+
+# ======================== ヘルパーメソッド ========================
 
 ## パネルリサイズ時のコールバック
 ##
@@ -170,7 +172,7 @@ func set_text_color(new_color: Color) -> void:
 	if _label:
 		_label.add_theme_color_override("font_color", new_color)
 
-# ======================== 入力デバイス・言語対応 ========================
+# ======================== シグナルハンドラ ========================
 
 ## 入力デバイス変更時のコールバック
 func _on_input_device_changed(_device_type: int) -> void:

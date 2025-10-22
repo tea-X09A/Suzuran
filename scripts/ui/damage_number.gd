@@ -1,22 +1,9 @@
 class_name DamageNumber
 extends Control
 
-## 表示する数値（マイナス値も対応）
-var display_value: int = 0:
-	set(value):
-		display_value = value
-		queue_redraw()
+# ======================== 定数定義 ========================
 
-## フェードアウトタイマー
-var fade_timer: float = 0.0
-## フェード継続時間
-var fade_duration: float = 2.0
-## 表示開始時の不透明度
-var initial_alpha: float = 1.0
-## 上方向への移動速度（ピクセル/秒）
-var upward_speed: float = 20.0
-
-# マイナス記号のドットパターン（5x7）
+## マイナス記号のドットパターン（5x7）
 const MINUS_PATTERN: Array = [
 	[0, 0, 0, 0, 0],
 	[0, 0, 0, 0, 0],
@@ -27,7 +14,7 @@ const MINUS_PATTERN: Array = [
 	[0, 0, 0, 0, 0]
 ]
 
-# 数字のドットパターン（5x7）
+## 数字のドットパターン（5x7）
 const DIGIT_PATTERNS: Dictionary = {
 	0: [
 		[1, 1, 1, 1, 1],
@@ -121,6 +108,25 @@ const DIGIT_PATTERNS: Dictionary = {
 	]
 }
 
+# ======================== 変数定義 ========================
+
+## 表示する数値（マイナス値も対応）
+var display_value: int = 0:
+	set(value):
+		display_value = value
+		queue_redraw()
+
+## フェードアウトタイマー
+var fade_timer: float = 0.0
+## フェード継続時間
+var fade_duration: float = 2.0
+## 表示開始時の不透明度
+var initial_alpha: float = 1.0
+## 上方向への移動速度（ピクセル/秒）
+var upward_speed: float = 20.0
+
+# ======================== 初期化処理 ========================
+
 func _ready() -> void:
 	# 初期設定
 	modulate = Color(1.0, 1.0, 1.0, initial_alpha)
@@ -129,6 +135,9 @@ func _ready() -> void:
 	custom_minimum_size = Vector2(30, 20)
 	queue_redraw()
 
+# ======================== 更新処理 ========================
+
+## フェードアウトと移動の処理
 func _process(delta: float) -> void:
 	# フェードアウト処理
 	if fade_timer > 0.0:
@@ -142,6 +151,9 @@ func _process(delta: float) -> void:
 		if fade_timer <= 0.0:
 			queue_free()
 
+# ======================== 描画処理 ========================
+
+## ダメージ数値を描画
 func _draw() -> void:
 	var value_str: String = str(display_value)
 	var dot_size: float = 3.0  # ドットサイズ（小さめ）
