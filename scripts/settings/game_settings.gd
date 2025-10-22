@@ -3,6 +3,8 @@ extends BaseSettingsMenu
 
 ## ゲーム設定メニュー
 
+# ======================== 定数定義 ========================
+
 const MENU_TEXTS: Dictionary = {
 	"always_dash_section": {
 		"ja": "常時ダッシュ",
@@ -18,28 +20,24 @@ const MENU_TEXTS: Dictionary = {
 	}
 }
 
-# 常時ダッシュ管理
+# ======================== 変数定義 ========================
+
+## 常時ダッシュ管理
 var always_dash_button_index: int = 0
 
-# テキスト更新用の参照
+## テキスト更新用の参照
 var always_dash_section_label: Label = null
+
+# ======================== 初期化処理 ========================
 
 func _init(manager_ref: WeakRef) -> void:
 	super._init(manager_ref)
 	use_2d_navigation = true
 
-## セクションラベルを作成
-func _create_section_label(text_key: String) -> Label:
-	var label: Label = Label.new()
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	FontTheme.apply_to_label(label, FontTheme.FONT_SIZE_LARGE, true)
-	label.process_mode = Node.PROCESS_MODE_ALWAYS
-	menu_container.add_child(label)
-	_update_text(label, text_key)
-	return label
+# ======================== メニュー構築処理 ========================
 
+## ゲーム設定メニューを構築
 func build_menu(parent_container: Control) -> void:
-	## ゲーム設定メニューを構築
 	# navigation_rowsを初期化（再構築時の重複を防ぐ）
 	navigation_rows.clear()
 
@@ -70,25 +68,22 @@ func build_menu(parent_container: Control) -> void:
 	# 言語変更シグナルに接続
 	_connect_language_signal()
 
-func _update_text(label: Label, key: String) -> void:
-	## ラベルテキストを多言語対応で更新
-	var lang_code: String = get_language_code()
-	label.text = MENU_TEXTS[key][lang_code]
+# ======================== UI要素作成メソッド ========================
 
-func _update_always_dash_button_text() -> void:
-	## 常時ダッシュボタンのテキストを現在の状態に応じて更新
-	if always_dash_button_index >= buttons.size():
-		return
+## セクションラベルを作成
+func _create_section_label(text_key: String) -> Label:
+	var label: Label = Label.new()
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	FontTheme.apply_to_label(label, FontTheme.FONT_SIZE_LARGE, true)
+	label.process_mode = Node.PROCESS_MODE_ALWAYS
+	menu_container.add_child(label)
+	_update_text(label, text_key)
+	return label
 
-	var lang_code: String = get_language_code()
-	# 常時ダッシュの状態に応じて表示（ONならON、OFFならOFF）
-	if GameSettings.always_dash:
-		buttons[always_dash_button_index].text = MENU_TEXTS["on"][lang_code]
-	else:
-		buttons[always_dash_button_index].text = MENU_TEXTS["off"][lang_code]
+# ======================== メニュー表示・非表示処理 ========================
 
+## メニューを表示し、現在の設定に応じて選択状態を設定
 func show_menu(initial_selection: int = 0, initial_row: int = 0, initial_column: int = 0) -> void:
-	## メニューを表示し、現在の設定に応じて選択状態を設定
 	if menu_container:
 		menu_container.visible = true
 
@@ -102,6 +97,35 @@ func show_menu(initial_selection: int = 0, initial_row: int = 0, initial_column:
 
 	_update_2d_selection()
 
+# ======================== テキスト更新メソッド ========================
+
+## ラベルテキストを多言語対応で更新
+func _update_text(label: Label, key: String) -> void:
+	var lang_code: String = get_language_code()
+	label.text = MENU_TEXTS[key][lang_code]
+
+## 常時ダッシュボタンのテキストを現在の状態に応じて更新
+func _update_always_dash_button_text() -> void:
+	if always_dash_button_index >= buttons.size():
+		return
+
+	var lang_code: String = get_language_code()
+	# 常時ダッシュの状態に応じて表示（ONならON、OFFならOFF）
+	if GameSettings.always_dash:
+		buttons[always_dash_button_index].text = MENU_TEXTS["on"][lang_code]
+	else:
+		buttons[always_dash_button_index].text = MENU_TEXTS["off"][lang_code]
+
+# ======================== 設定変更処理 ========================
+
+## 常時ダッシュを切り替え
+func _toggle_always_dash() -> void:
+	GameSettings.toggle_always_dash()
+	# ボタンのテキストを更新
+	_update_always_dash_button_text()
+
+# ======================== 左右入力処理（派生クラスでオーバーライド） ========================
+
 ## 左キー入力処理（基底クラスからオーバーライド）
 func _handle_left_input() -> void:
 	# 常時ダッシュ行にいる場合は常時ダッシュを切り替え
@@ -114,14 +138,10 @@ func _handle_right_input() -> void:
 	if current_row == 0:
 		_toggle_always_dash()
 
-## 常時ダッシュを切り替え
-func _toggle_always_dash() -> void:
-	GameSettings.toggle_always_dash()
-	# ボタンのテキストを更新
-	_update_always_dash_button_text()
+# ======================== コールバックメソッド ========================
 
+## 言語が変更されたときに呼ばれるコールバック
 func _on_language_changed(_new_language: String) -> void:
-	## 言語が変更されたときに呼ばれるコールバック
 	_update_back_button_text()
 	if always_dash_section_label:
 		_update_text(always_dash_section_label, "always_dash_section")
@@ -129,8 +149,10 @@ func _on_language_changed(_new_language: String) -> void:
 	# 常時ダッシュボタンのテキストを更新
 	_update_always_dash_button_text()
 
+# ======================== クリーンアップ処理 ========================
+
+## クリーンアップ処理
 func cleanup() -> void:
-	## クリーンアップ処理
 	_disconnect_language_signal()
 
 	# 参照をクリア

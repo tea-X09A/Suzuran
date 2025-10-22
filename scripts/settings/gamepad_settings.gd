@@ -3,6 +3,8 @@ extends BaseSettingsMenu
 
 ## ゲームパッド設定メニュー
 
+# ======================== 定数定義 ========================
+
 const MENU_TEXTS: Dictionary = {
 	"fight": {
 		"ja": "格闘",
@@ -42,7 +44,7 @@ const MENU_TEXTS: Dictionary = {
 	}
 }
 
-# アクションの順序を定義（表示順）
+## アクションの順序を定義（表示順）
 const ACTION_ORDER: Array[String] = [
 	"fight",
 	"shooting",
@@ -53,24 +55,28 @@ const ACTION_ORDER: Array[String] = [
 	"run"
 ]
 
-# ゲームパッドデバイスID（複数のコントローラーがある場合は選択可能にする）
+## ゲームパッドデバイスID（複数のコントローラーがある場合は選択可能にする）
 const DEVICE_ID: int = 0
 
-# ボタン入力待機状態
+# ======================== 変数定義 ========================
+
+## ボタン入力待機状態
 var is_waiting_for_input: bool = false
 var waiting_action: String = ""
 
-# ボタンの参照を保持
+## ボタンの参照を保持
 var button_buttons: Dictionary = {}  # action名 -> Button
 
-# リセットボタン
+## リセットボタン
 var reset_button: Button = null
 
-# 前フレームのボタン状態（just_pressed検出用）
+## 前フレームのボタン状態（just_pressed検出用）
 var previous_button_states: Dictionary = {}
 
+# ======================== メニュー構築処理 ========================
+
+## ゲームパッド設定メニューを構築
 func build_menu(parent_container: Control) -> void:
-	"""ゲームパッド設定メニューを構築"""
 	# VBoxContainerを作成
 	_init_menu_container(parent_container)
 
@@ -104,8 +110,10 @@ func build_menu(parent_container: Control) -> void:
 	# 言語変更シグナルに接続
 	_connect_language_signal()
 
+# ======================== UI要素作成メソッド ========================
+
+## ボタンバインド設定の行を作成（ラベル + ボタン）
 func _create_button_binding_row(grid: GridContainer, action: String) -> void:
-	"""ボタンバインド設定の行を作成（ラベル + ボタン）"""
 	# アクション名ラベル（左列）
 	var label: Label = Label.new()
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -133,8 +141,8 @@ func _create_button_binding_row(grid: GridContainer, action: String) -> void:
 	# 初期テキストを設定
 	_update_button_button_text(action)
 
+## リセットボタンを作成
 func _create_reset_button() -> void:
-	"""リセットボタンを作成"""
 	var reset_container: HBoxContainer = _create_centered_hbox(0)
 
 	reset_button = Button.new()
@@ -148,68 +156,30 @@ func _create_reset_button() -> void:
 
 	_update_reset_button_text()
 
-func _on_button_button_pressed(action: String) -> void:
-	"""ボタンが押されたときの処理"""
-	is_waiting_for_input = true
-	waiting_action = action
+# ======================== テキスト更新メソッド ========================
 
-	# ボタンのテキストを「ボタンを押してください...」に変更
-	var button: Button = button_buttons[action]
-	var lang_code: String = get_language_code()
-	button.text = MENU_TEXTS["waiting"][lang_code]
-
-	# 現在のボタン状態を記録（決定ボタンの誤検出を防ぐため）
-	var button_codes: Array[int] = [
-		JOY_BUTTON_A, JOY_BUTTON_B, JOY_BUTTON_X, JOY_BUTTON_Y,
-		JOY_BUTTON_BACK, JOY_BUTTON_GUIDE, JOY_BUTTON_START,
-		JOY_BUTTON_LEFT_STICK, JOY_BUTTON_RIGHT_STICK,
-		JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER,
-		JOY_BUTTON_DPAD_UP, JOY_BUTTON_DPAD_DOWN,
-		JOY_BUTTON_DPAD_LEFT, JOY_BUTTON_DPAD_RIGHT,
-	]
-	_update_button_states(button_codes)
-
-func _on_reset_pressed() -> void:
-	"""リセットボタンが押されたときの処理"""
-	GameSettings.reset_gamepad_bindings()
-	# すべてのボタンのテキストを更新
-	for action in ACTION_ORDER:
-		_update_button_button_text(action)
-
+## ラベルテキストを更新
 func _update_label_text(label: Label, text_key: String) -> void:
-	"""ラベルテキストを更新"""
 	var lang_code: String = get_language_code()
 	label.text = MENU_TEXTS[text_key][lang_code]
 
+## ボタンのテキストを更新（現在のボタン名を表示）
 func _update_button_button_text(action: String) -> void:
-	"""ボタンのテキストを更新（現在のボタン名を表示）"""
 	var button: Button = button_buttons.get(action)
 	if button:
 		var btn: int = GameSettings.get_gamepad_binding(action)
 		button.text = GameSettings.get_gamepad_button_name(btn)
 
+## リセットボタンのテキストを更新
 func _update_reset_button_text() -> void:
-	"""リセットボタンのテキストを更新"""
 	if reset_button:
 		var lang_code: String = get_language_code()
 		reset_button.text = MENU_TEXTS["reset"][lang_code]
 
-func _on_language_changed(_new_language: String) -> void:
-	"""言語が変更されたときに呼ばれるコールバック"""
-	_update_back_button_text()
-	_update_reset_button_text()
+# ======================== 入力処理 ========================
 
-	# GridContainer内のラベルを更新
-	if menu_container:
-		for child in menu_container.get_children():
-			if child is GridContainer:
-				for grid_child in child.get_children():
-					if grid_child is Label and grid_child.has_meta("text_key"):
-						var text_key: String = grid_child.get_meta("text_key")
-						_update_label_text(grid_child, text_key)
-
+## 入力処理
 func process_input(_delta: float) -> void:
-	"""入力処理"""
 	if not menu_container or not menu_container.visible:
 		return
 
@@ -226,8 +196,8 @@ func process_input(_delta: float) -> void:
 	# 通常の入力処理（ボタンナビゲーション）
 	_process_1d_navigation()
 
+## ボタン入力待ち状態での入力処理
 func _handle_button_input() -> void:
-	"""ボタン入力待ち状態での入力処理"""
 	# 主要なゲームパッドボタンを定義
 	var button_codes: Array[int] = [
 		JOY_BUTTON_A,               # 0
@@ -295,13 +265,15 @@ func _handle_button_input() -> void:
 	# ボタン状態を更新（次フレーム用）
 	_update_button_states(button_codes)
 
+## ボタン状態を更新（次フレーム用）
 func _update_button_states(button_codes: Array[int]) -> void:
-	"""ボタン状態を更新（次フレーム用）"""
 	for button_code in button_codes:
 		previous_button_states[button_code] = Input.is_joy_button_pressed(DEVICE_ID, button_code)
 
+# ======================== ヘルパーメソッド ========================
+
+## 指定されたボタンが他のアクションに既に割り当てられているかチェック
 func _is_button_duplicated(action: String, button_code: int) -> bool:
-	"""指定されたボタンが他のアクションに既に割り当てられているかチェック"""
 	for other_action in ACTION_ORDER:
 		# 自分自身のアクションはスキップ
 		if other_action == action:
@@ -311,12 +283,58 @@ func _is_button_duplicated(action: String, button_code: int) -> bool:
 			return true
 	return false
 
+## 独自の入力処理を行っているかどうか
 func is_handling_input() -> bool:
-	"""独自の入力処理を行っているかどうか"""
 	return is_waiting_for_input
 
+# ======================== コールバックメソッド ========================
+
+## ボタンが押されたときの処理
+func _on_button_button_pressed(action: String) -> void:
+	is_waiting_for_input = true
+	waiting_action = action
+
+	# ボタンのテキストを「ボタンを押してください...」に変更
+	var button: Button = button_buttons[action]
+	var lang_code: String = get_language_code()
+	button.text = MENU_TEXTS["waiting"][lang_code]
+
+	# 現在のボタン状態を記録（決定ボタンの誤検出を防ぐため）
+	var button_codes: Array[int] = [
+		JOY_BUTTON_A, JOY_BUTTON_B, JOY_BUTTON_X, JOY_BUTTON_Y,
+		JOY_BUTTON_BACK, JOY_BUTTON_GUIDE, JOY_BUTTON_START,
+		JOY_BUTTON_LEFT_STICK, JOY_BUTTON_RIGHT_STICK,
+		JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER,
+		JOY_BUTTON_DPAD_UP, JOY_BUTTON_DPAD_DOWN,
+		JOY_BUTTON_DPAD_LEFT, JOY_BUTTON_DPAD_RIGHT,
+	]
+	_update_button_states(button_codes)
+
+## リセットボタンが押されたときの処理
+func _on_reset_pressed() -> void:
+	GameSettings.reset_gamepad_bindings()
+	# すべてのボタンのテキストを更新
+	for action in ACTION_ORDER:
+		_update_button_button_text(action)
+
+## 言語が変更されたときに呼ばれるコールバック
+func _on_language_changed(_new_language: String) -> void:
+	_update_back_button_text()
+	_update_reset_button_text()
+
+	# GridContainer内のラベルを更新
+	if menu_container:
+		for child in menu_container.get_children():
+			if child is GridContainer:
+				for grid_child in child.get_children():
+					if grid_child is Label and grid_child.has_meta("text_key"):
+						var text_key: String = grid_child.get_meta("text_key")
+						_update_label_text(grid_child, text_key)
+
+# ======================== クリーンアップ処理 ========================
+
+## クリーンアップ処理
 func cleanup() -> void:
-	"""クリーンアップ処理"""
 	_disconnect_language_signal()
 
 	button_buttons.clear()

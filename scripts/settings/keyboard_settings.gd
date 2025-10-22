@@ -3,6 +3,8 @@ extends BaseSettingsMenu
 
 ## キーボード設定メニュー
 
+# ======================== 定数定義 ========================
+
 const MENU_TEXTS: Dictionary = {
 	"fight": {
 		"ja": "格闘",
@@ -42,7 +44,7 @@ const MENU_TEXTS: Dictionary = {
 	}
 }
 
-# アクションの順序を定義（表示順）
+## アクションの順序を定義（表示順）
 const ACTION_ORDER: Array[String] = [
 	"fight",
 	"shooting",
@@ -53,21 +55,25 @@ const ACTION_ORDER: Array[String] = [
 	"run"
 ]
 
-# キー入力待機状態
+# ======================== 変数定義 ========================
+
+## キー入力待機状態
 var is_waiting_for_input: bool = false
 var waiting_action: String = ""
 
-# キーボタンの参照を保持
+## キーボタンの参照を保持
 var key_buttons: Dictionary = {}  # action名 -> Button
 
-# リセットボタン
+## リセットボタン
 var reset_button: Button = null
 
-# 前フレームのキー状態（just_pressed検出用）
+## 前フレームのキー状態（just_pressed検出用）
 var previous_key_states: Dictionary = {}
 
+# ======================== メニュー構築処理 ========================
+
+## キーボード設定メニューを構築
 func build_menu(parent_container: Control) -> void:
-	"""キーボード設定メニューを構築"""
 	# VBoxContainerを作成
 	_init_menu_container(parent_container)
 
@@ -101,8 +107,10 @@ func build_menu(parent_container: Control) -> void:
 	# 言語変更シグナルに接続
 	_connect_language_signal()
 
+# ======================== UI要素作成メソッド ========================
+
+## キーバインド設定の行を作成（ラベル + キーボタン）
 func _create_key_binding_row(grid: GridContainer, action: String) -> void:
-	"""キーバインド設定の行を作成（ラベル + キーボタン）"""
 	# アクション名ラベル（左列）
 	var label: Label = Label.new()
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -130,8 +138,8 @@ func _create_key_binding_row(grid: GridContainer, action: String) -> void:
 	# 初期テキストを設定
 	_update_key_button_text(action)
 
+## リセットボタンを作成
 func _create_reset_button() -> void:
-	"""リセットボタンを作成"""
 	var reset_container: HBoxContainer = _create_centered_hbox(0)
 
 	reset_button = Button.new()
@@ -145,70 +153,30 @@ func _create_reset_button() -> void:
 
 	_update_reset_button_text()
 
-func _on_key_button_pressed(action: String) -> void:
-	"""キーボタンが押されたときの処理"""
-	is_waiting_for_input = true
-	waiting_action = action
+# ======================== テキスト更新メソッド ========================
 
-	# ボタンのテキストを「キーを押してください...」に変更
-	var button: Button = key_buttons[action]
-	var lang_code: String = get_language_code()
-	button.text = MENU_TEXTS["waiting"][lang_code]
-
-	# 現在のキー状態を記録（決定キーの誤検出を防ぐため）
-	var key_codes: Array[int] = [
-		KEY_A, KEY_B, KEY_C, KEY_D, KEY_E, KEY_F, KEY_G, KEY_H, KEY_I, KEY_J,
-		KEY_K, KEY_L, KEY_M, KEY_N, KEY_O, KEY_P, KEY_Q, KEY_R, KEY_S, KEY_T,
-		KEY_U, KEY_V, KEY_W, KEY_X, KEY_Y, KEY_Z,
-		KEY_0, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9,
-		KEY_SPACE, KEY_SHIFT, KEY_CTRL, KEY_ALT, KEY_TAB, KEY_BACKSPACE,
-		KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN,
-		KEY_COMMA, KEY_PERIOD, KEY_SLASH, KEY_SEMICOLON, KEY_APOSTROPHE,
-		KEY_BRACKETLEFT, KEY_BRACKETRIGHT, KEY_BACKSLASH, KEY_MINUS, KEY_EQUAL
-	]
-	_update_key_states(key_codes)
-
-func _on_reset_pressed() -> void:
-	"""リセットボタンが押されたときの処理"""
-	GameSettings.reset_key_bindings()
-	# すべてのキーボタンのテキストを更新
-	for action in ACTION_ORDER:
-		_update_key_button_text(action)
-
+## ラベルテキストを更新
 func _update_label_text(label: Label, text_key: String) -> void:
-	"""ラベルテキストを更新"""
 	var lang_code: String = get_language_code()
 	label.text = MENU_TEXTS[text_key][lang_code]
 
+## キーボタンのテキストを更新（現在のキー名を表示）
 func _update_key_button_text(action: String) -> void:
-	"""キーボタンのテキストを更新（現在のキー名を表示）"""
 	var button: Button = key_buttons.get(action)
 	if button:
 		var key: int = GameSettings.get_key_binding(action)
 		button.text = GameSettings.get_key_name(key)
 
+## リセットボタンのテキストを更新
 func _update_reset_button_text() -> void:
-	"""リセットボタンのテキストを更新"""
 	if reset_button:
 		var lang_code: String = get_language_code()
 		reset_button.text = MENU_TEXTS["reset"][lang_code]
 
-func _on_language_changed(_new_language: String) -> void:
-	"""言語が変更されたときに呼ばれるコールバック"""
-	_update_back_button_text()
-	_update_reset_button_text()
+# ======================== 入力処理 ========================
 
-	# GridContainer内のラベルを更新
-	if menu_container:
-		for child in menu_container.get_children():
-			if child is GridContainer:
-				for grid_child in child.get_children():
-					if grid_child is Label and grid_child.has_meta("text_key"):
-						var text_key: String = grid_child.get_meta("text_key")
-						_update_label_text(grid_child, text_key)
-
+## 入力処理
 func process_input(_delta: float) -> void:
-	"""入力処理"""
 	if not menu_container or not menu_container.visible:
 		return
 
@@ -225,8 +193,14 @@ func process_input(_delta: float) -> void:
 	# 通常の入力処理（ボタンナビゲーション）
 	_process_1d_navigation()
 
+## 独自の入力処理を行っているかどうか
+func is_handling_input() -> bool:
+	return is_waiting_for_input
+
+# ======================== キー入力処理 ========================
+
+## キー入力待ち状態での入力処理
 func _handle_key_input() -> void:
-	"""キー入力待ち状態での入力処理"""
 	# 主要なキーコードを定義
 	var key_codes: Array[int] = [
 		# アルファベット
@@ -295,13 +269,15 @@ func _handle_key_input() -> void:
 	previous_key_states[KEY_ESCAPE] = Input.is_physical_key_pressed(KEY_ESCAPE)
 	_update_key_states(key_codes)
 
+## キー状態を更新（次フレーム用）
 func _update_key_states(key_codes: Array[int]) -> void:
-	"""キー状態を更新（次フレーム用）"""
 	for keycode in key_codes:
 		previous_key_states[keycode] = Input.is_physical_key_pressed(keycode)
 
+# ======================== ヘルパーメソッド ========================
+
+## 指定されたキーが他のアクションに既に割り当てられているかチェック
 func _is_key_duplicated(action: String, keycode: int) -> bool:
-	"""指定されたキーが他のアクションに既に割り当てられているかチェック"""
 	for other_action in ACTION_ORDER:
 		# 自分自身のアクションはスキップ
 		if other_action == action:
@@ -311,12 +287,56 @@ func _is_key_duplicated(action: String, keycode: int) -> bool:
 			return true
 	return false
 
-func is_handling_input() -> bool:
-	"""独自の入力処理を行っているかどうか"""
-	return is_waiting_for_input
+# ======================== コールバックメソッド ========================
 
+## キーボタンが押されたときの処理
+func _on_key_button_pressed(action: String) -> void:
+	is_waiting_for_input = true
+	waiting_action = action
+
+	# ボタンのテキストを「キーを押してください...」に変更
+	var button: Button = key_buttons[action]
+	var lang_code: String = get_language_code()
+	button.text = MENU_TEXTS["waiting"][lang_code]
+
+	# 現在のキー状態を記録（決定キーの誤検出を防ぐため）
+	var key_codes: Array[int] = [
+		KEY_A, KEY_B, KEY_C, KEY_D, KEY_E, KEY_F, KEY_G, KEY_H, KEY_I, KEY_J,
+		KEY_K, KEY_L, KEY_M, KEY_N, KEY_O, KEY_P, KEY_Q, KEY_R, KEY_S, KEY_T,
+		KEY_U, KEY_V, KEY_W, KEY_X, KEY_Y, KEY_Z,
+		KEY_0, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9,
+		KEY_SPACE, KEY_SHIFT, KEY_CTRL, KEY_ALT, KEY_TAB, KEY_BACKSPACE,
+		KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN,
+		KEY_COMMA, KEY_PERIOD, KEY_SLASH, KEY_SEMICOLON, KEY_APOSTROPHE,
+		KEY_BRACKETLEFT, KEY_BRACKETRIGHT, KEY_BACKSLASH, KEY_MINUS, KEY_EQUAL
+	]
+	_update_key_states(key_codes)
+
+## リセットボタンが押されたときの処理
+func _on_reset_pressed() -> void:
+	GameSettings.reset_key_bindings()
+	# すべてのキーボタンのテキストを更新
+	for action in ACTION_ORDER:
+		_update_key_button_text(action)
+
+## 言語が変更されたときに呼ばれるコールバック
+func _on_language_changed(_new_language: String) -> void:
+	_update_back_button_text()
+	_update_reset_button_text()
+
+	# GridContainer内のラベルを更新
+	if menu_container:
+		for child in menu_container.get_children():
+			if child is GridContainer:
+				for grid_child in child.get_children():
+					if grid_child is Label and grid_child.has_meta("text_key"):
+						var text_key: String = grid_child.get_meta("text_key")
+						_update_label_text(grid_child, text_key)
+
+# ======================== クリーンアップ処理 ========================
+
+## クリーンアップ処理
 func cleanup() -> void:
-	"""クリーンアップ処理"""
 	_disconnect_language_signal()
 
 	key_buttons.clear()

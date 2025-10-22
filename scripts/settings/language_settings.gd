@@ -3,22 +3,30 @@ extends BaseSettingsMenu
 
 ## 言語設定メニュー
 
-# 言語リスト
+# ======================== 定数定義 ========================
+
+## 言語リスト
 const LANGUAGES: Array[Dictionary] = [
 	{"id": GameSettings.Language.JAPANESE, "name": "日本語"},
 	{"id": GameSettings.Language.ENGLISH, "name": "English"}
 ]
 
-# 言語管理
+# ======================== 変数定義 ========================
+
+## 言語管理
 var current_language_index: int = 0
 var language_button: Button = null
+
+# ======================== 初期化処理 ========================
 
 func _init(manager_ref: WeakRef) -> void:
 	super._init(manager_ref)
 	use_2d_navigation = true
 
+# ======================== メニュー構築処理 ========================
+
+## 言語設定メニューを構築
 func build_menu(parent_container: Control) -> void:
-	## 言語設定メニューを構築
 	# navigation_rowsを初期化（再構築時の重複を防ぐ）
 	navigation_rows.clear()
 
@@ -55,8 +63,10 @@ func build_menu(parent_container: Control) -> void:
 		GameSettings.language_changed.disconnect(_on_language_changed)
 	GameSettings.language_changed.connect(_on_language_changed)
 
+# ======================== メニュー表示・非表示処理 ========================
+
+## メニューを表示し、現在の言語に応じて選択状態を設定
 func show_menu(initial_selection: int = 0, initial_row: int = 0, initial_column: int = 0) -> void:
-	## メニューを表示し、現在の言語に応じて選択状態を設定
 	if menu_container:
 		menu_container.visible = true
 
@@ -76,6 +86,8 @@ func show_menu(initial_selection: int = 0, initial_row: int = 0, initial_column:
 	current_selection = initial_selection
 
 	_update_2d_selection()
+
+# ======================== 言語変更処理 ========================
 
 ## 言語を変更
 func _change_language(direction: int) -> void:
@@ -98,6 +110,8 @@ func _change_language(direction: int) -> void:
 	if language_button:
 		language_button.text = LANGUAGES[current_language_index]["name"]
 
+# ======================== 左右入力処理（派生クラスでオーバーライド） ========================
+
 ## 左キー入力処理（基底クラスからオーバーライド）
 func _handle_left_input() -> void:
 	# 言語行にいる場合は言語を変更
@@ -110,12 +124,16 @@ func _handle_right_input() -> void:
 	if current_row == 0:
 		_change_language(1)
 
+# ======================== コールバックメソッド ========================
+
+## 言語が変更されたときに呼ばれるコールバック
 func _on_language_changed(_new_language: String) -> void:
-	## 言語が変更されたときに呼ばれるコールバック
 	_update_back_button_text()
 
+# ======================== クリーンアップ処理 ========================
+
+## クリーンアップ処理
 func cleanup() -> void:
-	## クリーンアップ処理
 	if GameSettings.language_changed.is_connected(_on_language_changed):
 		GameSettings.language_changed.disconnect(_on_language_changed)
 

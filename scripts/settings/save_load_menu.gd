@@ -4,6 +4,8 @@ extends BaseSettingsMenu
 ## セーブ/ロードメニュー
 ## SaveLoadManager AutoLoadを使用してセーブ/ロード機能を提供
 
+# ======================== 定数定義 ========================
+
 ## メニューモード
 enum Mode {
 	SAVE,
@@ -16,12 +18,6 @@ enum DisplayMode {
 	CONFIRM
 }
 
-## 現在のモード
-var current_mode: Mode = Mode.SAVE
-
-## 現在の表示モード
-var current_display_mode: DisplayMode = DisplayMode.SLOT_SELECT
-
 ## セーブスロット数
 const SLOT_COUNT: int = 5
 
@@ -30,19 +26,6 @@ const SPACER_SIZE: float = 20.0
 const TOP_SPACER_SIZE: float = 100.0
 const MIDDLE_SPACER_SIZE: float = 10.0
 const CONFIRM_BUTTON_SIZE: Vector2 = Vector2(300, 80)
-
-## スロットボタンの配列（別管理）
-var slot_buttons: Array[Button] = []
-
-## タイトルラベル
-var title_label: Label = null
-
-## 確認画面用のコンテナとボタン
-var confirm_container: VBoxContainer = null
-var confirm_message_label: Label = null
-var selected_slot: int = -1
-var confirm_yes_button: Button = null
-var confirm_no_button: Button = null
 
 ## 多言語対応テキスト
 const MENU_TEXTS: Dictionary = {
@@ -84,10 +67,35 @@ const MENU_TEXTS: Dictionary = {
 	}
 }
 
+# ======================== 変数定義 ========================
+
+## 現在のモード
+var current_mode: Mode = Mode.SAVE
+
+## 現在の表示モード
+var current_display_mode: DisplayMode = DisplayMode.SLOT_SELECT
+
+## スロットボタンの配列（別管理）
+var slot_buttons: Array[Button] = []
+
+## タイトルラベル
+var title_label: Label = null
+
+## 確認画面用のコンテナとボタン
+var confirm_container: VBoxContainer = null
+var confirm_message_label: Label = null
+var selected_slot: int = -1
+var confirm_yes_button: Button = null
+var confirm_no_button: Button = null
+
+# ======================== 初期化処理 ========================
+
 ## コンストラクタでモードを指定
 func _init(manager_ref: WeakRef, mode: Mode = Mode.SAVE) -> void:
 	super._init(manager_ref)
 	current_mode = mode
+
+# ======================== メニュー構築処理 ========================
 
 ## メニューを構築
 func build_menu(parent_container: Control) -> void:
@@ -130,10 +138,6 @@ func build_menu(parent_container: Control) -> void:
 	# 初期スロット情報を更新
 	_update_all_slot_buttons()
 
-## 現在の言語コードを取得（ヘルパーメソッド）
-func _get_language_code() -> String:
-	return "ja" if GameSettings.current_language == GameSettings.Language.JAPANESE else "en"
-
 ## 確認画面を構築
 func _build_confirm_menu(parent_container: Control) -> void:
 	# 確認画面用のVBoxContainerを作成
@@ -174,41 +178,7 @@ func _build_confirm_menu(parent_container: Control) -> void:
 	var no_center: CenterContainer = _create_center_container(confirm_no_button)
 	confirm_container.add_child(no_center)
 
-## 確認ボタンを作成（ヘルパーメソッド）
-func _create_confirm_button(button_text: String, callback: Callable) -> Button:
-	var button: Button = Button.new()
-	button.text = button_text
-	button.custom_minimum_size = CONFIRM_BUTTON_SIZE
-	FontTheme.apply_to_button(button, FontTheme.FONT_SIZE_LARGE, true)
-	button.focus_mode = Control.FOCUS_ALL
-	button.process_mode = Node.PROCESS_MODE_ALWAYS
-	button.pressed.connect(callback)
-	return button
-
-## 中央配置コンテナを作成（ヘルパーメソッド）
-func _create_center_container(child_node: Control) -> CenterContainer:
-	var center: CenterContainer = CenterContainer.new()
-	center.process_mode = Node.PROCESS_MODE_ALWAYS
-	center.add_child(child_node)
-	return center
-
-## スロットボタンを作成
-func _create_slot_button(slot_index: int) -> Button:
-	var button: Button = Button.new()
-	button.custom_minimum_size = Vector2(400, 80)
-	FontTheme.apply_to_button(button, FontTheme.FONT_SIZE_SMALL, true)
-	button.focus_mode = Control.FOCUS_ALL
-	button.process_mode = Node.PROCESS_MODE_ALWAYS
-	button.pressed.connect(_on_slot_pressed.bind(slot_index))
-
-	# ボタンをメニューコンテナに追加
-	if menu_container:
-		menu_container.add_child(button)
-
-	# buttons配列にも追加（選択処理用）
-	buttons.append(button)
-
-	return button
+# ======================== メニュー表示・非表示処理 ========================
 
 ## メニュー表示時に呼ばれる
 func show_menu(initial_selection: int = 0, _initial_row: int = 0, _initial_column: int = 0) -> void:
@@ -250,6 +220,46 @@ func hide_menu() -> void:
 	# 親クラスのhide_menu()を呼び出す
 	super.hide_menu()
 
+# ======================== UI要素作成メソッド ========================
+
+## スロットボタンを作成
+func _create_slot_button(slot_index: int) -> Button:
+	var button: Button = Button.new()
+	button.custom_minimum_size = Vector2(400, 80)
+	FontTheme.apply_to_button(button, FontTheme.FONT_SIZE_SMALL, true)
+	button.focus_mode = Control.FOCUS_ALL
+	button.process_mode = Node.PROCESS_MODE_ALWAYS
+	button.pressed.connect(_on_slot_pressed.bind(slot_index))
+
+	# ボタンをメニューコンテナに追加
+	if menu_container:
+		menu_container.add_child(button)
+
+	# buttons配列にも追加（選択処理用）
+	buttons.append(button)
+
+	return button
+
+## 確認ボタンを作成（ヘルパーメソッド）
+func _create_confirm_button(button_text: String, callback: Callable) -> Button:
+	var button: Button = Button.new()
+	button.text = button_text
+	button.custom_minimum_size = CONFIRM_BUTTON_SIZE
+	FontTheme.apply_to_button(button, FontTheme.FONT_SIZE_LARGE, true)
+	button.focus_mode = Control.FOCUS_ALL
+	button.process_mode = Node.PROCESS_MODE_ALWAYS
+	button.pressed.connect(callback)
+	return button
+
+## 中央配置コンテナを作成（ヘルパーメソッド）
+func _create_center_container(child_node: Control) -> CenterContainer:
+	var center: CenterContainer = CenterContainer.new()
+	center.process_mode = Node.PROCESS_MODE_ALWAYS
+	center.add_child(child_node)
+	return center
+
+# ======================== テキスト更新メソッド ========================
+
 ## タイトルテキストを更新
 func _update_title_text() -> void:
 	if title_label == null:
@@ -289,18 +299,6 @@ func _update_slot_button(slot_index: int) -> void:
 	# LOADモードでは空きスロットを無効化
 	_set_button_enabled(button, not (current_mode == Mode.LOAD and not save_exists))
 
-## 空きスロットテキストをフォーマット（ヘルパーメソッド）
-func _format_empty_slot_text(slot_index: int, lang_code: String) -> String:
-	var slot_prefix: String = MENU_TEXTS["slot_prefix"][lang_code]
-	var slot_num_str: String = "%02d" % (slot_index + 1)
-	var empty_text: String = MENU_TEXTS["empty_slot"][lang_code]
-	return "%s%s\n\n%s" % [slot_prefix, slot_num_str, empty_text]
-
-## ボタンの有効/無効を設定（ヘルパーメソッド）
-func _set_button_enabled(button: Button, enabled: bool) -> void:
-	button.disabled = not enabled
-	button.focus_mode = Control.FOCUS_ALL if enabled else Control.FOCUS_NONE
-
 ## スロットテキストをフォーマット
 func _format_slot_text(slot_index: int, save_info: Dictionary, lang_code: String) -> String:
 	var slot_prefix: String = MENU_TEXTS["slot_prefix"][lang_code]
@@ -319,6 +317,110 @@ func _format_slot_text(slot_index: int, save_info: Dictionary, lang_code: String
 	var line3: String = "%s%s" % [location_prefix, location]
 
 	return "%s\n%s\n%s" % [line1, line2, line3]
+
+## 確認画面のボタン選択を更新（BaseSettingsMenuのスタイルを使用）
+func _update_confirm_button_selection() -> void:
+	if not confirm_yes_button or not confirm_no_button:
+		return
+
+	# 選択されているボタンと選択されていないボタンにスタイルを適用
+	if current_selection == 0:
+		_apply_button_selection_style(confirm_yes_button, true)
+		_apply_button_selection_style(confirm_no_button, false)
+	else:
+		_apply_button_selection_style(confirm_yes_button, false)
+		_apply_button_selection_style(confirm_no_button, true)
+
+## 確認画面のテキストを更新
+func _update_confirm_screen_texts() -> void:
+	var lang_code: String = _get_language_code()
+
+	if confirm_message_label:
+		# モードに応じてメッセージを切り替え
+		var message_key: String = "confirm_save" if current_mode == Mode.SAVE else "confirm_load"
+		confirm_message_label.text = MENU_TEXTS[message_key][lang_code]
+
+	if confirm_yes_button:
+		confirm_yes_button.text = MENU_TEXTS["yes"][lang_code]
+
+	if confirm_no_button:
+		confirm_no_button.text = MENU_TEXTS["no"][lang_code]
+
+# ======================== 入力処理 ========================
+
+## サブメニューが独自に入力を処理する必要があるかどうか（確認画面表示中）
+func is_handling_input() -> bool:
+	return current_display_mode == DisplayMode.CONFIRM
+
+## 入力処理のオーバーライド（表示モードに応じて処理を分岐）
+func process_input(_delta: float) -> void:
+	if current_display_mode == DisplayMode.CONFIRM:
+		# 確認画面表示中の入力処理
+		# 上キー: 「はい」を選択
+		if Input.is_action_just_pressed("ui_menu_up"):
+			current_selection = 0
+			_update_confirm_button_selection()
+		# 下キー: 「いいえ」を選択
+		elif Input.is_action_just_pressed("ui_menu_down"):
+			current_selection = 1
+			_update_confirm_button_selection()
+		# 決定キー: 選択を実行（言語を考慮）
+		elif GameSettings.is_action_menu_accept_pressed():
+			if current_selection == 0:
+				_on_confirm_yes()
+			else:
+				_on_confirm_no()
+		# ESC/キャンセルボタン: 「いいえ」を実行（ゲームパッド: 言語により×/⚪︎が切替）
+		elif GameSettings.is_action_menu_cancel_pressed() or Input.is_action_just_pressed("pause"):
+			_on_confirm_no()
+		return
+
+	# スロット選択画面の入力処理（無効化されたボタンをスキップする）
+	if not menu_container or not menu_container.visible:
+		return
+
+	# ESC/キャンセルボタンで戻る（ゲームパッド: 言語により×/⚪︎が切替）
+	if GameSettings.is_action_menu_cancel_pressed():
+		_on_back_pressed()
+		return
+
+	# 上下キーで選択（無効化されたボタンをスキップ）
+	if Input.is_action_just_pressed("ui_menu_up"):
+		var next_selection: int = _find_next_enabled_button(current_selection, -1)
+		if next_selection != current_selection:
+			current_selection = next_selection
+			_update_button_selection()
+
+	elif Input.is_action_just_pressed("ui_menu_down"):
+		var next_selection: int = _find_next_enabled_button(current_selection, 1)
+		if next_selection != current_selection:
+			current_selection = next_selection
+			_update_button_selection()
+
+	elif GameSettings.is_action_menu_accept_pressed():
+		if current_selection >= 0 and current_selection < buttons.size():
+			var button: Button = buttons[current_selection]
+			# 無効化されていないボタンのみ押下可能
+			if not button.disabled:
+				button.emit_signal("pressed")
+
+# ======================== ヘルパーメソッド ========================
+
+## 現在の言語コードを取得（ヘルパーメソッド）
+func _get_language_code() -> String:
+	return "ja" if GameSettings.current_language == GameSettings.Language.JAPANESE else "en"
+
+## 空きスロットテキストをフォーマット（ヘルパーメソッド）
+func _format_empty_slot_text(slot_index: int, lang_code: String) -> String:
+	var slot_prefix: String = MENU_TEXTS["slot_prefix"][lang_code]
+	var slot_num_str: String = "%02d" % (slot_index + 1)
+	var empty_text: String = MENU_TEXTS["empty_slot"][lang_code]
+	return "%s%s\n\n%s" % [slot_prefix, slot_num_str, empty_text]
+
+## ボタンの有効/無効を設定（ヘルパーメソッド）
+func _set_button_enabled(button: Button, enabled: bool) -> void:
+	button.disabled = not enabled
+	button.focus_mode = Control.FOCUS_ALL if enabled else Control.FOCUS_NONE
 
 ## SaveLoadManagerの形式をSaveLoadMenu用に変換
 func _convert_save_info_format(raw_info: Dictionary) -> Dictionary:
@@ -355,59 +457,6 @@ func _get_location_from_scene_path(scene_path: String) -> String:
 
 	# その他のシーンは大文字化して表示
 	return file_name.capitalize()
-
-## スロットボタンが押されたときの処理
-func _on_slot_pressed(slot_index: int) -> void:
-	var message_key: String = "confirm_save" if current_mode == Mode.SAVE else "confirm_load"
-	_show_confirmation(slot_index, message_key)
-
-## 確認画面を表示（統一メソッド）
-func _show_confirmation(slot_index: int, message_key: String) -> void:
-	selected_slot = slot_index
-
-	# 確認メッセージを更新
-	var lang_code: String = _get_language_code()
-	if confirm_message_label:
-		confirm_message_label.text = MENU_TEXTS[message_key][lang_code]
-
-	# スロット選択画面を非表示にして確認画面を表示
-	if menu_container:
-		menu_container.visible = false
-	if confirm_container:
-		confirm_container.visible = true
-
-	# 表示モードを変更
-	current_display_mode = DisplayMode.CONFIRM
-
-	# 確認画面のボタン選択を初期化（「いいえ」をデフォルトで選択）
-	current_selection = 1
-	_update_confirm_button_selection()
-
-## 確認画面 - はい
-func _on_confirm_yes() -> void:
-	if current_mode == Mode.SAVE:
-		_execute_save(selected_slot)
-		# _execute_save() 内で確認画面を非表示にしてメインメニューに戻る
-	else: # Mode.LOAD
-		_execute_load(selected_slot)
-		# ロードの場合、シーン切り替えが発生するため確認画面のクローズは不要
-
-## 確認画面 - いいえ
-func _on_confirm_no() -> void:
-	_close_confirmation_screen()
-
-## 確認画面のボタン選択を更新（BaseSettingsMenuのスタイルを使用）
-func _update_confirm_button_selection() -> void:
-	if not confirm_yes_button or not confirm_no_button:
-		return
-
-	# 選択されているボタンと選択されていないボタンにスタイルを適用
-	if current_selection == 0:
-		_apply_button_selection_style(confirm_yes_button, true)
-		_apply_button_selection_style(confirm_no_button, false)
-	else:
-		_apply_button_selection_style(confirm_yes_button, false)
-		_apply_button_selection_style(confirm_no_button, true)
 
 ## ボタンの選択スタイルを適用（ヘルパーメソッド）
 func _apply_button_selection_style(button: Button, is_selected: bool) -> void:
@@ -481,84 +530,6 @@ func _execute_load(slot_index: int) -> void:
 
 	# この行には到達しません（シーン切り替えにより削除済み）
 
-## 言語が変更されたときに呼ばれるコールバック
-func _on_language_changed(_new_language: String) -> void:
-	_update_back_button_text()
-	_update_title_text()
-	_update_all_slot_buttons()
-	_update_confirm_screen_texts()
-
-## 確認画面のテキストを更新
-func _update_confirm_screen_texts() -> void:
-	var lang_code: String = _get_language_code()
-
-	if confirm_message_label:
-		# モードに応じてメッセージを切り替え
-		var message_key: String = "confirm_save" if current_mode == Mode.SAVE else "confirm_load"
-		confirm_message_label.text = MENU_TEXTS[message_key][lang_code]
-
-	if confirm_yes_button:
-		confirm_yes_button.text = MENU_TEXTS["yes"][lang_code]
-
-	if confirm_no_button:
-		confirm_no_button.text = MENU_TEXTS["no"][lang_code]
-
-## サブメニューが独自に入力を処理する必要があるかどうか（確認画面表示中）
-func is_handling_input() -> bool:
-	return current_display_mode == DisplayMode.CONFIRM
-
-## 入力処理のオーバーライド（表示モードに応じて処理を分岐）
-func process_input(_delta: float) -> void:
-	if current_display_mode == DisplayMode.CONFIRM:
-		# 確認画面表示中の入力処理
-		# 上キー: 「はい」を選択
-		if Input.is_action_just_pressed("ui_menu_up"):
-			current_selection = 0
-			_update_confirm_button_selection()
-		# 下キー: 「いいえ」を選択
-		elif Input.is_action_just_pressed("ui_menu_down"):
-			current_selection = 1
-			_update_confirm_button_selection()
-		# 決定キー: 選択を実行（言語を考慮）
-		elif GameSettings.is_action_menu_accept_pressed():
-			if current_selection == 0:
-				_on_confirm_yes()
-			else:
-				_on_confirm_no()
-		# ESC/キャンセルボタン: 「いいえ」を実行（ゲームパッド: 言語により×/⚪︎が切替）
-		elif GameSettings.is_action_menu_cancel_pressed() or Input.is_action_just_pressed("pause"):
-			_on_confirm_no()
-		return
-
-	# スロット選択画面の入力処理（無効化されたボタンをスキップする）
-	if not menu_container or not menu_container.visible:
-		return
-
-	# ESC/キャンセルボタンで戻る（ゲームパッド: 言語により×/⚪︎が切替）
-	if GameSettings.is_action_menu_cancel_pressed():
-		_on_back_pressed()
-		return
-
-	# 上下キーで選択（無効化されたボタンをスキップ）
-	if Input.is_action_just_pressed("ui_menu_up"):
-		var next_selection: int = _find_next_enabled_button(current_selection, -1)
-		if next_selection != current_selection:
-			current_selection = next_selection
-			_update_button_selection()
-
-	elif Input.is_action_just_pressed("ui_menu_down"):
-		var next_selection: int = _find_next_enabled_button(current_selection, 1)
-		if next_selection != current_selection:
-			current_selection = next_selection
-			_update_button_selection()
-
-	elif GameSettings.is_action_menu_accept_pressed():
-		if current_selection >= 0 and current_selection < buttons.size():
-			var button: Button = buttons[current_selection]
-			# 無効化されていないボタンのみ押下可能
-			if not button.disabled:
-				button.emit_signal("pressed")
-
 ## 次の有効なボタンを検索（無効化されたボタンをスキップ）
 ## direction: -1で上方向、1で下方向
 func _find_next_enabled_button(start_index: int, direction: int) -> int:
@@ -587,11 +558,62 @@ func _find_next_enabled_button(start_index: int, direction: int) -> int:
 	# 全てのボタンが無効化されている場合は、現在の選択を維持
 	return start_index
 
+# ======================== コールバックメソッド ========================
+
+## スロットボタンが押されたときの処理
+func _on_slot_pressed(slot_index: int) -> void:
+	var message_key: String = "confirm_save" if current_mode == Mode.SAVE else "confirm_load"
+	_show_confirmation(slot_index, message_key)
+
+## 確認画面を表示（統一メソッド）
+func _show_confirmation(slot_index: int, message_key: String) -> void:
+	selected_slot = slot_index
+
+	# 確認メッセージを更新
+	var lang_code: String = _get_language_code()
+	if confirm_message_label:
+		confirm_message_label.text = MENU_TEXTS[message_key][lang_code]
+
+	# スロット選択画面を非表示にして確認画面を表示
+	if menu_container:
+		menu_container.visible = false
+	if confirm_container:
+		confirm_container.visible = true
+
+	# 表示モードを変更
+	current_display_mode = DisplayMode.CONFIRM
+
+	# 確認画面のボタン選択を初期化（「いいえ」をデフォルトで選択）
+	current_selection = 1
+	_update_confirm_button_selection()
+
+## 確認画面 - はい
+func _on_confirm_yes() -> void:
+	if current_mode == Mode.SAVE:
+		_execute_save(selected_slot)
+		# _execute_save() 内で確認画面を非表示にしてメインメニューに戻る
+	else: # Mode.LOAD
+		_execute_load(selected_slot)
+		# ロードの場合、シーン切り替えが発生するため確認画面のクローズは不要
+
+## 確認画面 - いいえ
+func _on_confirm_no() -> void:
+	_close_confirmation_screen()
+
 ## 戻るボタンが押されたときの処理（オーバーライド）
 func _on_back_pressed() -> void:
 	var manager = menu_manager_ref.get_ref()
 	if manager:
 		manager.show_main_menu()
+
+## 言語が変更されたときに呼ばれるコールバック
+func _on_language_changed(_new_language: String) -> void:
+	_update_back_button_text()
+	_update_title_text()
+	_update_all_slot_buttons()
+	_update_confirm_screen_texts()
+
+# ======================== クリーンアップ処理 ========================
 
 ## クリーンアップ処理
 func cleanup() -> void:

@@ -4,6 +4,8 @@ extends RefCounted
 ## 設定メニューの基底クラス
 ## 全てのサブメニューはこのクラスを継承する
 
+# ======================== 定数定義 ========================
+
 ## ボタンサイズ定数
 ## STANDARD: 1列レイアウト用の幅（設定メニューのメインボタンなど）
 ## COMPACT: 横並びレイアウト用の幅（ArrowSelectorや戻るボタンなど）
@@ -14,6 +16,8 @@ const BUTTON_HEIGHT: int = 60
 ## 矢印の色定数
 const ARROW_ACTIVE_COLOR: Color = Color(1.0, 1.0, 1.0, 1.0)
 const ARROW_DISABLED_COLOR: Color = Color(0.875, 0.875, 0.875, 0.5)
+
+# ======================== 変数定義 ========================
 
 ## 親メニューマネージャーへの参照（weakref使用）
 var menu_manager_ref: WeakRef
@@ -33,6 +37,8 @@ var navigation_rows: Array[Array] = []  # Array[Array[int]]
 var current_row: int = 0
 var current_column: int = 0
 var use_2d_navigation: bool = false  # 2Dナビゲーションを使用するか
+
+# ======================== 初期化処理 ========================
 
 func _init(manager_ref: WeakRef) -> void:
 	menu_manager_ref = manager_ref
@@ -66,9 +72,13 @@ func _init_styles() -> void:
 	_normal_style.corner_radius_bottom_left = 8
 	_normal_style.corner_radius_bottom_right = 8
 
+# ======================== メニュー構築処理 ========================
+
 ## メニューを構築（サブクラスでオーバーライド）
 func build_menu(_parent_container: Control) -> void:
 	pass
+
+# ======================== メニュー表示・非表示処理 ========================
 
 ## メニューを表示
 func show_menu(initial_selection: int = 0, initial_row: int = 0, initial_column: int = 0) -> void:
@@ -102,6 +112,8 @@ func get_selection_state() -> Dictionary:
 			"selection": current_selection
 		}
 
+# ======================== 入力処理 ========================
+
 ## サブメニューが独自に入力を処理する必要があるかどうか
 ## （例: 確認ダイアログ表示中など、親の入力処理をスキップしたい場合）
 func is_handling_input() -> bool:
@@ -129,6 +141,8 @@ func process_input(_delta: float) -> void:
 	else:
 		_process_1d_navigation()
 
+# ======================== ナビゲーション処理 ========================
+
 ## 1Dナビゲーションの入力処理（既存の実装）
 func _process_1d_navigation() -> void:
 	# 上下キーで選択
@@ -148,6 +162,8 @@ func _process_1d_navigation() -> void:
 		if current_selection >= 0 and current_selection < buttons.size():
 			buttons[current_selection].emit_signal("pressed")
 
+# ======================== ボタン管理メソッド ========================
+
 ## ボタンの選択状態を更新（効率化：キャッシュされたスタイルを使用）
 func _update_button_selection() -> void:
 	for i in range(buttons.size()):
@@ -162,6 +178,41 @@ func _update_button_selection() -> void:
 			buttons[i].add_theme_stylebox_override("pressed", _normal_style)
 			buttons[i].add_theme_stylebox_override("focus", _normal_style)
 			buttons[i].add_theme_stylebox_override("disabled", _normal_style)
+
+## 2D選択状態を更新（行と列を考慮）
+func _update_2d_selection() -> void:
+	if current_row >= navigation_rows.size():
+		current_row = navigation_rows.size() - 1
+	if current_row < 0:
+		current_row = 0
+
+	var row_buttons: Array = navigation_rows[current_row]
+	if current_column >= row_buttons.size():
+		current_column = row_buttons.size() - 1
+	if current_column < 0:
+		current_column = 0
+
+	var selected_index: int = row_buttons[current_column]
+	current_selection = selected_index
+
+	# すべてのボタンのスタイルを更新
+	for i in range(buttons.size()):
+		var button: Button = buttons[i]
+		if i == current_selection:
+			_apply_button_style(button, _selected_style)
+		else:
+			_apply_button_style(button, _normal_style)
+
+## ボタンに統一スタイルを適用
+func _apply_button_style(button: Button, style: StyleBoxFlat, include_disabled: bool = false) -> void:
+	button.add_theme_stylebox_override("normal", style)
+	button.add_theme_stylebox_override("hover", style)
+	button.add_theme_stylebox_override("pressed", style)
+	button.add_theme_stylebox_override("focus", style)
+	if include_disabled:
+		button.add_theme_stylebox_override("disabled", style)
+
+# ======================== UI要素作成メソッド ========================
 
 ## ボタンを作成してコンテナに追加
 func _create_button(label_text: String, callback: Callable) -> Button:
@@ -207,15 +258,6 @@ func _create_horizontal_button(label_text: String, callback: Callable, container
 	buttons.append(button)
 	return button
 
-## ボタンに統一スタイルを適用
-func _apply_button_style(button: Button, style: StyleBoxFlat, include_disabled: bool = false) -> void:
-	button.add_theme_stylebox_override("normal", style)
-	button.add_theme_stylebox_override("hover", style)
-	button.add_theme_stylebox_override("pressed", style)
-	button.add_theme_stylebox_override("focus", style)
-	if include_disabled:
-		button.add_theme_stylebox_override("disabled", style)
-
 ## 矢印の表示状態を更新（有効/無効を視覚的に表現）
 func _update_arrow_visibility(
 	left_arrow: Label,
@@ -233,29 +275,42 @@ func _update_arrow_visibility(
 	else:
 		right_arrow.add_theme_color_override("font_color", ARROW_DISABLED_COLOR)
 
-## 2D選択状態を更新（行と列を考慮）
-func _update_2d_selection() -> void:
-	if current_row >= navigation_rows.size():
-		current_row = navigation_rows.size() - 1
-	if current_row < 0:
-		current_row = 0
+## メニュー用VBoxContainerを初期化して返す
+func _init_menu_container(parent_container: Control) -> VBoxContainer:
+	menu_container = VBoxContainer.new()
+	menu_container.add_theme_constant_override("separation", 20)
+	menu_container.process_mode = Node.PROCESS_MODE_ALWAYS
+	menu_container.visible = false
+	parent_container.add_child(menu_container)
+	return menu_container
 
-	var row_buttons: Array = navigation_rows[current_row]
-	if current_column >= row_buttons.size():
-		current_column = row_buttons.size() - 1
-	if current_column < 0:
-		current_column = 0
+## 戻るボタンを作成（中央寄せのHBoxContainerに配置）
+func _create_back_button() -> void:
+	# HBoxContainerを作成して中央寄せ
+	var back_container: HBoxContainer = _create_centered_hbox(0)
 
-	var selected_index: int = row_buttons[current_column]
-	current_selection = selected_index
+	# backボタンを作成
+	back_button = Button.new()
+	back_button.text = ""
+	back_button.custom_minimum_size = Vector2(BUTTON_WIDTH_COMPACT, BUTTON_HEIGHT)
+	FontTheme.apply_to_button(back_button, FontTheme.FONT_SIZE_LARGE, true)
+	back_button.focus_mode = Control.FOCUS_NONE
+	back_button.process_mode = Node.PROCESS_MODE_ALWAYS
+	back_button.pressed.connect(_on_back_pressed)
+	back_container.add_child(back_button)
+	buttons.append(back_button)
 
-	# すべてのボタンのスタイルを更新
-	for i in range(buttons.size()):
-		var button: Button = buttons[i]
-		if i == current_selection:
-			_apply_button_style(button, _selected_style)
-		else:
-			_apply_button_style(button, _normal_style)
+	_update_back_button_text()
+
+## 戻るボタンのテキストを更新
+func _update_back_button_text() -> void:
+	if back_button == null:
+		return
+
+	if GameSettings.current_language == GameSettings.Language.JAPANESE:
+		back_button.text = "戻る"
+	else:
+		back_button.text = "Back"
 
 ## 2Dナビゲーションの入力処理
 func _process_2d_navigation() -> void:
@@ -296,6 +351,8 @@ func _process_2d_navigation() -> void:
 			if not button.disabled:
 				button.emit_signal("pressed")
 
+# ======================== 左右入力処理（派生クラスでオーバーライド） ========================
+
 ## 左キー入力処理（派生クラスでオーバーライドして実装すること）
 ##
 ## このメソッドは2Dナビゲーション使用時（use_2d_navigation = true）に
@@ -326,6 +383,8 @@ func _handle_left_input() -> void:
 func _handle_right_input() -> void:
 	pass
 
+# ======================== 言語関連処理 ========================
+
 ## 言語が変更されたときの処理（派生クラスでオーバーライドして実装すること）
 ##
 ## このメソッドはGameSettings.language_changedシグナルが発火されたときに呼び出されます。
@@ -353,48 +412,15 @@ func _disconnect_language_signal() -> void:
 	if GameSettings.language_changed.is_connected(_on_language_changed):
 		GameSettings.language_changed.disconnect(_on_language_changed)
 
-## メニュー用VBoxContainerを初期化して返す
-func _init_menu_container(parent_container: Control) -> VBoxContainer:
-	menu_container = VBoxContainer.new()
-	menu_container.add_theme_constant_override("separation", 20)
-	menu_container.process_mode = Node.PROCESS_MODE_ALWAYS
-	menu_container.visible = false
-	parent_container.add_child(menu_container)
-	return menu_container
-
-## 戻るボタンを作成（中央寄せのHBoxContainerに配置）
-func _create_back_button() -> void:
-	# HBoxContainerを作成して中央寄せ
-	var back_container: HBoxContainer = _create_centered_hbox(0)
-
-	# backボタンを作成
-	back_button = Button.new()
-	back_button.text = ""
-	back_button.custom_minimum_size = Vector2(BUTTON_WIDTH_COMPACT, BUTTON_HEIGHT)
-	FontTheme.apply_to_button(back_button, FontTheme.FONT_SIZE_LARGE, true)
-	back_button.focus_mode = Control.FOCUS_NONE
-	back_button.process_mode = Node.PROCESS_MODE_ALWAYS
-	back_button.pressed.connect(_on_back_pressed)
-	back_container.add_child(back_button)
-	buttons.append(back_button)
-
-	_update_back_button_text()
-
-## 戻るボタンのテキストを更新
-func _update_back_button_text() -> void:
-	if back_button == null:
-		return
-
-	if GameSettings.current_language == GameSettings.Language.JAPANESE:
-		back_button.text = "戻る"
-	else:
-		back_button.text = "Back"
+# ======================== コールバックメソッド ========================
 
 ## 戻るボタンが押されたときの処理
 func _on_back_pressed() -> void:
 	var manager = menu_manager_ref.get_ref()
 	if manager:
 		manager.show_settings_menu()
+
+# ======================== クリーンアップ処理 ========================
 
 ## クリーンアップ処理
 func cleanup() -> void:
@@ -408,9 +434,7 @@ func cleanup() -> void:
 	back_button = null
 	navigation_rows.clear()  # 2Dナビゲーション情報をクリア
 
-# ============================================================================
-# ArrowSelector クラス - 左右矢印付きセレクター
-# ============================================================================
+# ======================== ArrowSelectorクラス ========================
 
 ## 左右矢印付きセレクター構造体
 class ArrowSelector:

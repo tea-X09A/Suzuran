@@ -3,6 +3,8 @@ extends BaseSettingsMenu
 
 ## 画面設定メニュー
 
+# ======================== 定数定義 ========================
+
 const MENU_TEXTS: Dictionary = {
 	"title": {
 		"ja": "画面設定",
@@ -26,49 +28,41 @@ const MENU_TEXTS: Dictionary = {
 	}
 }
 
-# 標準解像度リスト（すべて表示する）
+## 標準解像度リスト（すべて表示する）
 const STANDARD_RESOLUTIONS: Array[Vector2i] = [
 	Vector2i(1920, 1080),
 	Vector2i(2560, 1440),
 	Vector2i(3840, 2160)
 ]
 
-# 解像度管理
+# ======================== 変数定義 ========================
+
+## 解像度管理
 var current_resolution_index: int = 0
 var left_arrow_label: Label = null
 var right_arrow_label: Label = null
 var resolution_button: Button = null
 
-# フルスクリーン管理
+## フルスクリーン管理
 var fullscreen_button_index: int = 0
 var fullscreen_left_arrow: Label = null
 var fullscreen_right_arrow: Label = null
 var fullscreen_button: Button = null
 
-# テキスト更新用の参照
+## テキスト更新用の参照
 var resolution_section_label: Label = null
 var fullscreen_section_label: Label = null
+
+# ======================== 初期化処理 ========================
 
 func _init(manager_ref: WeakRef) -> void:
 	super._init(manager_ref)
 	use_2d_navigation = true
 
-## 現在の言語コードを取得
-func _get_language_code() -> String:
-	return "ja" if GameSettings.current_language == GameSettings.Language.JAPANESE else "en"
+# ======================== メニュー構築処理 ========================
 
-## セクションラベルを作成
-func _create_section_label(text_key: String) -> Label:
-	var label: Label = Label.new()
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	FontTheme.apply_to_label(label, FontTheme.FONT_SIZE_LARGE, true)
-	label.process_mode = Node.PROCESS_MODE_ALWAYS
-	menu_container.add_child(label)
-	_update_text(label, text_key)
-	return label
-
+## 画面設定メニューを構築
 func build_menu(parent_container: Control) -> void:
-	## 画面設定メニューを構築
 	# navigation_rowsを初期化（再構築時の重複を防ぐ）
 	navigation_rows.clear()
 
@@ -133,25 +127,10 @@ func build_menu(parent_container: Control) -> void:
 		GameSettings.language_changed.disconnect(_on_language_changed)
 	GameSettings.language_changed.connect(_on_language_changed)
 
-func _update_text(label: Label, key: String) -> void:
-	## ラベルテキストを多言語対応で更新
-	var lang_code: String = _get_language_code()
-	label.text = MENU_TEXTS[key][lang_code]
+# ======================== メニュー表示・非表示処理 ========================
 
-func _update_fullscreen_button_text() -> void:
-	## フルスクリーンボタンのテキストを現在の状態と同期して更新
-	if fullscreen_button_index >= buttons.size():
-		return
-
-	var lang_code: String = _get_language_code()
-	# 現在の状態を表示（WINDOWEDなら「OFF」、FULLSCREENなら「ON」）
-	if GameSettings.window_mode == GameSettings.WindowMode.WINDOWED:
-		buttons[fullscreen_button_index].text = MENU_TEXTS["fullscreen_off"][lang_code]
-	else:
-		buttons[fullscreen_button_index].text = MENU_TEXTS["fullscreen_on"][lang_code]
-
+## メニューを表示し、現在の設定に応じて選択状態を設定
 func show_menu(initial_selection: int = 0, initial_row: int = 0, initial_column: int = 0) -> void:
-	## メニューを表示し、現在の設定に応じて選択状態を設定
 	if menu_container:
 		menu_container.visible = true
 
@@ -177,6 +156,37 @@ func show_menu(initial_selection: int = 0, initial_row: int = 0, initial_column:
 
 	_update_2d_selection()
 
+# ======================== UI要素作成メソッド ========================
+
+## セクションラベルを作成
+func _create_section_label(text_key: String) -> Label:
+	var label: Label = Label.new()
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	FontTheme.apply_to_label(label, FontTheme.FONT_SIZE_LARGE, true)
+	label.process_mode = Node.PROCESS_MODE_ALWAYS
+	menu_container.add_child(label)
+	_update_text(label, text_key)
+	return label
+
+# ======================== テキスト更新メソッド ========================
+
+## ラベルテキストを多言語対応で更新
+func _update_text(label: Label, key: String) -> void:
+	var lang_code: String = _get_language_code()
+	label.text = MENU_TEXTS[key][lang_code]
+
+## フルスクリーンボタンのテキストを現在の状態と同期して更新
+func _update_fullscreen_button_text() -> void:
+	if fullscreen_button_index >= buttons.size():
+		return
+
+	var lang_code: String = _get_language_code()
+	# 現在の状態を表示（WINDOWEDなら「OFF」、FULLSCREENなら「ON」）
+	if GameSettings.window_mode == GameSettings.WindowMode.WINDOWED:
+		buttons[fullscreen_button_index].text = MENU_TEXTS["fullscreen_off"][lang_code]
+	else:
+		buttons[fullscreen_button_index].text = MENU_TEXTS["fullscreen_on"][lang_code]
+
 ## 解像度の矢印表示を更新
 func _update_resolution_arrows() -> void:
 	if not left_arrow_label or not right_arrow_label:
@@ -197,6 +207,32 @@ func _update_resolution_arrows() -> void:
 		can_go_right = right_resolution in available_resolutions
 
 	_update_arrow_visibility(left_arrow_label, right_arrow_label, can_go_left, can_go_right)
+
+# ======================== 左右入力処理 ========================
+
+## 左キー入力処理（基底クラスからオーバーライド）
+func _handle_left_input() -> void:
+	# 解像度行にいる場合は解像度を変更
+	if current_row == 0:
+		_change_resolution(-1)
+	# フルスクリーン行にいる場合はフルスクリーンを切り替え
+	elif current_row == 1:
+		_toggle_fullscreen()
+
+## 右キー入力処理（基底クラスからオーバーライド）
+func _handle_right_input() -> void:
+	# 解像度行にいる場合は解像度を変更
+	if current_row == 0:
+		_change_resolution(1)
+	# フルスクリーン行にいる場合はフルスクリーンを切り替え
+	elif current_row == 1:
+		_toggle_fullscreen()
+
+# ======================== ヘルパーメソッド ========================
+
+## 現在の言語コードを取得
+func _get_language_code() -> String:
+	return "ja" if GameSettings.current_language == GameSettings.Language.JAPANESE else "en"
 
 ## 解像度を変更
 func _change_resolution(direction: int) -> void:
@@ -233,24 +269,6 @@ func _change_resolution(direction: int) -> void:
 	# 矢印の表示を更新
 	_update_resolution_arrows()
 
-## 左キー入力処理（基底クラスからオーバーライド）
-func _handle_left_input() -> void:
-	# 解像度行にいる場合は解像度を変更
-	if current_row == 0:
-		_change_resolution(-1)
-	# フルスクリーン行にいる場合はフルスクリーンを切り替え
-	elif current_row == 1:
-		_toggle_fullscreen()
-
-## 右キー入力処理（基底クラスからオーバーライド）
-func _handle_right_input() -> void:
-	# 解像度行にいる場合は解像度を変更
-	if current_row == 0:
-		_change_resolution(1)
-	# フルスクリーン行にいる場合はフルスクリーンを切り替え
-	elif current_row == 1:
-		_toggle_fullscreen()
-
 ## フルスクリーンを切り替え
 func _toggle_fullscreen() -> void:
 	if GameSettings.window_mode == GameSettings.WindowMode.FULLSCREEN:
@@ -260,8 +278,10 @@ func _toggle_fullscreen() -> void:
 	# ボタンのテキストを更新
 	_update_fullscreen_button_text()
 
+# ======================== コールバックメソッド ========================
+
+## 言語が変更されたときに呼ばれるコールバック
 func _on_language_changed(_new_language: String) -> void:
-	## 言語が変更されたときに呼ばれるコールバック
 	_update_back_button_text()
 	if resolution_section_label:
 		_update_text(resolution_section_label, "resolution_section")
@@ -271,8 +291,10 @@ func _on_language_changed(_new_language: String) -> void:
 	# フルスクリーンボタンのテキストを更新
 	_update_fullscreen_button_text()
 
+# ======================== クリーンアップ処理 ========================
+
+## クリーンアップ処理
 func cleanup() -> void:
-	## クリーンアップ処理
 	if GameSettings.language_changed.is_connected(_on_language_changed):
 		GameSettings.language_changed.disconnect(_on_language_changed)
 

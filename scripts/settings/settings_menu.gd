@@ -3,6 +3,8 @@ extends BaseSettingsMenu
 
 ## 設定メニュー - 各種設定へのエントリーポイント
 
+# ======================== 定数定義 ========================
+
 ## 多言語対応テキスト
 const MENU_TEXTS: Dictionary = {
 	"volume": {
@@ -26,6 +28,8 @@ const MENU_TEXTS: Dictionary = {
 		"en": "Game Settings"
 	}
 }
+
+# ======================== メニュー構築処理 ========================
 
 ## 設定メニューを構築
 func build_menu(parent_container: Control) -> void:
@@ -54,11 +58,15 @@ func build_menu(parent_container: Control) -> void:
 	# 初期テキストを設定
 	_update_all_button_texts()
 
+# ======================== UI要素作成メソッド ========================
+
 ## 設定項目ボタンを作成（text_keyは多言語テキストのキー）
 func _create_setting_button(text_key: String, callback: Callable) -> Button:
 	var button: Button = _create_button("", callback)
 	button.set_meta("text_key", text_key)
 	return button
+
+# ======================== テキスト更新メソッド ========================
 
 ## 全てのボタンのテキストを現在の言語に応じて更新
 func _update_all_button_texts() -> void:
@@ -79,6 +87,8 @@ func _set_button_text(button: Button, text_key: String) -> void:
 		button.text = MENU_TEXTS[text_key][lang_code]
 	else:
 		push_error("Invalid text_key or language code: " + text_key + ", " + lang_code)
+
+# ======================== コールバックメソッド ========================
 
 ## 音量設定を開く
 func _on_volume_pressed() -> void:
@@ -126,6 +136,8 @@ func _on_back_pressed() -> void:
 func _on_language_changed(_new_language: String) -> void:
 	_update_back_button_text()
 	_update_all_button_texts()
+
+# ======================== クリーンアップ処理 ========================
 
 ## クリーンアップ処理
 func cleanup() -> void:
