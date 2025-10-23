@@ -1,126 +1,36 @@
 extends Control
 
+# ======================== エクスポートプロパティ ========================
+
+## 弾薬数（-1は無限）
 @export var ammo_count: int = -1:
 	set(value):
 		ammo_count = value
 		queue_redraw()
 
+## アイコンテクスチャ
 @export var icon_texture: Texture2D
+## アイコンのスケール
 @export var icon_scale: float = 0.18
+## ドットの色
 @export var dot_color: Color = Color.BLACK
-@export var infinite_symbol_color: Color = Color(1.0, 0.8, 0.0, 1.0)  # ゴールド色
-@export var background_color: Color = Color(0.95, 0.95, 0.95, 0.4)  # 半透明の白
-@export var border_color: Color = Color(0.3, 0.6, 0.8, 1.0)  # 明るいシアン
+## 無限記号の色
+@export var infinite_symbol_color: Color = Color(1.0, 0.8, 0.0, 1.0)
+## 背景色
+@export var background_color: Color = Color(0.95, 0.95, 0.95, 0.4)
+## 枠線の色
+@export var border_color: Color = Color(0.3, 0.6, 0.8, 1.0)
+## 枠線の太さ
 @export var border_width: float = 2.0
 
-# 数字のドットパターン（5x7）
-const DIGIT_PATTERNS: Dictionary = {
-	0: [
-		[1, 1, 1, 1, 1],
-		[1, 0, 0, 0, 1],
-		[1, 0, 0, 0, 1],
-		[1, 0, 0, 0, 1],
-		[1, 0, 0, 0, 1],
-		[1, 0, 0, 0, 1],
-		[1, 1, 1, 1, 1]
-	],
-	1: [
-		[0, 0, 1, 0, 0],
-		[0, 1, 1, 0, 0],
-		[0, 0, 1, 0, 0],
-		[0, 0, 1, 0, 0],
-		[0, 0, 1, 0, 0],
-		[0, 0, 1, 0, 0],
-		[0, 1, 1, 1, 0]
-	],
-	2: [
-		[1, 1, 1, 1, 1],
-		[0, 0, 0, 0, 1],
-		[0, 0, 0, 0, 1],
-		[1, 1, 1, 1, 1],
-		[1, 0, 0, 0, 0],
-		[1, 0, 0, 0, 0],
-		[1, 1, 1, 1, 1]
-	],
-	3: [
-		[1, 1, 1, 1, 1],
-		[0, 0, 0, 0, 1],
-		[0, 0, 0, 0, 1],
-		[1, 1, 1, 1, 1],
-		[0, 0, 0, 0, 1],
-		[0, 0, 0, 0, 1],
-		[1, 1, 1, 1, 1]
-	],
-	4: [
-		[1, 0, 0, 0, 1],
-		[1, 0, 0, 0, 1],
-		[1, 0, 0, 0, 1],
-		[1, 1, 1, 1, 1],
-		[0, 0, 0, 0, 1],
-		[0, 0, 0, 0, 1],
-		[0, 0, 0, 0, 1]
-	],
-	5: [
-		[1, 1, 1, 1, 1],
-		[1, 0, 0, 0, 0],
-		[1, 0, 0, 0, 0],
-		[1, 1, 1, 1, 1],
-		[0, 0, 0, 0, 1],
-		[0, 0, 0, 0, 1],
-		[1, 1, 1, 1, 1]
-	],
-	6: [
-		[1, 1, 1, 1, 1],
-		[1, 0, 0, 0, 0],
-		[1, 0, 0, 0, 0],
-		[1, 1, 1, 1, 1],
-		[1, 0, 0, 0, 1],
-		[1, 0, 0, 0, 1],
-		[1, 1, 1, 1, 1]
-	],
-	7: [
-		[1, 1, 1, 1, 1],
-		[0, 0, 0, 0, 1],
-		[0, 0, 0, 0, 1],
-		[0, 0, 0, 1, 0],
-		[0, 0, 1, 0, 0],
-		[0, 1, 0, 0, 0],
-		[1, 0, 0, 0, 0]
-	],
-	8: [
-		[1, 1, 1, 1, 1],
-		[1, 0, 0, 0, 1],
-		[1, 0, 0, 0, 1],
-		[1, 1, 1, 1, 1],
-		[1, 0, 0, 0, 1],
-		[1, 0, 0, 0, 1],
-		[1, 1, 1, 1, 1]
-	],
-	9: [
-		[1, 1, 1, 1, 1],
-		[1, 0, 0, 0, 1],
-		[1, 0, 0, 0, 1],
-		[1, 1, 1, 1, 1],
-		[0, 0, 0, 0, 1],
-		[0, 0, 0, 0, 1],
-		[1, 1, 1, 1, 1]
-	]
-}
-
-# 無限大記号のドットパターン（11x7）
-const INFINITY_PATTERN: Array = [
-	[0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0],
-	[1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0],
-	[1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0],
-	[1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0],
-	[1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0],
-	[1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0],
-	[0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0]
-]
+# ======================== 初期化処理 ========================
 
 func _ready() -> void:
 	queue_redraw()
 
+# ======================== 描画処理 ========================
+
+## メイン描画処理
 func _draw() -> void:
 	if icon_texture:
 		var icon_size: Vector2 = icon_texture.get_size() * icon_scale
@@ -148,17 +58,21 @@ func _draw() -> void:
 			# 数値を2桁で表示
 			_draw_two_digit_number(number_pos, ammo_count)
 
+# ======================== ヘルパーメソッド ========================
+
+## 無限大記号を描画
 func _draw_infinity_symbol(pos: Vector2) -> void:
 	var dot_size: float = 4.0
 	var spacing: float = 4.0
 
 	for row in range(7):
 		for col in range(11):
-			if INFINITY_PATTERN[row][col] == 1:
+			if DotPatterns.INFINITY_PATTERN[row][col] == 1:
 				var dot_pos: Vector2 = pos + Vector2(col * spacing, row * spacing)
 				var rect: Rect2 = Rect2(dot_pos - Vector2(dot_size / 2.0, dot_size / 2.0), Vector2(dot_size, dot_size))
 				draw_rect(rect, infinite_symbol_color)
 
+## 2桁の数字を描画
 func _draw_two_digit_number(pos: Vector2, number: int) -> void:
 	# 0-99の範囲に制限
 	number = clampi(number, 0, 99)
@@ -179,11 +93,12 @@ func _draw_two_digit_number(pos: Vector2, number: int) -> void:
 	var ones_offset: Vector2 = Vector2(digit_width + digit_spacing, 0)
 	_draw_single_digit(pos + ones_offset, ones, dot_size, spacing)
 
+## 1桁の数字を描画
 func _draw_single_digit(pos: Vector2, digit: int, dot_size: float, spacing: float) -> void:
 	if digit < 0 or digit > 9:
 		return
 
-	var pattern: Array = DIGIT_PATTERNS[digit]
+	var pattern: Array = DotPatterns.DIGIT_PATTERNS[digit]
 
 	for row in range(7):
 		for col in range(5):

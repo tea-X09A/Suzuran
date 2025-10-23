@@ -243,8 +243,8 @@ func _initialize_ui() -> void:
 		ep_gauge = canvas_layer.get_node_or_null("EPGauge")
 		if ep_gauge:
 			# HP値とEP値を初期化
-			ep_gauge.ep_value = hp_count
-			ep_gauge.progress = current_ep / 32.0
+			ep_gauge.hp_value = hp_count
+			ep_gauge.ep_progress = current_ep / 32.0
 
 		ammo_gauge = canvas_layer.get_node_or_null("AmmoGauge")
 		if ammo_gauge:
@@ -424,7 +424,7 @@ func handle_enemy_hit(enemy_direction: Vector2) -> bool:
 		hp_count -= 1
 		# UIを更新
 		if ep_gauge:
-			ep_gauge.ep_value = hp_count
+			ep_gauge.hp_value = hp_count
 
 		# ダメージ表記を表示
 		show_damage_number(-1)
@@ -470,7 +470,7 @@ func heal_ep(amount: float) -> void:
 
 	# UIを更新
 	if ep_gauge:
-		ep_gauge.progress = current_ep / 32.0
+		ep_gauge.ep_progress = current_ep / 32.0
 
 ## HP回復処理
 func heal_hp(amount: int) -> void:
@@ -479,7 +479,7 @@ func heal_hp(amount: int) -> void:
 
 	# UIを更新
 	if ep_gauge:
-		ep_gauge.ep_value = hp_count
+		ep_gauge.hp_value = hp_count
 
 # ======================== 弾数管理 ========================
 
@@ -570,13 +570,13 @@ func restore_player_state(state: Dictionary) -> void:
 	if state.has("hp_count"):
 		hp_count = state["hp_count"]
 		if ep_gauge:
-			ep_gauge.ep_value = hp_count
+			ep_gauge.hp_value = hp_count
 
 	# EPを復元
 	if state.has("current_ep"):
 		current_ep = state["current_ep"]
 		if ep_gauge:
-			ep_gauge.progress = current_ep / 32.0
+			ep_gauge.ep_progress = current_ep / 32.0
 
 	# 弾数を復元
 	if state.has("ammo_count"):
