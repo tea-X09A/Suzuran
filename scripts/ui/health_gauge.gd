@@ -2,29 +2,29 @@ extends Control
 
 # ======================== エクスポートプロパティ ========================
 
-## プログレスの進行度（0.0 ~ 1.0）
-@export var progress: float = 1.0:
+## EPゲージの進行度（0.0 ~ 1.0）
+@export var ep_progress: float = 1.0:
 	set(value):
-		progress = clamp(value, 0.0, 1.0)
+		ep_progress = clamp(value, 0.0, 1.0)
 		queue_redraw()
 
-## EP値
-@export var ep_value: int = 3:
+## HP値（ハート内に表示）
+@export var hp_value: int = 3:
 	set(value):
-		ep_value = value
+		hp_value = value
 		queue_redraw()
 
-## ゲージの半径
+## 円形ゲージの半径
 @export var radius: float = 75.0
-## ゲージの太さ
+## 円形ゲージの太さ
 @export var thickness: float = 12.0
-## ゲージの色（未達成部分）
+## EPゲージの色（未達成部分）
 @export var gauge_color: Color = Color(0.2, 0.2, 0.2, 1.0)
-## ゲージの色（達成部分）
+## EPゲージの色（達成部分）
 @export var background_color: Color = Color(1.0, 0.4, 0.7, 1.0)
 ## ハートの色
 @export var heart_color: Color = Color(1.0, 0.2, 0.2, 1.0)
-## ドットの色
+## HP数字のドットの色
 @export var dot_color: Color = Color.WHITE
 
 # ======================== 初期化処理 ========================
@@ -39,34 +39,34 @@ func _draw() -> void:
 	var center: Vector2 = size / 2.0
 	var start_angle: float = -PI / 2  # 12時の位置から開始
 
-	# 円形ゲージをドットで描画
+	# EPゲージ（円形）をドットで描画
 	_draw_dotted_gauge(center, start_angle)
 
 	# ハートの描画
 	_draw_heart(center)
 
-	# ドット数字の描画
-	_draw_dot_number(center, ep_value)
+	# HP数字の描画
+	_draw_dot_number(center, hp_value)
 
 # ======================== ヘルパーメソッド ========================
 
-## ドット状の円形ゲージを描画
+## ドット状のEP円形ゲージを描画
 func _draw_dotted_gauge(center: Vector2, start_angle: float) -> void:
 	var dot_count: int = 32  # 円周上に配置するドットの総数
 	var dot_size: float = 15.0  # ドットのサイズ（ピクセル）
 	var angle_step: float = TAU / float(dot_count)
 
-	# 背景のドット（グレー）- 正方形
+	# 背景のドット（グレー）- EPゲージの未達成部分
 	for i in range(dot_count):
 		var angle: float = float(i) * angle_step
 		var pos: Vector2 = center + Vector2(cos(angle), sin(angle)) * radius
 		var rect: Rect2 = Rect2(pos - Vector2(dot_size / 2.0, dot_size / 2.0), Vector2(dot_size, dot_size))
 		draw_rect(rect, gauge_color)
 
-	# プログレスのドット（ピンク）- 正方形（時計回りに描画）
-	if progress > 0.0:
-		var progress_dot_count: int = roundi(float(dot_count) * progress)
-		for i in range(progress_dot_count):
+	# EPゲージのドット（ピンク）- 達成部分（時計回りに描画）
+	if ep_progress > 0.0:
+		var ep_dot_count: int = roundi(float(dot_count) * ep_progress)
+		for i in range(ep_dot_count):
 			# 時計回りにするため angle_step を足す
 			var angle: float = start_angle + float(i) * angle_step
 			var pos: Vector2 = center + Vector2(cos(angle), sin(angle)) * radius
@@ -111,7 +111,7 @@ func _draw_heart(center: Vector2) -> void:
 		var rect: Rect2 = Rect2(pos - Vector2(dot_size / 2.0, dot_size / 2.0), Vector2(dot_size, dot_size))
 		draw_rect(rect, highlight_color)
 
-## ドット数字を描画
+## HPドット数字を描画
 func _draw_dot_number(center: Vector2, number: int) -> void:
 	if number < 0 or number > 9:
 		return
