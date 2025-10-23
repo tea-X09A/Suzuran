@@ -162,8 +162,3 @@ func _on_fighting_hitbox_area_entered(area: Area2D) -> void:
 			# ヒットフラグを立てる
 			has_hit = true
 			print("[FightingState] 敵にダメージ: %d, ノックバック方向: %v" % [damage, knockback_direction])
-
-			# プレイヤーが地上にいた場合、壁衝突時と同じようにfightingをキャンセル
-			if not started_airborne and player.is_grounded:
-				end_fighting()
-				handle_action_end_transition()

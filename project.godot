@@ -28,6 +28,10 @@ SaveLoadManager="*res://scripts/autoload/save_load_manager.gd"
 EventManager="*res://scripts/autoload/event_manager.gd"
 FontTheme="*res://scripts/autoload/font_theme.gd"
 
+[debug]
+
+shapes/collision/max_contacts_displayed=16
+
 [display]
 
 window/size/viewport_width=1920
