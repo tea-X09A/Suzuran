@@ -6,7 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://cm2ybmb8lcuey" path="res://scenes/backgrounds/level0_bg.tscn" id="4_1nvli"]
 [ext_resource type="PackedScene" uid="uid://ygpxc8s354rc" path="res://scenes/traps/trap_01.tscn" id="4_5kr0j"]
 [ext_resource type="PackedScene" uid="uid://cvn3qwq0tl42h" path="res://scenes/enemies/enemy_01.tscn" id="5_ry65h"]
-[ext_resource type="Script" uid="uid://dxdj20rflv3f0" path="res://scripts/ui/circular_progress.gd" id="6_circular"]
+[ext_resource type="Script" uid="uid://dxdj20rflv3f0" path="res://scripts/ui/health_gauge.gd" id="6_circular"]
 [ext_resource type="PackedScene" uid="uid://b7y8qr3m4n5p6" path="res://scenes/items/item.tscn" id="6_oem7y"]
 [ext_resource type="Script" uid="uid://cem1ykee8ffbe" path="res://scripts/ui/ammo_gauge.gd" id="7_ammo"]
 [ext_resource type="Texture2D" uid="uid://c5dl3pkbmw88x" path="res://assets/images/bullets/kunai.png" id="8_kunai"]

@@ -3,7 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://cb3hree4jheeu" path="res://scenes/levels/camera.tscn" id="1_2r1tl"]
 [ext_resource type="PackedScene" uid="uid://daofj62a4corn" path="res://scenes/player/player.tscn" id="2_8a7m2"]
 [ext_resource type="PackedScene" uid="uid://cm2ybmb8lcuey" path="res://scenes/backgrounds/level0_bg.tscn" id="3_plydf"]
-[ext_resource type="Script" uid="uid://dxdj20rflv3f0" path="res://scripts/ui/circular_progress.gd" id="4_5ntmo"]
+[ext_resource type="Script" uid="uid://dxdj20rflv3f0" path="res://scripts/ui/health_gauge.gd" id="4_5ntmo"]
 [ext_resource type="Script" uid="uid://cem1ykee8ffbe" path="res://scripts/ui/ammo_gauge.gd" id="5_ammo"]
 [ext_resource type="Texture2D" uid="uid://c5dl3pkbmw88x" path="res://assets/images/bullets/kunai.png" id="5_kunai"]
 [ext_resource type="Texture2D" uid="uid://cvvb866p8u71i" path="res://assets/images/tilesets/tilesheet_complete.png" id="5_nkeig"]
