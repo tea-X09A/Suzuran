@@ -1,9 +1,11 @@
+## 敵キャラクターのベースクラス
+## ステートパターンによる AI制御、視界判定、ダメージ処理を実装
 class_name Enemy
 extends CharacterBody2D
 
 # ======================== ノード参照キャッシュ ========================
 
-# Sprite2D（見た目）
+## Sprite2D（見た目）
 @onready var sprite: Sprite2D = $Sprite2D
 # Hitbox（プレイヤーにダメージを与える範囲）
 @onready var hitbox: Area2D = $Hitbox
@@ -24,20 +26,20 @@ var animation_state_machine: AnimationNodeStateMachinePlayback = null
 
 # ======================== エクスポート設定 ========================
 
-# 敵のID（アニメーション名に使用、エディタで設定）
+## 敵のID（アニメーション名に使用、エディタで設定）
 @export var enemy_id: String = ""
-# 最大HP
+## 最大HP
 @export var max_hp: int = 5
 
 # ======================== 状態管理変数 ========================
 
-# 移動速度
+## 移動速度
 var move_speed: float = 50.0
-# パトロール範囲（初期位置からの距離）
+## パトロール範囲（初期位置からの距離）
 var patrol_range: float = 100.0
-# 待機時間（秒）
+## 待機時間（秒）
 var wait_duration: float = 3.0
-# プレイヤーを見失うまでの遅延時間（秒）
+## プレイヤーを見失うまでの遅延時間（秒）
 var lose_sight_delay: float = 2.0
 # キャプチャのクールダウン時間（秒）
 var capture_cooldown: float = 0.5
@@ -104,9 +106,9 @@ var hp_gauge_display_duration: float = 4.0
 
 # ======================== ステート管理システム ========================
 
-# ステートインスタンス辞書
+## ステートインスタンス辞書
 var state_instances: Dictionary = {}
-# 現在のアクティブステート
+## 現在のアクティブステート
 var current_state: BaseEnemyState
 
 # ======================== 初期化処理 ========================

@@ -1,8 +1,12 @@
 class_name EnemyKnockbackState
 extends BaseEnemyState
 
-# 一度空中に浮いたかどうかのフラグ
+# ======================== 変数定義 ========================
+
+## 一度空中に浮いたかどうかのフラグ
 var was_in_air: bool = false
+
+# ======================== 状態初期化・クリーンアップ ========================
 
 ## ステート開始時の処理
 func initialize_state() -> void:
@@ -49,6 +53,8 @@ func cleanup_state() -> void:
 			enemy.hitbox.set_deferred("monitorable", true)
 		if enemy.detection_area:
 			enemy.detection_area.set_deferred("monitoring", true)
+
+# ======================== 物理演算処理 ========================
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:

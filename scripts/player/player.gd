@@ -1,22 +1,24 @@
+## プレイヤークラス（メイン制御）
+## ステートパターンを使用した状態管理とパラメータ管理を実装
 class_name Player
 extends CharacterBody2D
 
 # ======================== 定数・Enum定義 ========================
 
-# プレイヤーの変身状態
+## プレイヤーの変身状態
 enum PLAYER_CONDITION { NORMAL, EXPANSION }
 
 # ======================== ノード参照キャッシュ ========================
 
-# 新アニメーションシステム用スプライト
+## 新アニメーションシステム用スプライト
 @onready var sprite_2d: Sprite2D = $Sprite2D
-# アニメーションプレイヤー
+## アニメーションプレイヤー
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
-# アニメーションツリー
+## アニメーションツリー
 @onready var animation_tree: AnimationTree = $AnimationTree
-# アニメーションツリーのPlayback参照（パフォーマンス最適化のためキャッシュ）
+## アニメーションツリーのPlayback参照（パフォーマンス最適化のためキャッシュ）
 var animation_tree_playback: AnimationNodeStateMachinePlayback = null
-# 当たり判定用コリジョン
+## 当たり判定用コリジョン
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
 
 # ======================== Hurtbox/Hitboxノード参照 ========================
@@ -35,60 +37,60 @@ var animation_tree_playback: AnimationNodeStateMachinePlayback = null
 
 # ======================== エクスポート設定 ========================
 
-# インスペクタで設定可能な初期変身状態
+## インスペクタで設定可能な初期変身状態
 @export var initial_condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
 
 # ======================== 状態管理変数 ========================
 
-# 現在の変身状態（NORMAL/EXPANSION）
+## 現在の変身状態（NORMAL/EXPANSION）
 var condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
-# 無敵エフェクト処理システム
+## 無敵エフェクト処理システム
 var invincibility_effect: InvincibilityEffect
-# 重力加速度（プロジェクト設定から取得）
+## 重力加速度（プロジェクト設定から取得）
 var GRAVITY: float
 
 # ======================== プレイヤー状態変数 ========================
 
-# 現在の向き（1.0: 右、-1.0: 左）
+## 現在の向き（1.0: 右、-1.0: 左）
 var direction_x: float = 1.0
-# 接地状態のキャッシュ（毎フレーム更新、パフォーマンス最適化）
+## 接地状態のキャッシュ（毎フレーム更新、パフォーマンス最適化）
 var is_grounded: bool = false
-# ジャンプ時の水平速度を無視するフラグ
+## ジャンプ時の水平速度を無視するフラグ
 var ignore_jump_horizontal_velocity: bool = false
-# squat状態からキャンセルされたフラグ（squat遷移制限用）
+## squat状態からキャンセルされたフラグ（squat遷移制限用）
 var squat_was_cancelled: bool = false
-# Hurtbox/Hitboxの初期X位置を保存（反転処理用）
+## Hurtbox/Hitboxの初期X位置を保存（反転処理用）
 var original_box_positions: Dictionary = {}
-# CAPTURE状態時に使用するアニメーション名（enemy.gdが動的に設定）
+## CAPTURE状態時に使用するアニメーション名（enemy.gdが動的に設定）
 var capture_animation_name: String = ""
-# HP残量（初期値3）
+## HP残量（初期値3）
 var hp_count: int = 3
-# 現在のEP（初期値0、最大32）
+## 現在のEP（初期値0、最大32）
 var current_ep: float = 0.0
-# UI EPゲージへの参照
+## UI EPゲージへの参照
 var ep_gauge: Control = null
-# ダメージ表記への参照
+## ダメージ表記への参照
 var damage_number: DamageNumber = null
-# 自動移動モード（遷移時の自動歩行用）
+## 自動移動モード（遷移時の自動歩行用）
 var auto_move_mode: bool = false
-# 投擲物弾数（-1で無限）
+## 投擲物弾数（-1で無限）
 var ammo_count: int = -1
-# UI 弾倉ゲージへの参照
+## UI 弾倉ゲージへの参照
 var ammo_gauge: Control = null
-# イベント中の入力無効化フラグ
+## イベント中の入力無効化フラグ
 var disable_input: bool = false
-# Examine機能のインジケーター（ActionIndicator）
+## Examine機能のインジケーター（ActionIndicator）
 var examine_indicator: ActionIndicator = null
-# Examineエリア内にいるかどうかのフラグ（エリア内では一部のアクション入力を抑制）
+## Examineエリア内にいるかどうかのフラグ（エリア内では一部のアクション入力を抑制）
 var in_examine_area: bool = false
 
 # ======================== ステート管理システム ========================
 
-# ステートインスタンス辞書
+## ステートインスタンス辞書
 var state_instances: Dictionary = {}
-# 現在のアクティブステート
+## 現在のアクティブステート
 var current_state: BaseState
-# DownStateへの参照（頻繁にアクセスするためキャッシュ）
+## DownStateへの参照（頻繁にアクセスするためキャッシュ）
 var down_state: DownState
 
 # ======================== 初期化処理 ========================

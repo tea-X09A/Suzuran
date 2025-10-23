@@ -1,10 +1,16 @@
+## 敵のステートパターン基底クラス
+## すべての敵ステートはこのクラスを継承して実装
 class_name BaseEnemyState
 extends RefCounted
 
 # ======================== 基本参照 ========================
+## 敵のCharacterBody2Dへの参照
 var enemy: CharacterBody2D
+## 敵のスプライトへの参照
 var sprite: Sprite2D
+## 敵のアニメーションツリーへの参照
 var animation_tree: AnimationTree
+## アニメーションステートマシンのPlayback参照
 var animation_state_machine: AnimationNodeStateMachinePlayback
 
 # ======================== 初期化処理 ========================

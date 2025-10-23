@@ -1,3 +1,5 @@
+## アイテムクラス（EP/HP回復）
+## プレイヤーとの接触で EP/HP を回復させる
 class_name Item
 extends Area2D
 

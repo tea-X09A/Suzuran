@@ -1,6 +1,13 @@
 class_name EnemyPatrolState
 extends BaseEnemyState
 
+# ======================== 変数定義 ========================
+
+## 前フレームの位置を記録する変数
+var previous_position: Vector2 = Vector2.ZERO
+
+# ======================== 状態初期化・クリーンアップ ========================
+
 ## ステート開始時の処理
 func initialize_state() -> void:
 	# パトロール目標位置を生成
@@ -11,8 +18,7 @@ func initialize_state() -> void:
 	else:
 		_generate_random_patrol_target()
 
-## ステート開始時の処理
-var previous_position: Vector2 = Vector2.ZERO
+# ======================== 物理演算処理 ========================
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:
@@ -44,6 +50,8 @@ func physics_update(delta: float) -> void:
 
 	# 次フレームのために現在位置を記録
 	previous_position = enemy.global_position
+
+# ======================== プライベートメソッド ========================
 
 ## パトロール移動処理
 func _patrol_movement() -> void:

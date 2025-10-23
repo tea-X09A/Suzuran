@@ -1,23 +1,31 @@
 extends Area2D
 class_name Kunai
 
-# ========== クナイ設定 ==========
-@export var lifetime: float = 2.0  # 生存時間（秒）
-@export var damage: int = 1  # ダメージ量
+# ======================== エクスポート変数 ========================
+## 生存時間（秒）
+@export var lifetime: float = 2.0
+## ダメージ量
+@export var damage: int = 1
 
-# ========== 内部状態変数 ==========
+# ======================== 変数定義 ========================
+## クナイの速度ベクトル
 var velocity: Vector2 = Vector2.ZERO
-var owner_character: Node2D = null  # 発射したキャラクター
+## 発射したキャラクター
+var owner_character: Node2D = null
+## 生存時間タイマー
 var lifetime_timer: float = 0.0
 
-# ノード参照をキャッシュ（CLAUDE.mdガイドライン準拠）
+# ======================== ノード参照キャッシュ ========================
 @onready var sprite_2d: Sprite2D = $Sprite2D
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
 
+# ======================== 初期化 ========================
+## プール初期化時の処理（シグナル接続はactivate()で行う）
 func _ready() -> void:
-	# プール初期化時はシグナル接続しない（activate()で行う）
 	pass
 
+# ======================== フレーム処理 ========================
+## 物理演算処理（移動と生存時間カウントダウン）
 func _physics_process(delta: float) -> void:
 	# 移動処理
 	global_position += velocity * delta
@@ -27,7 +35,8 @@ func _physics_process(delta: float) -> void:
 	if lifetime_timer <= 0.0:
 		destroy_kunai()
 
-# クナイの初期化（プレイヤーから呼び出される）
+# ======================== 公開メソッド ========================
+## クナイの初期化（プレイヤーから呼び出される）
 func initialize(direction: float, speed: float, shooter: Node2D, damage_value: int = 1) -> void:
 	# 速度設定
 	velocity = Vector2(direction * speed, 0.0)
@@ -50,7 +59,37 @@ func initialize(direction: float, speed: float, shooter: Node2D, damage_value: i
 	# クナイをアクティブ化
 	activate()
 
-# 物理ボディとの衝突処理
+## クナイをアクティブ化（プールから取得時）
+func activate() -> void:
+	# シグナル接続（重複接続を防止）
+	if not body_entered.is_connected(_on_body_entered):
+		body_entered.connect(_on_body_entered)
+	if not area_entered.is_connected(_on_area_entered):
+		area_entered.connect(_on_area_entered)
+
+	# 表示と物理処理を有効化
+	visible = true
+	set_physics_process(true)
+
+## クナイを非アクティブ化（プール返却時）
+func deactivate() -> void:
+	# シグナル接続を安全に解除（CLAUDE.mdガイドライン準拠）
+	if body_entered.is_connected(_on_body_entered):
+		body_entered.disconnect(_on_body_entered)
+	if area_entered.is_connected(_on_area_entered):
+		area_entered.disconnect(_on_area_entered)
+
+	# 表示と物理処理を無効化
+	visible = false
+	set_physics_process(false)
+
+	# 状態をリセット
+	velocity = Vector2.ZERO
+	owner_character = null
+	lifetime_timer = lifetime
+
+# ======================== プライベートメソッド ========================
+## 物理ボディとの衝突処理
 func _on_body_entered(body: Node2D) -> void:
 	# 発射したキャラクターとの衝突を無視
 	if body == owner_character:
@@ -65,7 +104,7 @@ func _on_body_entered(body: Node2D) -> void:
 	# クナイを破壊
 	destroy_kunai()
 
-# エリア（Area2D）との衝突処理
+## エリア（Area2D）との衝突処理
 func _on_area_entered(area: Area2D) -> void:
 	# 発射したキャラクターのhurtboxとの衝突を無視
 	if area.get_parent() == owner_character:
@@ -94,42 +133,14 @@ func _on_area_entered(area: Area2D) -> void:
 			# クナイを破壊
 			destroy_kunai()
 
-# クナイ破壊処理（プール返却）
+## クナイ破壊処理（プール返却）
 func destroy_kunai() -> void:
 	# オブジェクトプールに返却
 	deactivate()
 	KunaiPoolManager.return_kunai(self)
 
-# クナイをアクティブ化（プールから取得時）
-func activate() -> void:
-	# シグナル接続（重複接続を防止）
-	if not body_entered.is_connected(_on_body_entered):
-		body_entered.connect(_on_body_entered)
-	if not area_entered.is_connected(_on_area_entered):
-		area_entered.connect(_on_area_entered)
-
-	# 表示と物理処理を有効化
-	visible = true
-	set_physics_process(true)
-
-# クナイを非アクティブ化（プール返却時）
-func deactivate() -> void:
-	# シグナル接続を安全に解除（CLAUDE.mdガイドライン準拠）
-	if body_entered.is_connected(_on_body_entered):
-		body_entered.disconnect(_on_body_entered)
-	if area_entered.is_connected(_on_area_entered):
-		area_entered.disconnect(_on_area_entered)
-
-	# 表示と物理処理を無効化
-	visible = false
-	set_physics_process(false)
-
-	# 状態をリセット
-	velocity = Vector2.ZERO
-	owner_character = null
-	lifetime_timer = lifetime
-
-# シーンツリーから削除される際の処理
+# ======================== クリーンアップ ========================
+## シーンツリーから削除される際の処理
 func _exit_tree() -> void:
 	# 参照をクリア（メモリリーク防止）
 	owner_character = null

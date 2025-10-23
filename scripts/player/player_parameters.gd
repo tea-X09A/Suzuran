@@ -1,3 +1,5 @@
+## プレイヤーのパラメータ管理クラス
+## 変身状態（NORMAL/EXPANSION）ごとのパラメータを一元管理
 class_name PlayerParameters
 extends RefCounted
 
@@ -8,7 +10,7 @@ extends RefCounted
 
 # ======================== 統合パラメータ辞書 ========================
 
-# すべてのパラメータを条件別に統合管理
+## すべてのパラメータを条件別に統合管理
 static var PARAMETERS: Dictionary = {
 	Player.PLAYER_CONDITION.NORMAL: {
 		# ======================== 基本移動パラメータ ========================

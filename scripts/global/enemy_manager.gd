@@ -5,6 +5,7 @@ class_name EnemyManager
 ## CAPTURE状態やその他のゲームイベント時に、エネミーの動作を一時的に
 ## 停止/再開する際に使用します。
 
+# ======================== 公開メソッド（全エネミー制御） ========================
 
 ## 全てのエネミーを無効化（非表示・動作停止）します
 static func disable_all_enemies(scene_tree: SceneTree) -> void:
@@ -21,6 +22,7 @@ static func enable_all_enemies(scene_tree: SceneTree) -> void:
 		if enemy.has_method("enable"):
 			enemy.enable()
 
+# ======================== 公開メソッド（個別エネミー制御） ========================
 
 ## 特定のエネミーを無効化します
 ##

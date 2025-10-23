@@ -1,6 +1,6 @@
-extends CanvasLayer
 ## FPS表示を管理するAutoLoadスクリプト
 ## F2キーで表示/非表示を切り替え
+extends CanvasLayer
 
 # ======================== 変数 ========================
 ## FPS表示用のラベル

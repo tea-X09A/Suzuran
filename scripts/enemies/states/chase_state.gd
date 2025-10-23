@@ -1,10 +1,14 @@
 class_name EnemyChaseState
 extends BaseEnemyState
 
+# ======================== 状態初期化・クリーンアップ ========================
+
 ## ステート開始時の処理
 func initialize_state() -> void:
 	# 追跡開始時の処理
 	pass
+
+# ======================== 物理演算処理 ========================
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:

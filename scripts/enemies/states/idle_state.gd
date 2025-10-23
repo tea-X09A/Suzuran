@@ -1,12 +1,16 @@
 class_name EnemyIdleState
 extends BaseEnemyState
 
+# ======================== 状態初期化・クリーンアップ ========================
+
 ## ステート開始時の処理
 func initialize_state() -> void:
 	# 待機タイマーをリセット
 	enemy.wait_timer = 0.0
 	# 速度を0に設定
 	enemy.velocity.x = 0.0
+
+# ======================== 物理演算処理 ========================
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:

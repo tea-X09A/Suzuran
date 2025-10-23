@@ -1,12 +1,11 @@
+## セーブ/ロードメニュー
+## SaveLoadManager AutoLoadを使用してセーブ/ロード機能を提供
 class_name SaveLoadMenu
 extends BaseSettingsMenu
 
-## セーブ/ロードメニュー
-## SaveLoadManager AutoLoadを使用してセーブ/ロード機能を提供
-
 # ======================== 定数定義 ========================
 
-## メニューモード
+## メニューモード（セーブ/ロード）
 enum Mode {
 	SAVE,
 	LOAD

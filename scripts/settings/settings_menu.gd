@@ -1,11 +1,10 @@
+## 設定メニュー - 各種設定へのエントリーポイント
 class_name SettingsMenu
 extends BaseSettingsMenu
 
-## 設定メニュー - 各種設定へのエントリーポイント
-
 # ======================== 定数定義 ========================
 
-## 多言語対応テキスト
+## 多言語対応メニューテキスト
 const MENU_TEXTS: Dictionary = {
 	"volume": {
 		"ja": "音量設定",

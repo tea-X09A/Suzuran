@@ -1,13 +1,17 @@
+## クナイオブジェクトプールマネージャー（AutoLoad）
+## クナイのインスタンスを再利用してパフォーマンスを最適化
 extends Node
-## AutoLoadとして登録されるため、class_nameは不要（競合を避ける）
 
 # ======================== 定数定義 ========================
 
+## クナイシーンのプリロード
 const KUNAI_SCENE: PackedScene = preload("res://scenes/bullets/kunai.tscn")
-const INITIAL_POOL_SIZE: int = 20  # プレイヤー10 + 敵10程度
+## プールの初期サイズ（プレイヤー10 + 敵10程度）
+const INITIAL_POOL_SIZE: int = 20
 
 # ======================== プール管理 ========================
 
+## クナイオブジェクトプール
 var kunai_pool: Array[Kunai] = []
 
 # ======================== 初期化処理 ========================

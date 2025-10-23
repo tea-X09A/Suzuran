@@ -1,3 +1,5 @@
+## トラップクラス（ダメージ・ノックバック）
+## プレイヤーに接触ダメージとノックバックを与える
 class_name Trap01
 extends StaticBody2D
 

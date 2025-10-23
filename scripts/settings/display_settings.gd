@@ -1,10 +1,11 @@
+## 画面設定メニュー
+## 解像度とフルスクリーンの設定を提供
 class_name DisplaySettingsMenu
 extends BaseSettingsMenu
 
-## 画面設定メニュー
-
 # ======================== 定数定義 ========================
 
+## メニューテキストの多言語定義
 const MENU_TEXTS: Dictionary = {
 	"title": {
 		"ja": "画面設定",

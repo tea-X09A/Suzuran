@@ -1,10 +1,11 @@
+## ゲームパッド設定メニュー
+## ゲームパッドボタンのバインド変更とリセット機能を提供
 class_name GamepadSettingsMenu
 extends BaseSettingsMenu
 
-## ゲームパッド設定メニュー
-
 # ======================== 定数定義 ========================
 
+## メニューテキストの多言語定義
 const MENU_TEXTS: Dictionary = {
 	"fight": {
 		"ja": "格闘",

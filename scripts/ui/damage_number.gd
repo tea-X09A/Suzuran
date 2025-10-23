@@ -1,3 +1,5 @@
+## ダメージ数値表示クラス
+## ドットパターンで数値を描画し、フェードアウトしながら上昇
 class_name DamageNumber
 extends Control
 

@@ -1,18 +1,29 @@
 class_name InvincibilityEffect
 extends RefCounted
 
-# プレイヤーへの弱参照（メモリリーク防止）
+# ======================== 変数定義 ========================
+
+## プレイヤーへの弱参照（メモリリーク防止）
 var player_ref: WeakRef
 
-# 無敵エフェクト管理変数
+## 無敵状態かどうか
 var is_invincible: bool = false
+## 無敵タイマー
 var invincibility_timer: float = 0.0
+## 点滅タイマー
 var blink_timer: float = 0.0
+## 点滅間隔
 var blink_interval: float = 0.1
+## 現在の可視状態
 var is_visible: bool = true
 
+# ======================== 初期化 ========================
+
+## コンストラクタ
 func _init(player_instance: CharacterBody2D) -> void:
 	player_ref = weakref(player_instance)
+
+# ======================== 公開メソッド ========================
 
 ## 無敵状態の設定
 func set_invincible(duration: float) -> void:
@@ -45,6 +56,8 @@ func update_invincibility_effect(delta: float) -> void:
 		blink_timer = 0.0
 		is_visible = not is_visible
 		_update_sprite_visibility()
+
+# ======================== プライベートメソッド ========================
 
 ## スプライトの可視性を更新（点滅エフェクト用）
 func _update_sprite_visibility() -> void:

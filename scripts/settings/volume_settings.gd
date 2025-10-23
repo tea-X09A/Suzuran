@@ -1,10 +1,10 @@
+## 音量設定メニュー（未実装）
 class_name VolumeSettingsMenu
 extends BaseSettingsMenu
 
-## 音量設定メニュー（未実装）
-
 # ======================== 定数定義 ========================
 
+## メニューテキストの多言語定義
 const MENU_TEXTS: Dictionary = {
 	"title": {
 		"ja": "音量設定",

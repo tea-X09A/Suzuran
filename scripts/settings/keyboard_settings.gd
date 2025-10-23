@@ -1,10 +1,11 @@
+## キーボード設定メニュー
+## キーバインドの変更とリセット機能を提供
 class_name KeyboardSettingsMenu
 extends BaseSettingsMenu
 
-## キーボード設定メニュー
-
 # ======================== 定数定義 ========================
 
+## メニューテキストの多言語定義
 const MENU_TEXTS: Dictionary = {
 	"fight": {
 		"ja": "格闘",

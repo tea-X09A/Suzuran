@@ -1,10 +1,11 @@
+## ゲーム設定メニュー
+## 常時ダッシュなどのゲームプレイ設定を提供
 class_name GameSettingsMenu
 extends BaseSettingsMenu
 
-## ゲーム設定メニュー
-
 # ======================== 定数定義 ========================
 
+## メニューテキストの多言語定義
 const MENU_TEXTS: Dictionary = {
 	"always_dash_section": {
 		"ja": "常時ダッシュ",

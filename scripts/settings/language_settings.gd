@@ -1,11 +1,11 @@
+## 言語設定メニュー
+## 日本語/英語の切り替え機能を提供
 class_name LanguageSettingsMenu
 extends BaseSettingsMenu
 
-## 言語設定メニュー
-
 # ======================== 定数定義 ========================
 
-## 言語リスト
+## 言語リスト（日本語/英語）
 const LANGUAGES: Array[Dictionary] = [
 	{"id": GameSettings.Language.JAPANESE, "name": "日本語"},
 	{"id": GameSettings.Language.ENGLISH, "name": "English"}
