@@ -54,8 +54,68 @@ text = {
 choices = Array[ExtResource("3_lx7pl")]([])
 condition = ""
 
+[sub_resource type="Resource" id="choice_yes"]
+script = ExtResource("3_lx7pl")
+text = {
+"en": "Yes, I understand!",
+"ja": "はい、わかりました！"
+}
+next_index = "4"
+
+[sub_resource type="Resource" id="choice_no"]
+script = ExtResource("3_lx7pl")
+text = {
+"en": "No, tell me more.",
+"ja": "いいえ、もっと教えてください。"
+}
+next_index = "5"
+
+[sub_resource type="Resource" id="message_004"]
+script = ExtResource("3_message")
+index = "3"
+speaker_id = "001"
+text = {
+"en": "Would you like to test the choice feature?",
+"ja": "選択肢機能をテストしてみますか？"
+}
+choices = Array[ExtResource("3_lx7pl")]([SubResource("choice_yes"), SubResource("choice_no")])
+condition = ""
+
+[sub_resource type="Resource" id="message_005"]
+script = ExtResource("3_message")
+index = "4"
+speaker_id = "001"
+text = {
+"en": "Great! You chose 'Yes'. The choice system is working correctly!",
+"ja": "素晴らしい！「はい」を選びましたね。選択肢システムは正常に動作しています！"
+}
+choices = Array[ExtResource("3_lx7pl")]([])
+condition = ""
+
+[sub_resource type="Resource" id="message_006"]
+script = ExtResource("3_message")
+index = "5"
+speaker_id = "001"
+text = {
+"en": "I see. Choices allow players to interact with the story and make decisions.",
+"ja": "なるほど。選択肢を使うことで、プレイヤーはストーリーに関わり、決断を下すことができます。"
+}
+choices = Array[ExtResource("3_lx7pl")]([])
+condition = ""
+
+[sub_resource type="Resource" id="message_007"]
+script = ExtResource("3_message")
+index = "6"
+speaker_id = "001"
+text = {
+"en": "That's all for this demo. Enjoy creating your own dialogues!",
+"ja": "このデモはこれで終わりです。独自の会話作成を楽しんでください！"
+}
+choices = Array[ExtResource("3_lx7pl")]([])
+condition = ""
+
 [resource]
 script = ExtResource("1_dialogue_data")
 characters = Array[ExtResource("2_character_info")]([SubResource("character_001"), SubResource("character_suzuran")])
-messages = Array[ExtResource("3_message")]([SubResource("message_001"), SubResource("message_002"), SubResource("message_003")])
+messages = Array[ExtResource("3_message")]([SubResource("message_001"), SubResource("message_002"), SubResource("message_003"), SubResource("message_004"), SubResource("message_005"), SubResource("message_006"), SubResource("message_007")])
 text_speed = 0.05

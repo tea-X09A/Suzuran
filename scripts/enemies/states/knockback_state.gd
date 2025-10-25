@@ -64,6 +64,10 @@ func physics_update(delta: float) -> void:
 	# ノックバック速度を適用
 	enemy.velocity = enemy.knockback_velocity
 
+	# 壁に衝突した場合、シグナルを発信
+	if enemy.is_on_wall():
+		enemy.knockback_wall_collision.emit()
+
 	# 一度空中に浮いたことを記録
 	if not enemy.is_on_floor():
 		was_in_air = true

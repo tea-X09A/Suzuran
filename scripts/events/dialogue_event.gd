@@ -299,7 +299,7 @@ func _advance_to_next_message() -> void:
 	_show_next_message()
 
 ## 選択肢が選択された時の処理
-func _on_choice_selected(next_index: String) -> void:
+func _on_choice_selected(_choice_index: int, next_index: String) -> void:
 	showing_choices = false
 	_stop_choice_input_monitoring()
 

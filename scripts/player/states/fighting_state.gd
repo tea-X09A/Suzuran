@@ -13,6 +13,7 @@ var is_fighting_active: bool = false
 var started_airborne: bool = false  # 状態開始時に空中にいたかのフラグ
 var damage: int = 3  # ダメージ値
 var has_hit: bool = false  # 攻撃がヒットしたかのフラグ
+var hit_enemy: Node = null  # 攻撃を当てた敵への参照（シグナル接続用）
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
@@ -29,8 +30,9 @@ func initialize_state() -> void:
 	fighting_timer = get_parameter("move_fighting_duration")
 	started_airborne = not player.is_grounded  # 開始時の空中状態を記録
 
-	# ヒットフラグをリセット
+	# ヒットフラグと敵参照をリセット
 	has_hit = false
+	hit_enemy = null
 
 	# ダメージ値の取得
 	damage = PlayerParameters.get_parameter(player.condition, "fighting_damage")
@@ -62,6 +64,12 @@ func cleanup_state() -> void:
 	# FightingHitboxのシグナル接続を解除（メモリリーク防止）
 	if fighting_hitbox and fighting_hitbox.area_entered.is_connected(_on_fighting_hitbox_area_entered):
 		fighting_hitbox.area_entered.disconnect(_on_fighting_hitbox_area_entered)
+
+	# 敵のノックバック壁衝突シグナルを切断（メモリリーク防止）
+	if hit_enemy and hit_enemy.has_signal("knockback_wall_collision"):
+		if hit_enemy.knockback_wall_collision.is_connected(_on_enemy_knockback_wall_collision):
+			hit_enemy.knockback_wall_collision.disconnect(_on_enemy_knockback_wall_collision)
+	hit_enemy = null
 
 	# run状態フラグをクリア
 	if fighting_hitbox:
@@ -161,4 +169,14 @@ func _on_fighting_hitbox_area_entered(area: Area2D) -> void:
 			parent_node.take_damage(damage, knockback_direction, fighting_hitbox)
 			# ヒットフラグを立てる
 			has_hit = true
-			print("[FightingState] 敵にダメージ: %d, ノックバック方向: %v" % [damage, knockback_direction])
+			# 敵への参照を保存
+			hit_enemy = parent_node
+			# 敵のノックバック壁衝突シグナルに接続
+			if parent_node.has_signal("knockback_wall_collision"):
+				if not parent_node.knockback_wall_collision.is_connected(_on_enemy_knockback_wall_collision):
+					parent_node.knockback_wall_collision.connect(_on_enemy_knockback_wall_collision)
+
+## 敵がノックバック中に壁に衝突した時の処理
+func _on_enemy_knockback_wall_collision() -> void:
+	# プレイヤーの水平方向の前進を停止
+	player.velocity.x = 0.0

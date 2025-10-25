@@ -3,6 +3,13 @@
 class_name Enemy
 extends CharacterBody2D
 
+# ======================== シグナル定義 ========================
+
+## ノックバック中に壁に衝突したときに発信
+## knockback_state.gdで emit() されます
+@warning_ignore("unused_signal")
+signal knockback_wall_collision
+
 # ======================== ノード参照キャッシュ ========================
 
 ## Sprite2D（見た目）

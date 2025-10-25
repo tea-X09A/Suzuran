@@ -353,6 +353,6 @@ position = Vector2(3264, -256)
 next_level = "level1"
 
 [node name="EventArea" parent="." instance=ExtResource("12_7s2gi")]
-position = Vector2(2992, -256)
+position = Vector2(3043, -256)
 event_id = "001"
 event_type = 1

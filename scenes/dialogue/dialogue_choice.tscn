@@ -3,8 +3,8 @@
 [ext_resource type="Script" uid="uid://bme4b1nyddatn" path="res://scripts/dialogue/dialogue_choice.gd" id="1_dialogue_choice"]
 
 [node name="ChoiceButton" type="Button"]
-custom_minimum_size = Vector2(400, 60)
-offset_right = 400.0
+custom_minimum_size = Vector2(700, 60)
+offset_right = 700.0
 offset_bottom = 60.0
 text = "Choice Text"
 script = ExtResource("1_dialogue_choice")
