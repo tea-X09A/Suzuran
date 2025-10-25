@@ -11,4 +11,8 @@
 
 # Claude Code local settings
 .claude/
-.DS_Store
+
+# Root files to ignore (except project.godot, .gitignore, .gitattributes, .editorconfig)
+/CLAUDE.md
+/icon.svg
+/icon.svg.import
