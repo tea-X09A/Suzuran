@@ -6,9 +6,9 @@ extends BaseSettingsMenu
 
 ## 多言語対応メニューテキスト
 const MENU_TEXTS: Dictionary = {
-	"volume": {
+	"sound": {
 		"ja": "音量設定",
-		"en": "Volume Settings"
+		"en": "Sound Settings"
 	},
 	"display": {
 		"ja": "画面設定",
@@ -39,7 +39,7 @@ func build_menu(parent_container: Control) -> void:
 	_create_setting_button("game", _on_game_pressed)
 	_create_setting_button("gamepad", _on_gamepad_pressed)
 	_create_setting_button("keyboard", _on_keyboard_pressed)
-	_create_setting_button("volume", _on_volume_pressed)
+	_create_setting_button("sound", _on_sound_pressed)
 	_create_setting_button("display", _on_display_pressed)
 	var language_button = _create_setting_button("language", _on_language_pressed)
 	language_button.text = "言語設定 / Language Settings"  # 言語設定は固定表記
@@ -90,10 +90,10 @@ func _set_button_text(button: Button, text_key: String) -> void:
 # ======================== コールバックメソッド ========================
 
 ## 音量設定を開く
-func _on_volume_pressed() -> void:
+func _on_sound_pressed() -> void:
 	var manager = menu_manager_ref.get_ref()
 	if manager:
-		manager.show_submenu("volume")
+		manager.show_submenu("sound")
 
 ## 画面設定を開く
 func _on_display_pressed() -> void:

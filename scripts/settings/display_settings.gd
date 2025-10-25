@@ -96,8 +96,8 @@ func build_menu(parent_container: Control) -> void:
 	# 矢印の表示を更新
 	_update_resolution_arrows()
 
-	# スペーサー
-	_create_spacer()
+	# スペーサー（項目間）
+	_create_spacer(10.0)
 
 	# フルスクリーンセクション
 	fullscreen_section_label = _create_section_label("fullscreen_section")
@@ -115,7 +115,7 @@ func build_menu(parent_container: Control) -> void:
 	var fullscreen_row_indices: Array[int] = [buttons.size() - 1]
 	navigation_rows.append(fullscreen_row_indices)
 
-	# スペーサー
+	# スペーサー（戻るボタン前）
 	_create_spacer()
 
 	# 戻るボタン

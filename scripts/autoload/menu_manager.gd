@@ -15,7 +15,7 @@ var last_selections: Dictionary = {}
 
 ## サブメニュー管理
 var settings_menu: SettingsMenu = null
-var volume_menu: VolumeSettingsMenu = null
+var sound_menu: SoundSettingsMenu = null
 var display_menu: DisplaySettingsMenu = null
 var language_menu: LanguageSettingsMenu = null
 var gamepad_menu: GamepadSettingsMenu = null
@@ -25,7 +25,7 @@ var save_menu: SaveLoadMenu = null
 var load_menu: SaveLoadMenu = null
 
 ## 状態管理
-var current_menu_state: String = "main"  ## "main", "settings", "volume", "display", "language", "gamepad", "keyboard", "game", "save", "load"
+var current_menu_state: String = "main"  ## "main", "settings", "sound", "display", "language", "gamepad", "keyboard", "game", "save", "load"
 var menu_just_opened: bool = false  ## メニューが開いたばかりのフレームかどうか
 var window_mode_just_changed: bool = false  ## ウィンドウモードが変更された直後かどうか
 var window_mode_skip_frames: int = 0  ## ウィンドウモード変更後にスキップするフレーム数
@@ -140,7 +140,7 @@ func _process_menu_input(_delta: float) -> void:
 				## セーブ/ロードメニューからメインメニューに戻る
 				show_main_menu()
 			_:
-				## サブメニュー（volume, display, language, gamepad, keyboard, game）から設定メニューに戻る
+				## サブメニュー（sound, display, language, gamepad, keyboard, game）から設定メニューに戻る
 				show_settings_menu()
 		return
 
@@ -221,9 +221,9 @@ func show_submenu(submenu_name: String) -> void:
 	## 指定されたサブメニューを表示
 	var submenu: BaseSettingsMenu = null
 	match submenu_name:
-		"volume":
-			submenu = volume_menu
-			current_menu_state = "volume"
+		"sound":
+			submenu = sound_menu
+			current_menu_state = "sound"
 		"display":
 			submenu = display_menu
 			current_menu_state = "display"
@@ -258,8 +258,8 @@ func _hide_all_submenus() -> void:
 	## すべてのサブメニューを非表示
 	if settings_menu:
 		settings_menu.hide_menu()
-	if volume_menu:
-		volume_menu.hide_menu()
+	if sound_menu:
+		sound_menu.hide_menu()
 	if display_menu:
 		display_menu.hide_menu()
 	if language_menu:
@@ -331,8 +331,8 @@ func _build_submenus() -> void:
 	settings_menu.build_menu(center_container)
 
 	## 音量設定
-	volume_menu = VolumeSettingsMenu.new(weakref(self))
-	volume_menu.build_menu(center_container)
+	sound_menu = SoundSettingsMenu.new(weakref(self))
+	sound_menu.build_menu(center_container)
 
 	## 画面設定
 	display_menu = DisplaySettingsMenu.new(weakref(self))
@@ -461,8 +461,8 @@ func _get_current_submenu() -> BaseSettingsMenu:
 	match current_menu_state:
 		"settings":
 			return settings_menu
-		"volume":
-			return volume_menu
+		"sound":
+			return sound_menu
 		"display":
 			return display_menu
 		"language":

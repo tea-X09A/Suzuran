@@ -58,7 +58,9 @@ func build_menu(parent_container: Control) -> void:
 	var always_dash_row_indices: Array[int] = [buttons.size() - 1]
 	navigation_rows.append(always_dash_row_indices)
 
-	# スペーサー
+	# TODO: 将来項目を追加する場合は、ここに項目を追加し、スペーサーを _create_spacer(10.0) にする
+
+	# スペーサー（戻るボタン前）
 	_create_spacer()
 
 	# 戻るボタン

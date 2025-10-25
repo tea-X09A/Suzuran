@@ -15,6 +15,11 @@ signal always_dash_changed(is_enabled: bool)
 signal key_bindings_changed()
 signal gamepad_bindings_changed()
 
+## 音量設定が変更された時に発信するシグナル
+signal bgm_volume_changed(volume: int)
+signal se_volume_changed(volume: int)
+signal voice_volume_changed(volume: int)
+
 ## 入力デバイスが変更された時に発信するシグナル
 signal input_device_changed(device_type: int)
 
@@ -46,6 +51,9 @@ const DEFAULT_LANGUAGE: Language = Language.JAPANESE
 const DEFAULT_WINDOW_MODE: WindowMode = WindowMode.WINDOWED
 const DEFAULT_RESOLUTION: Vector2i = Vector2i(1920, 1080)
 const DEFAULT_ALWAYS_DASH: bool = false
+const DEFAULT_BGM_VOLUME: int = 5
+const DEFAULT_SE_VOLUME: int = 5
+const DEFAULT_VOICE_VOLUME: int = 5
 
 ## デフォルトキーバインド設定
 const DEFAULT_KEY_BINDINGS: Dictionary = {
@@ -85,6 +93,11 @@ var current_resolution: Vector2i = DEFAULT_RESOLUTION
 
 ## ゲーム設定
 var always_dash: bool = DEFAULT_ALWAYS_DASH
+
+## 音量設定
+var bgm_volume: int = DEFAULT_BGM_VOLUME
+var se_volume: int = DEFAULT_SE_VOLUME
+var voice_volume: int = DEFAULT_VOICE_VOLUME
 
 ## キーバインド設定
 var key_bindings: Dictionary = DEFAULT_KEY_BINDINGS.duplicate()
@@ -286,6 +299,37 @@ func toggle_always_dash() -> void:
 	## 常時ダッシュを切り替える（ON <-> OFF）
 	set_always_dash(not always_dash)
 
+# ======================== 音量設定 ========================
+func set_bgm_volume(volume: int) -> void:
+	## BGM音量を設定する（0~10の範囲に制限）
+	var clamped_volume: int = clampi(volume, 0, 10)
+	_change_setting(
+		bgm_volume,
+		clamped_volume,
+		func(val): bgm_volume = val,
+		func(): bgm_volume_changed.emit(bgm_volume)
+	)
+
+func set_se_volume(volume: int) -> void:
+	## SE音量を設定する（0~10の範囲に制限）
+	var clamped_volume: int = clampi(volume, 0, 10)
+	_change_setting(
+		se_volume,
+		clamped_volume,
+		func(val): se_volume = val,
+		func(): se_volume_changed.emit(se_volume)
+	)
+
+func set_voice_volume(volume: int) -> void:
+	## VOICE音量を設定する（0~10の範囲に制限）
+	var clamped_volume: int = clampi(volume, 0, 10)
+	_change_setting(
+		voice_volume,
+		clamped_volume,
+		func(val): voice_volume = val,
+		func(): voice_volume_changed.emit(voice_volume)
+	)
+
 # ======================== キーバインド設定 ========================
 func set_key_binding(action: String, key: int) -> void:
 	## キーバインドを設定する
@@ -387,6 +431,9 @@ func save_settings() -> void:
 			"height": current_resolution.y
 		},
 		"always_dash": always_dash,
+		"bgm_volume": bgm_volume,
+		"se_volume": se_volume,
+		"voice_volume": voice_volume,
 		"key_bindings": key_bindings,
 		"gamepad_bindings": gamepad_bindings
 	}
@@ -445,6 +492,11 @@ func _load_from_json() -> void:
 
 	## ゲーム設定の読み込み
 	always_dash = settings_data.get("always_dash", DEFAULT_ALWAYS_DASH)
+
+	## 音量設定の読み込み
+	bgm_volume = settings_data.get("bgm_volume", DEFAULT_BGM_VOLUME)
+	se_volume = settings_data.get("se_volume", DEFAULT_SE_VOLUME)
+	voice_volume = settings_data.get("voice_volume", DEFAULT_VOICE_VOLUME)
 
 	## キーバインド設定の読み込み
 	var saved_key_bindings: Dictionary = settings_data.get("key_bindings", {})
