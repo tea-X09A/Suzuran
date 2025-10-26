@@ -13,15 +13,15 @@ func initialize_state() -> void:
 	# 空中フラグをリセット
 	was_in_air = false
 	# hitboxを無効化・非表示
-	if enemy.hitbox:
-		enemy.hitbox.set_deferred("monitoring", false)
-		enemy.hitbox.set_deferred("monitorable", false)
-		enemy.hitbox.visible = false
+	if hitbox:
+		hitbox.set_deferred("monitoring", false)
+		hitbox.set_deferred("monitorable", false)
+		hitbox.visible = false
 
 	# detection_areaを無効化・非表示
-	if enemy.detection_area:
-		enemy.detection_area.set_deferred("monitoring", false)
-		enemy.detection_area.visible = false
+	if detection_area:
+		detection_area.set_deferred("monitoring", false)
+		detection_area.visible = false
 
 ## ステート終了時の処理
 func cleanup_state() -> void:
@@ -31,28 +31,28 @@ func cleanup_state() -> void:
 	# ノックバック後に向きを変更する必要がある場合
 	if enemy.direction_to_face_after_knockback != 0.0:
 		# スプライトの反転
-		if enemy.sprite:
-			enemy.sprite.scale.x = enemy.initial_sprite_scale_x * enemy.direction_to_face_after_knockback
+		if sprite:
+			sprite.scale.x = enemy.initial_sprite_scale_x * enemy.direction_to_face_after_knockback
 		# DetectionArea, Hitbox, Hurtboxの反転
-		for node in [enemy.detection_area, enemy.hitbox, enemy.hurtbox]:
+		for node in [detection_area, hitbox, hurtbox]:
 			if node:
 				node.scale.x = enemy.direction_to_face_after_knockback
 		# フラグをリセット
 		enemy.direction_to_face_after_knockback = 0.0
 
 	# hitboxとdetection_areaのvisibleを常に復元
-	if enemy.hitbox:
-		enemy.hitbox.visible = true
-	if enemy.detection_area:
-		enemy.detection_area.visible = true
+	if hitbox:
+		hitbox.visible = true
+	if detection_area:
+		detection_area.visible = true
 
 	# 画面内の場合のみmonitoringを再有効化
 	if enemy.on_screen:
-		if enemy.hitbox:
-			enemy.hitbox.set_deferred("monitoring", true)
-			enemy.hitbox.set_deferred("monitorable", true)
-		if enemy.detection_area:
-			enemy.detection_area.set_deferred("monitoring", true)
+		if hitbox:
+			hitbox.set_deferred("monitoring", true)
+			hitbox.set_deferred("monitorable", true)
+		if detection_area:
+			detection_area.set_deferred("monitoring", true)
 
 # ======================== 物理演算処理 ========================
 

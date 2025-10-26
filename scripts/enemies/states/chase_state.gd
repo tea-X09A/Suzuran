@@ -16,7 +16,7 @@ func physics_update(delta: float) -> void:
 	apply_gravity(delta)
 
 	# プレイヤー参照を取得
-	var player: Node2D = enemy.get_player()
+	var player: Node2D = get_player()
 
 	# プレイヤーが存在しない場合はIDLE状態へ
 	if not player:
