@@ -61,6 +61,23 @@ const ACTION_ORDER: Array[String] = [
 	"dodge"
 ]
 
+## キー入力検出用のキーコード配列
+const KEY_CODES: Array[int] = [
+	# アルファベット
+	KEY_A, KEY_B, KEY_C, KEY_D, KEY_E, KEY_F, KEY_G, KEY_H, KEY_I, KEY_J,
+	KEY_K, KEY_L, KEY_M, KEY_N, KEY_O, KEY_P, KEY_Q, KEY_R, KEY_S, KEY_T,
+	KEY_U, KEY_V, KEY_W, KEY_X, KEY_Y, KEY_Z,
+	# 数字
+	KEY_0, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9,
+	# 特殊キー
+	KEY_SPACE, KEY_SHIFT, KEY_CTRL, KEY_ALT, KEY_TAB, KEY_BACKSPACE,
+	# 矢印キー
+	KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN,
+	# その他
+	KEY_COMMA, KEY_PERIOD, KEY_SLASH, KEY_SEMICOLON, KEY_APOSTROPHE,
+	KEY_BRACKETLEFT, KEY_BRACKETRIGHT, KEY_BACKSLASH, KEY_MINUS, KEY_EQUAL
+]
+
 # ======================== 変数定義 ========================
 
 ## キー入力待機状態
@@ -207,36 +224,14 @@ func is_handling_input() -> bool:
 
 ## キー入力待ち状態での入力処理
 func _handle_key_input() -> void:
-	# 主要なキーコードを定義
-	var key_codes: Array[int] = [
-		# アルファベット
-		KEY_A, KEY_B, KEY_C, KEY_D, KEY_E, KEY_F, KEY_G, KEY_H, KEY_I, KEY_J,
-		KEY_K, KEY_L, KEY_M, KEY_N, KEY_O, KEY_P, KEY_Q, KEY_R, KEY_S, KEY_T,
-		KEY_U, KEY_V, KEY_W, KEY_X, KEY_Y, KEY_Z,
-		# 数字
-		KEY_0, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9,
-		# 特殊キー
-		KEY_SPACE, KEY_SHIFT, KEY_CTRL, KEY_ALT, KEY_TAB, KEY_BACKSPACE,
-		# 矢印キー
-		KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN,
-		# その他
-		KEY_COMMA, KEY_PERIOD, KEY_SLASH, KEY_SEMICOLON, KEY_APOSTROPHE,
-		KEY_BRACKETLEFT, KEY_BRACKETRIGHT, KEY_BACKSLASH, KEY_MINUS, KEY_EQUAL
-	]
-
 	# キーバインド設定中はESCキーのみキャンセル（Xキーはキーバインド対象）
 	var esc_pressed_now: bool = Input.is_physical_key_pressed(KEY_ESCAPE)
 	var esc_pressed_before: bool = previous_key_states.get(KEY_ESCAPE, false)
 	if esc_pressed_now and not esc_pressed_before:
-		is_waiting_for_input = false
-		var old_action: String = waiting_action
-		waiting_action = ""
-		# ボタンのテキストを元に戻す
-		if old_action in key_buttons:
-			_update_key_button_text(old_action)
+		_cancel_input_waiting()
 		return
 
-	for keycode in key_codes:
+	for keycode in KEY_CODES:
 		var is_pressed_now: bool = Input.is_physical_key_pressed(keycode)
 		var was_pressed_before: bool = previous_key_states.get(keycode, false)
 
@@ -244,36 +239,19 @@ func _handle_key_input() -> void:
 		if is_pressed_now and not was_pressed_before:
 			# 重複チェック
 			if _is_key_duplicated(waiting_action, keycode):
-				# 重複フィードバック：ボタンを0.5秒間赤く表示
-				var button: Button = key_buttons[waiting_action]
-				if menu_container:
-					var tween: Tween = menu_container.create_tween()
-					tween.tween_property(button, "modulate", Color.RED, 0.0)
-					tween.tween_property(button, "modulate", Color.WHITE, 0.5)
-
+				# 重複フィードバック表示
+				_show_duplicate_feedback(waiting_action)
 				# 重複している場合は設定せず、入力待ち状態を解除
-				is_waiting_for_input = false
-				var old_action: String = waiting_action
-				waiting_action = ""
-				# ボタンのテキストを元に戻す
-				_update_key_button_text(old_action)
+				_cancel_input_waiting()
 				return
 
 			# 重複していない場合のみキーバインドを設定
-			GameSettings.set_key_binding(waiting_action, keycode)
-
-			# ボタンのテキストを更新
-			_update_key_button_text(waiting_action)
-
-			# 入力待ち状態を解除
-			is_waiting_for_input = false
-			waiting_action = ""
-
+			_complete_binding(waiting_action, keycode)
 			return
 
 	# キー状態を更新（次フレーム用）
 	previous_key_states[KEY_ESCAPE] = Input.is_physical_key_pressed(KEY_ESCAPE)
-	_update_key_states(key_codes)
+	_update_key_states(KEY_CODES)
 
 ## キー状態を更新（次フレーム用）
 func _update_key_states(key_codes: Array[int]) -> void:
@@ -293,6 +271,33 @@ func _is_key_duplicated(action: String, keycode: int) -> bool:
 			return true
 	return false
 
+## 重複フィードバックを表示（ボタンを0.5秒間赤く表示）
+func _show_duplicate_feedback(action: String) -> void:
+	var button: Button = key_buttons[action]
+	if menu_container:
+		var tween: Tween = menu_container.create_tween()
+		tween.tween_property(button, "modulate", Color.RED, 0.0)
+		tween.tween_property(button, "modulate", Color.WHITE, 0.5)
+
+## 入力待ち状態を解除してボタンテキストを元に戻す
+func _cancel_input_waiting() -> void:
+	var old_action: String = waiting_action
+	is_waiting_for_input = false
+	waiting_action = ""
+	# ボタンのテキストを元に戻す
+	if old_action in key_buttons:
+		_update_key_button_text(old_action)
+
+## バインディング設定を完了
+func _complete_binding(action: String, keycode: int) -> void:
+	# キーバインドを設定
+	GameSettings.set_key_binding(action, keycode)
+	# ボタンのテキストを更新
+	_update_key_button_text(action)
+	# 入力待ち状態を解除
+	is_waiting_for_input = false
+	waiting_action = ""
+
 # ======================== コールバックメソッド ========================
 
 ## キーボタンが押されたときの処理
@@ -306,17 +311,7 @@ func _on_key_button_pressed(action: String) -> void:
 	button.text = MENU_TEXTS["waiting"][lang_code]
 
 	# 現在のキー状態を記録（決定キーの誤検出を防ぐため）
-	var key_codes: Array[int] = [
-		KEY_A, KEY_B, KEY_C, KEY_D, KEY_E, KEY_F, KEY_G, KEY_H, KEY_I, KEY_J,
-		KEY_K, KEY_L, KEY_M, KEY_N, KEY_O, KEY_P, KEY_Q, KEY_R, KEY_S, KEY_T,
-		KEY_U, KEY_V, KEY_W, KEY_X, KEY_Y, KEY_Z,
-		KEY_0, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9,
-		KEY_SPACE, KEY_SHIFT, KEY_CTRL, KEY_ALT, KEY_TAB, KEY_BACKSPACE,
-		KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN,
-		KEY_COMMA, KEY_PERIOD, KEY_SLASH, KEY_SEMICOLON, KEY_APOSTROPHE,
-		KEY_BRACKETLEFT, KEY_BRACKETRIGHT, KEY_BACKSLASH, KEY_MINUS, KEY_EQUAL
-	]
-	_update_key_states(key_codes)
+	_update_key_states(KEY_CODES)
 
 ## リセットボタンが押されたときの処理
 func _on_reset_pressed() -> void:

@@ -64,6 +64,9 @@ const ACTION_ORDER: Array[String] = [
 ## ゲームパッドデバイスID（複数のコントローラーがある場合は選択可能にする）
 const DEVICE_ID: int = 0
 
+## トリガー検出の閾値
+const TRIGGER_THRESHOLD: float = 0.5
+
 # ======================== 変数定義 ========================
 
 ## ボタン入力待機状態
@@ -206,12 +209,7 @@ func process_input(_delta: float) -> void:
 func _handle_button_input() -> void:
 	# ボタンバインド設定中はキャンセルボタンで中止（ゲームパッド: 言語により×/⚪︎が切替）
 	if GameSettings.is_action_menu_cancel_pressed():
-		is_waiting_for_input = false
-		var old_action: String = waiting_action
-		waiting_action = ""
-		# ボタンのテキストを元に戻す
-		if old_action in button_buttons:
-			_update_button_button_text(old_action)
+		_cancel_input_waiting()
 		return
 
 	# トリガーボタン（L2/R2）の検出
@@ -226,31 +224,14 @@ func _handle_button_input() -> void:
 		if is_pressed_now and not was_pressed_before:
 			# 重複チェック
 			if _is_button_duplicated(waiting_action, button_code):
-				# 重複フィードバック：ボタンを0.5秒間赤く表示
-				var button: Button = button_buttons[waiting_action]
-				if menu_container:
-					var tween: Tween = menu_container.create_tween()
-					tween.tween_property(button, "modulate", Color.RED, 0.0)
-					tween.tween_property(button, "modulate", Color.WHITE, 0.5)
-
+				# 重複フィードバック表示
+				_show_duplicate_feedback(waiting_action)
 				# 重複している場合は設定せず、入力待ち状態を解除
-				is_waiting_for_input = false
-				var old_action: String = waiting_action
-				waiting_action = ""
-				# ボタンのテキストを元に戻す
-				_update_button_button_text(old_action)
+				_cancel_input_waiting()
 				return
 
 			# 重複していない場合のみボタンバインドを設定
-			GameSettings.set_gamepad_binding(waiting_action, button_code)
-
-			# ボタンのテキストを更新
-			_update_button_button_text(waiting_action)
-
-			# 入力待ち状態を解除
-			is_waiting_for_input = false
-			waiting_action = ""
-
+			_complete_binding(waiting_action, button_code)
 			return
 
 	# ボタン状態を更新（次フレーム用）
@@ -260,8 +241,6 @@ func _handle_button_input() -> void:
 ## トリガーボタン（L2/R2）の入力処理
 ## トリガーはアナログ軸として扱われるため、特別な処理が必要
 func _handle_trigger_input() -> void:
-	const TRIGGER_THRESHOLD: float = 0.5  # トリガー検出の閾値
-
 	# L2トリガー（Axis 6）の検出
 	var l2_value: float = Input.get_joy_axis(DEVICE_ID, JOY_AXIS_TRIGGER_LEFT)
 	var l2_pressed_now: bool = l2_value > TRIGGER_THRESHOLD
@@ -293,30 +272,14 @@ func _assign_trigger_button(_trigger_name: String, axis_index: int) -> void:
 
 	# 重複チェック
 	if _is_button_duplicated(waiting_action, trigger_button_code):
-		# 重複フィードバック：ボタンを0.5秒間赤く表示
-		var button: Button = button_buttons[waiting_action]
-		if menu_container:
-			var tween: Tween = menu_container.create_tween()
-			tween.tween_property(button, "modulate", Color.RED, 0.0)
-			tween.tween_property(button, "modulate", Color.WHITE, 0.5)
-
+		# 重複フィードバック表示
+		_show_duplicate_feedback(waiting_action)
 		# 重複している場合は設定せず、入力待ち状態を解除
-		is_waiting_for_input = false
-		var old_action: String = waiting_action
-		waiting_action = ""
-		# ボタンのテキストを元に戻す
-		_update_button_button_text(old_action)
+		_cancel_input_waiting()
 		return
 
 	# 重複していない場合のみボタンバインドを設定
-	GameSettings.set_gamepad_binding(waiting_action, trigger_button_code)
-
-	# ボタンのテキストを更新
-	_update_button_button_text(waiting_action)
-
-	# 入力待ち状態を解除
-	is_waiting_for_input = false
-	waiting_action = ""
+	_complete_binding(waiting_action, trigger_button_code)
 
 # ======================== ヘルパーメソッド ========================
 
@@ -330,6 +293,33 @@ func _is_button_duplicated(action: String, button_code: int) -> bool:
 		if GameSettings.get_gamepad_binding(other_action) == button_code:
 			return true
 	return false
+
+## 重複フィードバックを表示（ボタンを0.5秒間赤く表示）
+func _show_duplicate_feedback(action: String) -> void:
+	var button: Button = button_buttons[action]
+	if menu_container:
+		var tween: Tween = menu_container.create_tween()
+		tween.tween_property(button, "modulate", Color.RED, 0.0)
+		tween.tween_property(button, "modulate", Color.WHITE, 0.5)
+
+## 入力待ち状態を解除してボタンテキストを元に戻す
+func _cancel_input_waiting() -> void:
+	var old_action: String = waiting_action
+	is_waiting_for_input = false
+	waiting_action = ""
+	# ボタンのテキストを元に戻す
+	if old_action in button_buttons:
+		_update_button_button_text(old_action)
+
+## バインディング設定を完了
+func _complete_binding(action: String, button_code: int) -> void:
+	# バインディングを設定
+	GameSettings.set_gamepad_binding(action, button_code)
+	# ボタンのテキストを更新
+	_update_button_button_text(action)
+	# 入力待ち状態を解除
+	is_waiting_for_input = false
+	waiting_action = ""
 
 ## 独自の入力処理を行っているかどうか
 func is_handling_input() -> bool:
@@ -352,7 +342,6 @@ func _on_button_button_pressed(action: String) -> void:
 		previous_button_states[button_code] = Input.is_joy_button_pressed(DEVICE_ID, button_code)
 
 	# トリガー状態も初期化
-	const TRIGGER_THRESHOLD: float = 0.5
 	var l2_value: float = Input.get_joy_axis(DEVICE_ID, JOY_AXIS_TRIGGER_LEFT)
 	var r2_value: float = Input.get_joy_axis(DEVICE_ID, JOY_AXIS_TRIGGER_RIGHT)
 	previous_button_states["L2"] = l2_value > TRIGGER_THRESHOLD

@@ -11,6 +11,9 @@ const ALWAYS_ALLOWED_SQUAT_KEYS: Array[int] = [KEY_DOWN]
 const ALWAYS_ALLOWED_LEFT_KEYS: Array[int] = [KEY_LEFT]
 const ALWAYS_ALLOWED_RIGHT_KEYS: Array[int] = [KEY_RIGHT]
 
+## トリガーボタン（L2/R2）の検出閾値
+const TRIGGER_THRESHOLD: float = 0.5
+
 # ======================== 基本参照 ========================
 # プレイヤーへの弱参照（CLAUDE.md準拠：循環参照防止）
 var player_ref: WeakRef = null
@@ -93,7 +96,13 @@ func update_key_states() -> void:
 		# ゲームパッドボタンの状態も記録
 		var button: int = GameSettings.get_gamepad_binding(action)
 		if button != JOY_BUTTON_INVALID:
-			previous_button_states[button] = Input.is_joy_button_pressed(GAMEPAD_DEVICE, button)
+			# トリガーボタン（100以上）の場合はアナログ軸として処理
+			if button >= 100:
+				var axis_index: int = button - 100
+				var axis_value: float = Input.get_joy_axis(GAMEPAD_DEVICE, axis_index)
+				previous_button_states[button] = axis_value > TRIGGER_THRESHOLD
+			else:
+				previous_button_states[button] = Input.is_joy_button_pressed(GAMEPAD_DEVICE, button)
 
 	# 常に許可すべきキーの状態も記録（just_pressed検出のため）
 	var always_allowed: Array[int] = [KEY_SPACE, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT]
@@ -103,17 +112,34 @@ func update_key_states() -> void:
 # ======================== 入力処理ヘルパーメソッド ========================
 
 ## ゲームパッドボタン入力チェック（カスタムボタン設定を使用）
+## トリガーボタン（L2/R2）にも対応
 func _check_gamepad_button_pressed(action: String) -> bool:
 	var button: int = GameSettings.get_gamepad_binding(action)
 	if button != JOY_BUTTON_INVALID:
-		return Input.is_joy_button_pressed(GAMEPAD_DEVICE, button)
+		# トリガーボタン（100以上）の場合はアナログ軸として処理
+		if button >= 100:
+			var axis_index: int = button - 100
+			var axis_value: float = Input.get_joy_axis(GAMEPAD_DEVICE, axis_index)
+			return axis_value > TRIGGER_THRESHOLD
+		else:
+			return Input.is_joy_button_pressed(GAMEPAD_DEVICE, button)
 	return false
 
 ## ゲームパッドボタン just_pressed チェック（カスタムボタン設定を使用）
+## トリガーボタン（L2/R2）にも対応
 func _check_gamepad_button_just_pressed(action: String) -> bool:
 	var button: int = GameSettings.get_gamepad_binding(action)
 	if button != JOY_BUTTON_INVALID:
-		var is_pressed_now: bool = Input.is_joy_button_pressed(GAMEPAD_DEVICE, button)
+		var is_pressed_now: bool = false
+
+		# トリガーボタン（100以上）の場合はアナログ軸として処理
+		if button >= 100:
+			var axis_index: int = button - 100
+			var axis_value: float = Input.get_joy_axis(GAMEPAD_DEVICE, axis_index)
+			is_pressed_now = axis_value > TRIGGER_THRESHOLD
+		else:
+			is_pressed_now = Input.is_joy_button_pressed(GAMEPAD_DEVICE, button)
+
 		var was_pressed_before: bool = previous_button_states.get(button, false)
 		return is_pressed_now and not was_pressed_before
 	return false
