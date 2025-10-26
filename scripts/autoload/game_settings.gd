@@ -423,8 +423,6 @@ func get_gamepad_button_name(button: int) -> String:
 			return "←"
 		JOY_BUTTON_DPAD_RIGHT:
 			return "→"
-		JOY_BUTTON_MISC1:
-			return "タッチパッド"  # Touchpad button
 		_:
 			return "Button " + str(button)
 

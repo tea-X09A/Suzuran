@@ -204,31 +204,6 @@ func process_input(_delta: float) -> void:
 
 ## ボタン入力待ち状態での入力処理
 func _handle_button_input() -> void:
-	# 主要なゲームパッドボタンを定義
-	var button_codes: Array[int] = [
-		JOY_BUTTON_A,               # 0
-		JOY_BUTTON_B,               # 1
-		JOY_BUTTON_X,               # 2
-		JOY_BUTTON_Y,               # 3
-		JOY_BUTTON_BACK,            # 4
-		JOY_BUTTON_GUIDE,           # 5
-		JOY_BUTTON_START,           # 6
-		JOY_BUTTON_LEFT_STICK,      # 7
-		JOY_BUTTON_RIGHT_STICK,     # 8
-		JOY_BUTTON_LEFT_SHOULDER,   # 9
-		JOY_BUTTON_RIGHT_SHOULDER,  # 10
-		JOY_BUTTON_DPAD_UP,         # 11
-		JOY_BUTTON_DPAD_DOWN,       # 12
-		JOY_BUTTON_DPAD_LEFT,       # 13
-		JOY_BUTTON_DPAD_RIGHT,      # 14
-		JOY_BUTTON_MISC1,           # 15 (PS4: タッチパッドボタン)
-	]
-
-	# トリガーボタン（L2/R2）の検出を追加
-	# PS4コントローラーでは、トリガーは主にアナログ軸として機能しますが、
-	# 閾値を超えた場合にボタンとして認識されることもあります
-	_handle_trigger_input()
-
 	# ボタンバインド設定中はキャンセルボタンで中止（ゲームパッド: 言語により×/⚪︎が切替）
 	if GameSettings.is_action_menu_cancel_pressed():
 		is_waiting_for_input = false
@@ -239,7 +214,11 @@ func _handle_button_input() -> void:
 			_update_button_button_text(old_action)
 		return
 
-	for button_code in button_codes:
+	# トリガーボタン（L2/R2）の検出
+	_handle_trigger_input()
+
+	# ゲームパッドのボタンを検出（0-14の範囲で標準的なボタンをカバー）
+	for button_code in range(15):
 		var is_pressed_now: bool = Input.is_joy_button_pressed(DEVICE_ID, button_code)
 		var was_pressed_before: bool = previous_button_states.get(button_code, false)
 
@@ -275,7 +254,8 @@ func _handle_button_input() -> void:
 			return
 
 	# ボタン状態を更新（次フレーム用）
-	_update_button_states(button_codes)
+	for button_code in range(15):
+		previous_button_states[button_code] = Input.is_joy_button_pressed(DEVICE_ID, button_code)
 
 ## トリガーボタン（L2/R2）の入力処理
 ## トリガーはアナログ軸として扱われるため、特別な処理が必要
@@ -305,7 +285,7 @@ func _handle_trigger_input() -> void:
 	previous_button_states["R2"] = r2_pressed_now
 
 ## トリガーボタンを割り当てる
-func _assign_trigger_button(trigger_name: String, axis_index: int) -> void:
+func _assign_trigger_button(_trigger_name: String, axis_index: int) -> void:
 	# トリガーをボタンコードとして扱うために、軸インデックスをオフセット付きで保存
 	# Godotでは、軸インデックスはボタンインデックスとは別の範囲にあるため、
 	# 区別するために大きな値（例: 100 + axis_index）を使用
@@ -338,11 +318,6 @@ func _assign_trigger_button(trigger_name: String, axis_index: int) -> void:
 	is_waiting_for_input = false
 	waiting_action = ""
 
-## ボタン状態を更新（次フレーム用）
-func _update_button_states(button_codes: Array[int]) -> void:
-	for button_code in button_codes:
-		previous_button_states[button_code] = Input.is_joy_button_pressed(DEVICE_ID, button_code)
-
 # ======================== ヘルパーメソッド ========================
 
 ## 指定されたボタンが他のアクションに既に割り当てられているかチェック
@@ -373,16 +348,8 @@ func _on_button_button_pressed(action: String) -> void:
 	button.text = MENU_TEXTS["waiting"][lang_code]
 
 	# 現在のボタン状態を記録（決定ボタンの誤検出を防ぐため）
-	var button_codes: Array[int] = [
-		JOY_BUTTON_A, JOY_BUTTON_B, JOY_BUTTON_X, JOY_BUTTON_Y,
-		JOY_BUTTON_BACK, JOY_BUTTON_GUIDE, JOY_BUTTON_START,
-		JOY_BUTTON_LEFT_STICK, JOY_BUTTON_RIGHT_STICK,
-		JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER,
-		JOY_BUTTON_DPAD_UP, JOY_BUTTON_DPAD_DOWN,
-		JOY_BUTTON_DPAD_LEFT, JOY_BUTTON_DPAD_RIGHT,
-		JOY_BUTTON_MISC1,  # タッチパッドボタン
-	]
-	_update_button_states(button_codes)
+	for button_code in range(15):
+		previous_button_states[button_code] = Input.is_joy_button_pressed(DEVICE_ID, button_code)
 
 	# トリガー状態も初期化
 	const TRIGGER_THRESHOLD: float = 0.5
