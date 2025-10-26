@@ -46,7 +46,6 @@ func initialize_state() -> void:
 	# DetectionAreaを表示（CLOSING状態でのみ表示）
 	if detection_area:
 		detection_area.visible = true
-		print("[CLOSING] DetectionArea を表示しました")
 
 ## AnimationTree状態終了時の処理
 func cleanup_state() -> void:
@@ -57,7 +56,6 @@ func cleanup_state() -> void:
 	# DetectionAreaを非表示
 	if detection_area:
 		detection_area.visible = false
-		print("[CLOSING] DetectionArea を非表示にしました")
 
 	# 状態のリセット
 	distance_traveled = 0.0
@@ -85,12 +83,9 @@ func handle_input(delta: float) -> void:
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:
-	# 重力適用
+	# 地面にいない場合は重力を適用してFALL状態に遷移
 	if not player.is_grounded:
 		apply_gravity(delta)
-
-	# 地面にいない場合はFALL状態に遷移
-	if not player.is_grounded:
 		player.change_state("FALL")
 		return
 
@@ -152,24 +147,14 @@ func _update_detection_area_position() -> void:
 
 ## DetectionAreaがArea2D（敵のHurtbox）と衝突した時の処理
 func _on_detection_area_area_entered(area: Area2D) -> void:
-	print("[CLOSING] DetectionArea が Area2D と衝突: ", area.name)
-
 	# 既に敵を検知している場合は処理しない
 	if enemy_detected:
-		print("[CLOSING] 既に敵を検知済みのため、処理をスキップ")
 		return
 
-	# エリアの親ノードを取得
+	# エリアの親ノードを取得して、enemiesグループに所属しているか確認
 	var parent_node: Node = area.get_parent()
-	var parent_name: String = str(parent_node.name) if parent_node else "null"
-	print("[CLOSING] 親ノード: ", parent_name)
-
-	# 親ノードがenemiesグループに所属しているか確認
 	if parent_node and parent_node.is_in_group("enemies"):
-		print("[CLOSING] 敵を検知！FIGHTING状態へ遷移します")
 		# 敵を検知したフラグを立てる
 		enemy_detected = true
 		# fighting状態へ遷移（runからのボーナスは付けない）
 		player.change_state("FIGHTING")
-	else:
-		print("[CLOSING] 親ノードはenemiesグループに属していません")
