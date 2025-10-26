@@ -345,6 +345,14 @@ func _reset_state_flags() -> void:
 	player_out_of_range = false
 	time_out_of_range = 0.0
 
+## プレイヤーの追跡を開始（共通処理）
+func _start_chasing_player(player_node: Node2D) -> void:
+	player_ref = weakref(player_node)
+	change_state("CHASE")
+	wait_timer = 0.0
+	player_out_of_range = false
+	time_out_of_range = 0.0
+
 ## プレイヤーを見失う処理
 func _lose_player() -> void:
 	# プレイヤー参照をnullにする前に保存
@@ -367,6 +375,10 @@ func _lose_player() -> void:
 
 ## キャプチャ処理を試行
 func _try_capture_player(player_node: Node2D) -> void:
+	# プレイヤーを追跡していない場合は、追跡を開始してCHASE状態に遷移
+	if not get_player():
+		_start_chasing_player(player_node)
+
 	# クールダウン中は処理しない
 	var current_time: float = Time.get_unix_time_from_system()
 	if current_time - last_capture_time < capture_cooldown:
@@ -516,12 +528,7 @@ func _on_screen_exited() -> void:
 func _on_detection_area_body_entered(body: Node2D) -> void:
 	# プレイヤーグループのボディのみ処理
 	if body.is_in_group("player"):
-		player_ref = weakref(body)
-		change_state("CHASE")
-		wait_timer = 0.0  # 待機タイマーをリセット
-		# 範囲外フラグをリセット
-		player_out_of_range = false
-		time_out_of_range = 0.0
+		_start_chasing_player(body)
 		# 継承先で追加処理を行うための仮想関数
 		_on_player_detected(body)
 
