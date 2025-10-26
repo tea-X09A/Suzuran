@@ -304,9 +304,7 @@ func change_state(new_state_name: String) -> void:
 
 	# アニメーション状態も更新
 	if animation_tree_playback:
-		# CLOSING状態はRUNアニメーションを使用
-		var animation_state_name: String = "RUN" if new_state_name == "CLOSING" else new_state_name
-		animation_tree_playback.travel(animation_state_name)
+		animation_tree_playback.travel(new_state_name)
 
 
 ## スプライト方向制御

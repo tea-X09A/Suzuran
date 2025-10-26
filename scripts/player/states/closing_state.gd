@@ -18,10 +18,6 @@ func initialize_state() -> void:
 	if not detection_area:
 		detection_area = player.get_node_or_null("DetectionArea")
 
-		# DetectionAreaノードが存在しない場合、動的に作成
-		if not detection_area:
-			_create_detection_area()
-
 	# 追従状態初期化
 	distance_traveled = 0.0
 	start_position = player.global_position
@@ -43,19 +39,11 @@ func initialize_state() -> void:
 	var direction: float = 1.0 if sprite_2d.flip_h else -1.0
 	player.velocity.x = direction * forward_speed
 
-	# DetectionAreaを表示（CLOSING状態でのみ表示）
-	if detection_area:
-		detection_area.visible = true
-
 ## AnimationTree状態終了時の処理
 func cleanup_state() -> void:
 	# DetectionAreaのシグナル接続を解除（メモリリーク防止）
 	if detection_area and detection_area.area_entered.is_connected(_on_detection_area_area_entered):
 		detection_area.area_entered.disconnect(_on_detection_area_area_entered)
-
-	# DetectionAreaを非表示
-	if detection_area:
-		detection_area.visible = false
 
 	# 状態のリセット
 	distance_traveled = 0.0
@@ -104,31 +92,6 @@ func physics_update(delta: float) -> void:
 			return
 
 # ======================== ヘルパーメソッド ========================
-
-## DetectionAreaノードを動的に作成
-func _create_detection_area() -> void:
-	# Area2Dノードを作成
-	detection_area = Area2D.new()
-	detection_area.name = "DetectionArea"
-	detection_area.collision_layer = 0  # 自身はどのレイヤーにも属さない
-	detection_area.collision_mask = 64  # 敵のHurtbox（レイヤー7、64）と衝突
-
-	# CollisionShape2Dを作成
-	var collision_shape: CollisionShape2D = CollisionShape2D.new()
-	collision_shape.name = "DetectionCollision"
-
-	# RectangleShape2Dを作成（前方の検知範囲）
-	var shape: RectangleShape2D = RectangleShape2D.new()
-	shape.size = Vector2(100, 100)  # 幅100、高さ100の検知範囲
-
-	collision_shape.shape = shape
-
-	# ノードツリーに追加
-	detection_area.add_child(collision_shape)
-	player.add_child(detection_area)
-
-	# 初期状態では非表示（CLOSING状態でのみ表示）
-	detection_area.visible = false
 
 ## Spriteの向きに応じてDetectionAreaの位置を更新
 func _update_detection_area_position() -> void:

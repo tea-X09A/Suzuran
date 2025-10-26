@@ -634,14 +634,10 @@ func _apply_knockback(direction: Vector2, attacker: Node = null) -> void:
 	var current_knockback_force: float = knockback_force
 	var vertical_force: float = -100.0
 
-	# FightingHitboxからの攻撃の場合、run状態なら3倍、それ以外は2倍の力
+	# FightingHitboxからの攻撃の場合、2倍の力
 	if attacker and attacker.name == "FightingHitbox":
-		if attacker.has_meta("is_running") and attacker.get_meta("is_running"):
-			current_knockback_force *= 3.0  # run状態の場合は3倍
-			vertical_force = -250.0  # 高く浮かせる
-		else:
-			current_knockback_force *= 2.0  # それ以外は2倍
-			vertical_force = -150.0  # 通常より少し高く
+		current_knockback_force *= 2.0
+		vertical_force = -150.0
 
 	knockback_velocity = Vector2(direction.x * current_knockback_force, vertical_force)
 

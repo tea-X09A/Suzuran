@@ -37,20 +37,13 @@ func initialize_state() -> void:
 	# ダメージ値の取得
 	damage = PlayerParameters.get_parameter(player.condition, "fighting_damage")
 
-	# run状態の場合はfighting_hitboxにフラグを設定
-	if fighting_hitbox:
-		fighting_hitbox.set_meta("is_running", is_running_state())
-
 	# FightingHitboxのarea_enteredシグナルを接続（重複接続を防止）
 	if fighting_hitbox and not fighting_hitbox.area_entered.is_connected(_on_fighting_hitbox_area_entered):
 		fighting_hitbox.area_entered.connect(_on_fighting_hitbox_area_entered)
 
-	# 前進速度の設定（idle/walk時は同じ速度、run時はボーナス付き）
+	# 前進速度の設定
 	if not started_airborne:  # 地上でのfighting時のみ前進
 		var forward_speed: float = get_parameter("move_fighting_initial_speed")
-		# 前の状態がRUNだった場合はボーナス速度を追加
-		if is_running_state():
-			forward_speed += get_parameter("move_fighting_run_bonus")
 		# Sprite2Dの向きに応じて前進（shootingと同じ方法で統一）
 		var direction: float = 1.0 if sprite_2d.flip_h else -1.0
 		player.velocity.x = direction * forward_speed
@@ -70,10 +63,6 @@ func cleanup_state() -> void:
 		if hit_enemy.knockback_wall_collision.is_connected(_on_enemy_knockback_wall_collision):
 			hit_enemy.knockback_wall_collision.disconnect(_on_enemy_knockback_wall_collision)
 	hit_enemy = null
-
-	# run状態フラグをクリア
-	if fighting_hitbox:
-		fighting_hitbox.remove_meta("is_running")
 
 	end_fighting()
 	started_airborne = false

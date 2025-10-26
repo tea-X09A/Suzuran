@@ -289,10 +289,6 @@ func get_current_state_name() -> String:
 		return state_machine.get_current_node()
 	return ""
 
-## 走行状態かどうかを判定
-func is_running_state() -> bool:
-	return get_current_state_name() == "RUN"
-
 ## 移動入力を取得（カスタムキー + 常に許可キーを考慮）
 func get_movement_input() -> float:
 	var keys: Dictionary = _get_direction_keys()
