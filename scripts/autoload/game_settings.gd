@@ -63,7 +63,8 @@ const DEFAULT_KEY_BINDINGS: Dictionary = {
 	"left": KEY_A,
 	"right": KEY_D,
 	"squat": KEY_S,
-	"run": KEY_SHIFT
+	"run": KEY_SHIFT,
+	"dodge": KEY_CTRL
 }
 
 ## デフォルトゲームパッドバインド設定
@@ -74,7 +75,8 @@ const DEFAULT_GAMEPAD_BINDINGS: Dictionary = {
 	"left": JOY_BUTTON_DPAD_LEFT,    # Button 13 (D-Pad Left)
 	"right": JOY_BUTTON_DPAD_RIGHT,  # Button 14 (D-Pad Right)
 	"squat": JOY_BUTTON_DPAD_DOWN,   # Button 12 (D-Pad Down)
-	"run": JOY_BUTTON_RIGHT_SHOULDER # Button 10 (RB/R1)
+	"run": JOY_BUTTON_RIGHT_SHOULDER, # Button 10 (RB/R1)
+	"dodge": JOY_BUTTON_LEFT_SHOULDER # Button 9 (LB/L1)
 }
 
 ## 言語名のマッピング
@@ -498,19 +500,21 @@ func _load_from_json() -> void:
 	se_volume = settings_data.get("se_volume", DEFAULT_SE_VOLUME)
 	voice_volume = settings_data.get("voice_volume", DEFAULT_VOICE_VOLUME)
 
-	## キーバインド設定の読み込み
+	## キーバインド設定の読み込み（新規アクション追加時の互換性を保つ）
+	key_bindings = DEFAULT_KEY_BINDINGS.duplicate()
 	var saved_key_bindings: Dictionary = settings_data.get("key_bindings", {})
-	if saved_key_bindings.is_empty():
-		key_bindings = DEFAULT_KEY_BINDINGS.duplicate()
-	else:
-		key_bindings = saved_key_bindings.duplicate()
+	# 保存された値で上書き（新しいアクションはデフォルト値が残る）
+	for action in saved_key_bindings:
+		if key_bindings.has(action):
+			key_bindings[action] = saved_key_bindings[action]
 
-	## ゲームパッドバインド設定の読み込み
+	## ゲームパッドバインド設定の読み込み（新規アクション追加時の互換性を保つ）
+	gamepad_bindings = DEFAULT_GAMEPAD_BINDINGS.duplicate()
 	var saved_gamepad_bindings: Dictionary = settings_data.get("gamepad_bindings", {})
-	if saved_gamepad_bindings.is_empty():
-		gamepad_bindings = DEFAULT_GAMEPAD_BINDINGS.duplicate()
-	else:
-		gamepad_bindings = saved_gamepad_bindings.duplicate()
+	# 保存された値で上書き（新しいアクションはデフォルト値が残る）
+	for action in saved_gamepad_bindings:
+		if gamepad_bindings.has(action):
+			gamepad_bindings[action] = saved_gamepad_bindings[action]
 
 	## ディスプレイ設定を適用
 	apply_all_display_settings()

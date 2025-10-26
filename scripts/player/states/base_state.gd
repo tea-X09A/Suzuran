@@ -84,7 +84,7 @@ func physics_update(_delta: float) -> void:
 ## キー状態の更新（毎フレーム呼び出す）
 func update_key_states() -> void:
 	# 全てのアクションキーの現在の状態を記録
-	var actions: Array[String] = ["fight", "shooting", "jump", "left", "right", "squat", "run"]
+	var actions: Array[String] = ["fight", "shooting", "jump", "left", "right", "squat", "run", "dodge"]
 	for action in actions:
 		var key: int = GameSettings.get_key_binding(action)
 		if key != KEY_NONE:
@@ -236,8 +236,23 @@ func is_shooting_input() -> bool:
 	# ゲームパッドボタンをチェック（カスタム設定のみ）
 	return _check_gamepad_button_just_pressed("shooting")
 
-## ダブルタップ検出（左右入力）
-## @return float - 1.0: 右ダブルタップ、-1.0: 左ダブルタップ、0.0: ダブルタップなし
+## dodge修飾キーがちょうど押されたかチェック
+## @return bool - dodge修飾キーがちょうど押された場合true
+func is_dodge_modifier_just_pressed() -> bool:
+	var dodge_key: int = GameSettings.get_key_binding("dodge")
+
+	# カスタムキーチェック
+	if dodge_key != KEY_NONE:
+		var is_pressed_now: bool = Input.is_physical_key_pressed(dodge_key)
+		var was_pressed_before: bool = previous_key_states.get(dodge_key, false)
+		if is_pressed_now and not was_pressed_before:
+			return true
+
+	# ゲームパッドボタンをチェック（カスタム設定のみ）
+	return _check_gamepad_button_just_pressed("dodge")
+
+## ダブルタップ検出（左右入力）+ dodge修飾キー＋方向入力
+## @return float - 1.0: 右ダブルタップまたは右dodge、-1.0: 左ダブルタップまたは左dodge、0.0: なし
 func check_dodge_double_tap() -> float:
 	var current_time: float = Time.get_ticks_msec() / 1000.0
 	var double_tap_window: float = get_parameter("dodging_double_tap_window")
@@ -249,6 +264,24 @@ func check_dodge_double_tap() -> float:
 	var left_just_pressed: bool = _check_physical_key_just_pressed(left_key, ALWAYS_ALLOWED_LEFT_KEYS, "left")
 	# 右キーのjust_pressed検出
 	var right_just_pressed: bool = _check_physical_key_just_pressed(right_key, ALWAYS_ALLOWED_RIGHT_KEYS, "right")
+	# 左キーのheld検出
+	var left_held: bool = _check_physical_key_pressed(left_key, ALWAYS_ALLOWED_LEFT_KEYS, "left")
+	# 右キーのheld検出
+	var right_held: bool = _check_physical_key_pressed(right_key, ALWAYS_ALLOWED_RIGHT_KEYS, "right")
+
+	# dodge修飾キーの状態チェック
+	var dodge_modifier_just_pressed: bool = is_dodge_modifier_just_pressed()
+
+	# dodge修飾キーがjust_pressedの時のみ回避を実行（長押しは無効）
+	if dodge_modifier_just_pressed:
+		# 左右キーが押されている状態をチェック（just_pressedはheldに含まれるため、heldで十分）
+		if left_held:
+			return -1.0  # 左dodge
+		if right_held:
+			return 1.0  # 右dodge
+		# 左右キーが押されていない場合、現在のスプライトの向きで回避
+		# sprite_2d.flip_h = true: 右向き, false: 左向き
+		return 1.0 if sprite_2d.flip_h else -1.0
 
 	# 左ダブルタップチェック
 	if left_just_pressed:

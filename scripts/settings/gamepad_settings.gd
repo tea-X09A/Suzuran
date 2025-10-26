@@ -35,6 +35,10 @@ const MENU_TEXTS: Dictionary = {
 		"ja": "走る",
 		"en": "Run"
 	},
+	"dodge": {
+		"ja": "回避",
+		"en": "Dodge"
+	},
 	"reset": {
 		"ja": "初期設定に戻す",
 		"en": "Reset to Default"
@@ -53,7 +57,8 @@ const ACTION_ORDER: Array[String] = [
 	"left",
 	"right",
 	"squat",
-	"run"
+	"run",
+	"dodge"
 ]
 
 ## ゲームパッドデバイスID（複数のコントローラーがある場合は選択可能にする）
