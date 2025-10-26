@@ -27,6 +27,10 @@ var load_menu: SaveLoadMenu = null
 ## 状態管理
 var current_menu_state: String = "main"  ## "main", "settings", "sound", "display", "language", "gamepad", "keyboard", "game", "save", "load"
 var menu_just_opened: bool = false  ## メニューが開いたばかりのフレームかどうか
+## デバッグメニューが閉じられた直後のフレームを追跡
+## 目的: デバッグメニューを閉じる際のキー入力で即座にポーズメニューが開くのを防止
+## 寿命: デバッグメニューが閉じられたフレームで true、次の _process() で false にリセット
+var debug_menu_just_closed: bool = false
 var window_mode_just_changed: bool = false  ## ウィンドウモードが変更された直後かどうか
 var window_mode_skip_frames: int = 0  ## ウィンドウモード変更後にスキップするフレーム数
 
@@ -78,10 +82,18 @@ func _ready() -> void:
 	## PauseManagerのシグナルに接続
 	PauseManager.pause_state_changed.connect(_on_pause_state_changed)
 
+	## DebugManagerのシグナルに接続
+	if DebugManager:
+		DebugManager.debug_state_changed.connect(_on_debug_state_changed)
+
 # ======================== 入力処理 ========================
 func _process(_delta: float) -> void:
 	## トランジション中は入力を無効化
 	if TransitionManager and TransitionManager.is_transitioning:
+		return
+
+	## デバッグメニューが開いている場合は入力を無効化
+	if DebugManager and DebugManager.is_open:
 		return
 
 	## イベント実行中は入力を無効化
@@ -90,6 +102,12 @@ func _process(_delta: float) -> void:
 
 	## メニューが表示されていない場合
 	if not pause_menu.visible:
+		## デバッグメニューが閉じられた直後のフレームでは入力を処理しない
+		## （デバッグメニューを閉じる操作と同じキーでポーズメニューが開くのを防ぐ）
+		if debug_menu_just_closed:
+			debug_menu_just_closed = false
+			return
+
 		## ESCキーでメニューを開く
 		if Input.is_action_just_pressed("pause"):
 			PauseManager.toggle_pause()
@@ -454,6 +472,24 @@ func _on_pause_state_changed(is_paused: bool) -> void:
 func _on_window_mode_changed(_is_fullscreen: bool) -> void:
 	## ウィンドウモードが変更されたときに呼ばれるコールバック
 	window_mode_skip_frames = 1  ## 1フレームスキップで十分
+
+func _on_debug_state_changed(is_open: bool) -> void:
+	## デバッグメニューの開閉状態が変化したときに呼ばれるコールバック
+	if not is_open:
+		## デバッグメニューが閉じられた時、次のフレームでメニューを開かないようにする
+		debug_menu_just_closed = true
+
+# ======================== クリーンアップ ========================
+func _exit_tree() -> void:
+	## シグナル接続を明示的に切断してメモリリークを防止
+	if GameSettings and GameSettings.window_mode_changed.is_connected(_on_window_mode_changed):
+		GameSettings.window_mode_changed.disconnect(_on_window_mode_changed)
+
+	if PauseManager and PauseManager.pause_state_changed.is_connected(_on_pause_state_changed):
+		PauseManager.pause_state_changed.disconnect(_on_pause_state_changed)
+
+	if DebugManager and DebugManager.debug_state_changed.is_connected(_on_debug_state_changed):
+		DebugManager.debug_state_changed.disconnect(_on_debug_state_changed)
 
 # ======================== ユーティリティ ========================
 func _get_current_submenu() -> BaseSettingsMenu:
