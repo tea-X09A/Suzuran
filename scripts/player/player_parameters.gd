@@ -43,6 +43,11 @@ static var PARAMETERS: Dictionary = {
 		"move_closing_speed_multiplier": 1.5,  # CLOSING時の速度倍率（run_speedに対する倍率）
 		"move_closing_max_distance": 300.0,    # CLOSING時の最大追従距離（ピクセル）
 
+		# ======================== DODGING（回避）パラメータ ========================
+		"move_dodging_speed_multiplier": 1.5,  # DODGING時の速度倍率（run_speedに対する倍率、closingと同じ）
+		"move_dodging_distance": 200.0,        # DODGING時の移動距離（ピクセル）
+		"dodging_double_tap_window": 0.3,      # ダブルタップの許容時間（秒）
+
 		# ======================== ダメージパラメータ ========================
 		"damage_duration": 0.6,                    # ダメージアニメーションの継続時間（秒）
 		"knockback_vertical_force": 200.0,         # ノックバック時の垂直方向の力（ピクセル/秒）
@@ -87,6 +92,11 @@ static var PARAMETERS: Dictionary = {
 		# ======================== CLOSING（追従）パラメータ（強化版） ========================
 		"move_closing_speed_multiplier": 1.8,  # CLOSING時の速度倍率（1.5 * 1.2）
 		"move_closing_max_distance": 400.0,    # CLOSING時の最大追従距離（300.0 * 1.33）（ピクセル）
+
+		# ======================== DODGING（回避）パラメータ（強化版） ========================
+		"move_dodging_speed_multiplier": 1.8,  # DODGING時の速度倍率（1.5 * 1.2、closingと同じ）
+		"move_dodging_distance": 260.0,        # DODGING時の移動距離（200.0 * 1.3）（ピクセル）
+		"dodging_double_tap_window": 0.3,      # ダブルタップの許容時間（秒）
 
 		# ======================== ダメージパラメータ（強化版） ========================
 		"damage_duration": 0.8,                    # ダメージアニメーションの継続時間（0.6 * 1.33）（秒）

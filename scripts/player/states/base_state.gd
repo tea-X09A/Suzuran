@@ -30,6 +30,12 @@ var condition: Player.PLAYER_CONDITION
 ## 空中での慣性保持用の水平速度（jump/fall状態で使用）
 var initial_horizontal_speed: float = 0.0
 
+# ======================== ダブルタップ検出用変数 ========================
+## 前回の左キー入力時刻
+var last_left_tap_time: float = -999.0
+## 前回の右キー入力時刻
+var last_right_tap_time: float = -999.0
+
 # ======================== キー入力状態管理 ========================
 ## 前フレームのキー状態を記録（just_pressed検出用）
 var previous_key_states: Dictionary = {}
@@ -230,6 +236,36 @@ func is_shooting_input() -> bool:
 	# ゲームパッドボタンをチェック（カスタム設定のみ）
 	return _check_gamepad_button_just_pressed("shooting")
 
+## ダブルタップ検出（左右入力）
+## @return float - 1.0: 右ダブルタップ、-1.0: 左ダブルタップ、0.0: ダブルタップなし
+func check_dodge_double_tap() -> float:
+	var current_time: float = Time.get_ticks_msec() / 1000.0
+	var double_tap_window: float = get_parameter("dodging_double_tap_window")
+
+	var left_key: int = GameSettings.get_key_binding("left")
+	var right_key: int = GameSettings.get_key_binding("right")
+
+	# 左キーのjust_pressed検出
+	var left_just_pressed: bool = _check_physical_key_just_pressed(left_key, ALWAYS_ALLOWED_LEFT_KEYS, "left")
+	# 右キーのjust_pressed検出
+	var right_just_pressed: bool = _check_physical_key_just_pressed(right_key, ALWAYS_ALLOWED_RIGHT_KEYS, "right")
+
+	# 左ダブルタップチェック
+	if left_just_pressed:
+		var time_since_last_tap: float = current_time - last_left_tap_time
+		last_left_tap_time = current_time
+		if time_since_last_tap <= double_tap_window and time_since_last_tap > 0.0:
+			return -1.0  # 左ダブルタップ
+
+	# 右ダブルタップチェック
+	if right_just_pressed:
+		var time_since_last_tap: float = current_time - last_right_tap_time
+		last_right_tap_time = current_time
+		if time_since_last_tap <= double_tap_window and time_since_last_tap > 0.0:
+			return 1.0  # 右ダブルタップ
+
+	return 0.0  # ダブルタップなし
+
 # ======================== 共通ユーティリティメソッド ========================
 
 ## 物理キーから方向キー入力を取得（内部ヘルパー）
@@ -422,10 +458,6 @@ func handle_air_action_input() -> bool:
 ## 慣性保持の初期化（空中状態開始時に呼び出し）
 func initialize_airborne_inertia() -> void:
 	initial_horizontal_speed = abs(player.velocity.x)
-
-## 慣性保持のクリーンアップ（空中状態終了時に呼び出し）
-func cleanup_airborne_inertia() -> void:
-	initial_horizontal_speed = 0.0
 
 ## 空中での移動入力処理（慣性保持考慮）
 func handle_airborne_movement_input() -> void:

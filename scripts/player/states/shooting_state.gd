@@ -26,12 +26,6 @@ func cleanup_state() -> void:
 	if animation_player and animation_player.animation_finished.is_connected(_on_shooting_animation_finished):
 		animation_player.animation_finished.disconnect(_on_shooting_animation_finished)
 
-	# 状態のリセット
-	shooting_timer = 0.0
-	is_shooting_02 = false
-	# キャッシュされたノード参照をクリア
-	shooting_animation_node = null
-
 ## 入力処理
 func handle_input(_delta: float) -> void:
 	# 基底クラスのdisable_inputチェックを実行（イベント中の入力無効化）

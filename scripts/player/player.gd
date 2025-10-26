@@ -34,6 +34,8 @@ var animation_tree_playback: AnimationNodeStateMachinePlayback = null
 @onready var fall_hurtbox_collision: CollisionShape2D = $FallHurtbox/FallHurtboxCollision
 @onready var walk_hurtbox_collision: CollisionShape2D = $WalkHurtbox/WalkHurtboxCollision
 @onready var fighting_hitbox_collision: CollisionShape2D = $FightingHitbox/FightingHitboxCollision
+@onready var closing_hurtbox_collision: CollisionShape2D = $ClosingHurtbox/ClosingHurtboxCollision
+@onready var dodging_hurtbox_collision: CollisionShape2D = $DodgingHurtbox/DodgingHurtboxCollision
 
 # ======================== エクスポート設定 ========================
 
@@ -192,6 +194,7 @@ func _initialize_state_system() -> void:
 	state_instances["WALK"] = WalkState.new(self)
 	state_instances["RUN"] = RunState.new(self)
 	state_instances["CLOSING"] = ClosingState.new(self)
+	state_instances["DODGING"] = DodgingState.new(self)
 	state_instances["JUMP"] = JumpState.new(self)
 	state_instances["FALL"] = FallState.new(self)
 	state_instances["SQUAT"] = SquatState.new(self)
@@ -220,6 +223,8 @@ func _initialize_box_positions() -> void:
 	original_box_positions["fall"] = fall_hurtbox_collision.position.x
 	original_box_positions["walk"] = walk_hurtbox_collision.position.x
 	original_box_positions["fighting_hit"] = fighting_hitbox_collision.position.x
+	original_box_positions["closing"] = closing_hurtbox_collision.position.x
+	original_box_positions["dodging"] = dodging_hurtbox_collision.position.x
 
 	# 初期のsprite向きに基づいて位置を更新
 	_update_box_positions(sprite_2d.flip_h)
@@ -336,7 +341,9 @@ func _update_box_positions(is_facing_right: bool) -> void:
 		{"collision": down_hurtbox_collision, "key": "down"},
 		{"collision": fall_hurtbox_collision, "key": "fall"},
 		{"collision": walk_hurtbox_collision, "key": "walk"},
-		{"collision": fighting_hitbox_collision, "key": "fighting_hit"}
+		{"collision": fighting_hitbox_collision, "key": "fighting_hit"},
+		{"collision": closing_hurtbox_collision, "key": "closing"},
+		{"collision": dodging_hurtbox_collision, "key": "dodging"}
 	]
 
 	for box in collision_boxes:
@@ -356,6 +363,8 @@ func set_all_collision_boxes_enabled(enabled: bool) -> void:
 	fall_hurtbox_collision.disabled = not enabled
 	walk_hurtbox_collision.disabled = not enabled
 	fighting_hitbox_collision.disabled = not enabled
+	closing_hurtbox_collision.disabled = not enabled
+	dodging_hurtbox_collision.disabled = not enabled
 
 ## 全てのCollision boxを有効化
 func enable_all_collision_boxes() -> void:

@@ -45,10 +45,6 @@ func cleanup_state() -> void:
 	if detection_area and detection_area.area_entered.is_connected(_on_detection_area_area_entered):
 		detection_area.area_entered.disconnect(_on_detection_area_area_entered)
 
-	# 状態のリセット
-	distance_traveled = 0.0
-	enemy_detected = false
-
 # ======================== 入力処理 ========================
 
 ## 入力処理

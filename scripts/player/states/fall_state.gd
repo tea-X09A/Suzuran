@@ -8,11 +8,6 @@ func initialize_state() -> void:
 	# 慣性保持の初期化（BaseStateの共通メソッド使用）
 	initialize_airborne_inertia()
 
-## AnimationTree状態終了時の処理
-func cleanup_state() -> void:
-	# 慣性保持のクリーンアップ（BaseStateの共通メソッド使用）
-	cleanup_airborne_inertia()
-
 # ======================== 入力処理 ========================
 
 ## 入力処理

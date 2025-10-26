@@ -65,7 +65,6 @@ func cleanup_state() -> void:
 	hit_enemy = null
 
 	end_fighting()
-	started_airborne = false
 
 ## 入力処理
 func handle_input(_delta: float) -> void:
