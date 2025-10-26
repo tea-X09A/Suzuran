@@ -40,6 +40,10 @@ static var PARAMETERS: Dictionary = {
 		"fighting_damage": 3,                  # 格闘攻撃のダメージ量
 		"shooting_damage": 1,                  # 射撃攻撃のダメージ量
 
+		# ======================== CLOSING（追従）パラメータ ========================
+		"move_closing_speed_multiplier": 1.5,  # CLOSING時の速度倍率（run_speedに対する倍率）
+		"move_closing_max_distance": 300.0,    # CLOSING時の最大追従距離（ピクセル）
+
 		# ======================== ダメージパラメータ ========================
 		"damage_duration": 0.6,                    # ダメージアニメーションの継続時間（秒）
 		"knockback_vertical_force": 200.0,         # ノックバック時の垂直方向の力（ピクセル/秒）
@@ -81,6 +85,10 @@ static var PARAMETERS: Dictionary = {
 		"fighting_enabled": false,             # 戦闘アクションの有効性（EXPANSION時は無効）
 		"fighting_damage": 3,                  # 格闘攻撃のダメージ量
 		"shooting_damage": 1,                  # 射撃攻撃のダメージ量
+
+		# ======================== CLOSING（追従）パラメータ（強化版） ========================
+		"move_closing_speed_multiplier": 1.8,  # CLOSING時の速度倍率（1.5 * 1.2）
+		"move_closing_max_distance": 400.0,    # CLOSING時の最大追従距離（300.0 * 1.33）（ピクセル）
 
 		# ======================== ダメージパラメータ（強化版） ========================
 		"damage_duration": 0.8,                    # ダメージアニメーションの継続時間（0.6 * 1.33）（秒）

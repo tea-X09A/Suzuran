@@ -191,6 +191,7 @@ func _initialize_state_system() -> void:
 	state_instances["IDLE"] = IdleState.new(self)
 	state_instances["WALK"] = WalkState.new(self)
 	state_instances["RUN"] = RunState.new(self)
+	state_instances["CLOSING"] = ClosingState.new(self)
 	state_instances["JUMP"] = JumpState.new(self)
 	state_instances["FALL"] = FallState.new(self)
 	state_instances["SQUAT"] = SquatState.new(self)
@@ -303,7 +304,9 @@ func change_state(new_state_name: String) -> void:
 
 	# アニメーション状態も更新
 	if animation_tree_playback:
-		animation_tree_playback.travel(new_state_name)
+		# CLOSING状態はRUNアニメーションを使用
+		var animation_state_name: String = "RUN" if new_state_name == "CLOSING" else new_state_name
+		animation_tree_playback.travel(animation_state_name)
 
 
 ## スプライト方向制御

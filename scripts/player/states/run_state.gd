@@ -10,7 +10,27 @@ func handle_input(delta: float) -> void:
 	if player.disable_input:
 		return
 
-	handle_movement_state_input("RUN", delta)
+	# RUN状態固有の攻撃入力チェック（closing状態への遷移）
+	if is_fight_input():
+		player.change_state("CLOSING")
+		return
+
+	# その他の入力はhandle_movement_state_inputに委譲
+	# ただし攻撃入力は既に処理済みなので、handle_common_inputsを使わずに個別処理
+	if can_jump():
+		perform_jump()
+		return
+
+	if can_transition_to_squat():
+		player.change_state("SQUAT")
+		return
+
+	if is_shooting_input():
+		player.change_state("SHOOTING")
+		return
+
+	# 移動入力処理
+	handle_movement_input_common("RUN", delta)
 
 # ======================== 物理演算処理 ========================
 
