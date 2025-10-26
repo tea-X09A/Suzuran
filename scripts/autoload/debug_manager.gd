@@ -101,7 +101,7 @@ func _init_styles() -> void:
 func _process(_delta: float) -> void:
 	## F5キーでシーンをリロード
 	if Input.is_action_just_pressed("reload_scene"):
-		get_tree().reload_current_scene()
+		_reload_scene()
 		return
 
 	## F12キーでデバッグメニューを開閉
@@ -173,6 +173,56 @@ func _handle_accept_input() -> void:
 	## Continueボタンの行の場合はメニューを閉じる
 	if current_row >= debug_items.size():
 		toggle_debug_menu()
+
+## シーンをリロードする（クリーンアップ処理付き）
+func _reload_scene() -> void:
+	## リロード前にAutoLoadと一時ノードをクリーンアップ
+	_cleanup_before_reload()
+	## シーンをリロード
+	get_tree().reload_current_scene()
+
+## リロード前のクリーンアップ処理
+func _cleanup_before_reload() -> void:
+	## デバッグメニューが開いている場合は閉じる
+	if is_open:
+		is_open = false
+		if debug_menu:
+			debug_menu.visible = false
+		print("[DebugManager] Debug menu closed for reload")
+
+	## EventManagerの状態をリセット
+	if EventManager:
+		EventManager.is_event_running = false
+		EventManager.current_event = null
+		EventManager.event_queue.clear()
+		print("[DebugManager] EventManager state reset")
+
+	## PauseManager の状態をリセット（ポーズ状態も解除）
+	if PauseManager:
+		PauseManager.is_paused = false
+	get_tree().paused = false
+	print("[DebugManager] Pause state reset")
+
+	## MenuManagerの状態をリセット
+	if MenuManager:
+		MenuManager.current_menu_state = "main"
+		MenuManager.menu_just_opened = false
+		if MenuManager.pause_menu and MenuManager.pause_menu.visible:
+			MenuManager.pause_menu.visible = false
+		print("[DebugManager] MenuManager state reset")
+
+	## tree.root上の一時ノードを削除（DialogueSystemなど）
+	var tree: SceneTree = get_tree()
+	if tree and tree.root:
+		## CanvasLayerを全て確認し、DialogueSystemを削除
+		for child in tree.root.get_children():
+			if child is CanvasLayer:
+				## DialogueSystemは名前で判定
+				if child.name.begins_with("DialogueSystem") or child.name.contains("Dialogue"):
+					print("[DebugManager] Removing temporary node: ", child.name)
+					child.queue_free()
+
+	print("[DebugManager] Scene reload cleanup completed")
 
 # ======================== UI構築 ========================
 ## デバッグメニューのUIを構築
