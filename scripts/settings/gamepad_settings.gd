@@ -221,7 +221,13 @@ func _handle_button_input() -> void:
 		JOY_BUTTON_DPAD_DOWN,       # 12
 		JOY_BUTTON_DPAD_LEFT,       # 13
 		JOY_BUTTON_DPAD_RIGHT,      # 14
+		JOY_BUTTON_MISC1,           # 15 (PS4: タッチパッドボタン)
 	]
+
+	# トリガーボタン（L2/R2）の検出を追加
+	# PS4コントローラーでは、トリガーは主にアナログ軸として機能しますが、
+	# 閾値を超えた場合にボタンとして認識されることもあります
+	_handle_trigger_input()
 
 	# ボタンバインド設定中はキャンセルボタンで中止（ゲームパッド: 言語により×/⚪︎が切替）
 	if GameSettings.is_action_menu_cancel_pressed():
@@ -271,6 +277,67 @@ func _handle_button_input() -> void:
 	# ボタン状態を更新（次フレーム用）
 	_update_button_states(button_codes)
 
+## トリガーボタン（L2/R2）の入力処理
+## トリガーはアナログ軸として扱われるため、特別な処理が必要
+func _handle_trigger_input() -> void:
+	const TRIGGER_THRESHOLD: float = 0.5  # トリガー検出の閾値
+
+	# L2トリガー（Axis 6）の検出
+	var l2_value: float = Input.get_joy_axis(DEVICE_ID, JOY_AXIS_TRIGGER_LEFT)
+	var l2_pressed_now: bool = l2_value > TRIGGER_THRESHOLD
+	var l2_pressed_before: bool = previous_button_states.get("L2", false)
+
+	if l2_pressed_now and not l2_pressed_before:
+		_assign_trigger_button("L2", JOY_AXIS_TRIGGER_LEFT)
+		return
+
+	# R2トリガー（Axis 7）の検出
+	var r2_value: float = Input.get_joy_axis(DEVICE_ID, JOY_AXIS_TRIGGER_RIGHT)
+	var r2_pressed_now: bool = r2_value > TRIGGER_THRESHOLD
+	var r2_pressed_before: bool = previous_button_states.get("R2", false)
+
+	if r2_pressed_now and not r2_pressed_before:
+		_assign_trigger_button("R2", JOY_AXIS_TRIGGER_RIGHT)
+		return
+
+	# トリガー状態を更新
+	previous_button_states["L2"] = l2_pressed_now
+	previous_button_states["R2"] = r2_pressed_now
+
+## トリガーボタンを割り当てる
+func _assign_trigger_button(trigger_name: String, axis_index: int) -> void:
+	# トリガーをボタンコードとして扱うために、軸インデックスをオフセット付きで保存
+	# Godotでは、軸インデックスはボタンインデックスとは別の範囲にあるため、
+	# 区別するために大きな値（例: 100 + axis_index）を使用
+	var trigger_button_code: int = 100 + axis_index
+
+	# 重複チェック
+	if _is_button_duplicated(waiting_action, trigger_button_code):
+		# 重複フィードバック：ボタンを0.5秒間赤く表示
+		var button: Button = button_buttons[waiting_action]
+		if menu_container:
+			var tween: Tween = menu_container.create_tween()
+			tween.tween_property(button, "modulate", Color.RED, 0.0)
+			tween.tween_property(button, "modulate", Color.WHITE, 0.5)
+
+		# 重複している場合は設定せず、入力待ち状態を解除
+		is_waiting_for_input = false
+		var old_action: String = waiting_action
+		waiting_action = ""
+		# ボタンのテキストを元に戻す
+		_update_button_button_text(old_action)
+		return
+
+	# 重複していない場合のみボタンバインドを設定
+	GameSettings.set_gamepad_binding(waiting_action, trigger_button_code)
+
+	# ボタンのテキストを更新
+	_update_button_button_text(waiting_action)
+
+	# 入力待ち状態を解除
+	is_waiting_for_input = false
+	waiting_action = ""
+
 ## ボタン状態を更新（次フレーム用）
 func _update_button_states(button_codes: Array[int]) -> void:
 	for button_code in button_codes:
@@ -313,8 +380,16 @@ func _on_button_button_pressed(action: String) -> void:
 		JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER,
 		JOY_BUTTON_DPAD_UP, JOY_BUTTON_DPAD_DOWN,
 		JOY_BUTTON_DPAD_LEFT, JOY_BUTTON_DPAD_RIGHT,
+		JOY_BUTTON_MISC1,  # タッチパッドボタン
 	]
 	_update_button_states(button_codes)
+
+	# トリガー状態も初期化
+	const TRIGGER_THRESHOLD: float = 0.5
+	var l2_value: float = Input.get_joy_axis(DEVICE_ID, JOY_AXIS_TRIGGER_LEFT)
+	var r2_value: float = Input.get_joy_axis(DEVICE_ID, JOY_AXIS_TRIGGER_RIGHT)
+	previous_button_states["L2"] = l2_value > TRIGGER_THRESHOLD
+	previous_button_states["R2"] = r2_value > TRIGGER_THRESHOLD
 
 ## リセットボタンが押されたときの処理
 func _on_reset_pressed() -> void:

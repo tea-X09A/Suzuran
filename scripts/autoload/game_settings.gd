@@ -379,6 +379,18 @@ func get_gamepad_button_name(button: int) -> String:
 	if button == JOY_BUTTON_INVALID:
 		return "None"
 
+	## トリガーボタン（L2/R2）のチェック
+	## トリガーは軸として扱われるため、オフセット100を使用して識別
+	if button >= 100:
+		var axis_index: int = button - 100
+		match axis_index:
+			JOY_AXIS_TRIGGER_LEFT:
+				return "L2"
+			JOY_AXIS_TRIGGER_RIGHT:
+				return "R2"
+			_:
+				return "Axis " + str(axis_index)
+
 	## PlayStationコントローラーのボタン名マッピング
 	match button:
 		JOY_BUTTON_A:
@@ -411,6 +423,8 @@ func get_gamepad_button_name(button: int) -> String:
 			return "←"
 		JOY_BUTTON_DPAD_RIGHT:
 			return "→"
+		JOY_BUTTON_MISC1:
+			return "タッチパッド"  # Touchpad button
 		_:
 			return "Button " + str(button)
 
