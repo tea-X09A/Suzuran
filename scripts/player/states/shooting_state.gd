@@ -37,13 +37,13 @@ func handle_input(_delta: float) -> void:
 	if is_shooting_02:
 		return
 
-	# 地上のみジャンプとしゃがみを受け付ける（shooting_01の場合）
-	if can_jump():
-		perform_jump()
-		return
-
-	if can_transition_to_squat():
-		player.change_state("SQUAT")
+	# ダブルタップ検出（回避）
+	var dodge_direction: float = check_dodge_double_tap()
+	if dodge_direction != 0.0:
+		# ダブルタップされた方向にspriteを向けてから回避状態へ遷移
+		sprite_2d.flip_h = dodge_direction > 0.0
+		player.direction_x = dodge_direction
+		player.change_state("DODGING")
 		return
 
 ## 物理演算処理
@@ -60,7 +60,7 @@ func physics_update(delta: float) -> void:
 	if is_shooting_02 and player.is_grounded:
 		shooting_timer = 0.0
 		is_shooting_02 = false
-		handle_landing_transition()
+		_transition_after_shooting()
 		return
 
 	# shooting_02の場合は、着地するまでアニメーションを維持（タイマー無視）
@@ -69,7 +69,7 @@ func physics_update(delta: float) -> void:
 
 	# 通常の射撃終了処理（shooting_01のみ）
 	if not update_shooting_state(delta):
-		handle_action_end_transition()
+		_transition_after_shooting()
 
 
 # ======================== 射撃処理 ========================
@@ -146,3 +146,21 @@ func _set_shooting_animation(animation_name: String) -> void:
 		# アニメーション変更後、再度SHOOTINGステートに遷移して新しいアニメーションを適用
 		if state_machine:
 			state_machine.start("SHOOTING")
+
+# ======================== 状態遷移ヘルパー ========================
+
+## shooting終了後の状態遷移（squatチェックなし）
+func _transition_after_shooting() -> void:
+	if not player.is_grounded:
+		player.change_state("FALL")
+		return
+
+	# 地上での状態判定（移動入力に応じて遷移）
+	var movement_input: float = get_movement_input()
+	if movement_input != 0.0:
+		if is_dash_input():
+			player.change_state("RUN")
+		else:
+			player.change_state("WALK")
+	else:
+		player.change_state("IDLE")

@@ -73,13 +73,13 @@ func handle_input(_delta: float) -> void:
 	if player.disable_input:
 		return
 
-	# 地上のみジャンプとしゃがみを受け付ける
-	if can_jump():
-		perform_jump()
-		return
-
-	if can_transition_to_squat():
-		player.change_state("SQUAT")
+	# ダブルタップ検出（回避）
+	var dodge_direction: float = check_dodge_double_tap()
+	if dodge_direction != 0.0:
+		# ダブルタップされた方向にspriteを向けてから回避状態へ遷移
+		sprite_2d.flip_h = dodge_direction > 0.0
+		player.direction_x = dodge_direction
+		player.change_state("DODGING")
 		return
 
 ## 物理演算処理
@@ -91,18 +91,18 @@ func physics_update(delta: float) -> void:
 	# 空中攻撃中に着地した場合、キャンセルして遷移
 	if started_airborne and player.is_grounded:
 		end_fighting()
-		handle_landing_transition()
+		_transition_after_fighting()
 		return
 
 	# 地上fighting時に壁に衝突した場合、アニメーションをキャンセル
 	if not started_airborne and player.is_grounded and player.is_on_wall():
 		end_fighting()
-		handle_action_end_transition()
+		_transition_after_fighting()
 		return
 
 	# 通常の攻撃終了処理
 	if not update_fighting_timer(delta):
-		handle_action_end_transition()
+		_transition_after_fighting()
 
 
 # ======================== 戦闘状態制御メソッド ========================
@@ -168,3 +168,21 @@ func _on_fighting_hitbox_area_entered(area: Area2D) -> void:
 func _on_enemy_knockback_wall_collision() -> void:
 	# プレイヤーの水平方向の前進を停止
 	player.velocity.x = 0.0
+
+# ======================== 状態遷移ヘルパー ========================
+
+## fighting終了後の状態遷移（squatチェックなし）
+func _transition_after_fighting() -> void:
+	if not player.is_grounded:
+		player.change_state("FALL")
+		return
+
+	# 地上での状態判定（移動入力に応じて遷移）
+	var movement_input: float = get_movement_input()
+	if movement_input != 0.0:
+		if is_dash_input():
+			player.change_state("RUN")
+		else:
+			player.change_state("WALK")
+	else:
+		player.change_state("IDLE")

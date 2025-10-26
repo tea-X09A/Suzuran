@@ -60,13 +60,13 @@ func handle_input(delta: float) -> void:
 	if player.disable_input:
 		return
 
-	# 追従中はジャンプとしゃがみのみ受け付ける
-	if can_jump():
-		perform_jump()
-		return
-
-	if can_transition_to_squat():
-		player.change_state("SQUAT")
+	# ダブルタップ検出（回避）
+	var dodge_direction: float = check_dodge_double_tap()
+	if dodge_direction != 0.0:
+		# ダブルタップされた方向にspriteを向けてから回避状態へ遷移
+		sprite_2d.flip_h = dodge_direction > 0.0
+		player.direction_x = dodge_direction
+		player.change_state("DODGING")
 		return
 
 # ======================== 物理演算処理 ========================
