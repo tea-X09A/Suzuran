@@ -45,6 +45,12 @@ func cleanup_state() -> void:
 	if detection_area and detection_area.area_entered.is_connected(_on_detection_area_area_entered):
 		detection_area.area_entered.disconnect(_on_detection_area_area_entered)
 
+	# 敵を検知せずにclosing状態が終了した場合は硬直時間を追加
+	if not enemy_detected:
+		player.dodge_recovery_time = 0.1
+		# 速度をゼロにして慣性を消す
+		player.velocity.x = 0.0
+
 # ======================== 入力処理 ========================
 
 ## 入力処理
