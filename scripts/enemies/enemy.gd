@@ -320,11 +320,7 @@ func _update_vision() -> void:
 
 ## hitboxと重なっているプレイヤーを取得
 func _get_overlapping_player() -> Node2D:
-	if not hitbox:
-		return null
-
-	# monitoringが無効の場合は処理しない（CLAUDE.mdガイドライン準拠）
-	if not hitbox.monitoring:
+	if not hitbox or not hitbox.monitoring:
 		return null
 
 	# プレイヤーのHurtboxとの重なりをチェック
@@ -337,21 +333,12 @@ func _get_overlapping_player() -> Node2D:
 
 	return null
 
-
-## 状態フラグをリセット
-func _reset_state_flags() -> void:
-	hit_wall = false
-	distance_since_collision = 0.0
-	player_out_of_range = false
-	time_out_of_range = 0.0
-
 ## プレイヤーの追跡を開始（共通処理）
 func _start_chasing_player(player_node: Node2D) -> void:
 	player_ref = weakref(player_node)
-	change_state("CHASE")
-	wait_timer = 0.0
 	player_out_of_range = false
 	time_out_of_range = 0.0
+	change_state("CHASE")
 
 ## プレイヤーを見失う処理
 func _lose_player() -> void:
@@ -363,11 +350,11 @@ func _lose_player() -> void:
 	change_state("IDLE")
 	# 壁に接触していない場合のみ壁衝突フラグをリセット
 	if not is_on_wall():
-		_reset_state_flags()
-	else:
-		# 範囲外フラグのみリセット
-		player_out_of_range = false
-		time_out_of_range = 0.0
+		hit_wall = false
+		distance_since_collision = 0.0
+	# 範囲外フラグは常にリセット
+	player_out_of_range = false
+	time_out_of_range = 0.0
 	# 継承先で追加処理を行うための仮想関数
 	_on_player_lost(lost_player)
 

@@ -181,7 +181,7 @@ func _update_hp_depletion(delta: float) -> void:
 
 	# UIのEPゲージを更新
 	if player.ep_gauge:
-		player.ep_gauge.progress = player.current_ep / 32.0
+		player.ep_gauge.ep_progress = player.current_ep / 32.0
 
 # ======================== カメラ制御処理 ========================
 
