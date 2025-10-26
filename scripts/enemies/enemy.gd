@@ -104,12 +104,8 @@ var current_hp: int
 var knockback_velocity: Vector2 = Vector2.ZERO
 # ノックバック後に向くべき方向（0.0なら変更なし）
 var direction_to_face_after_knockback: float = 0.0
-# HPゲージへの参照
+# HPゲージへの参照（scripts/ui/enemy_hp_gauge.gd）
 var hp_gauge: Control = null
-# HPゲージのフェードタイマー
-var hp_gauge_fade_timer: float = 0.0
-# HPゲージの表示時間
-var hp_gauge_display_duration: float = 4.0
 
 # ======================== ステート管理システム ========================
 
@@ -220,16 +216,6 @@ func _physics_process(delta: float) -> void:
 	# CAPTURE状態中は処理をスキップ
 	if is_in_capture_mode:
 		return
-
-	# HPゲージのフェードアウト処理
-	if hp_gauge_fade_timer > 0.0:
-		hp_gauge_fade_timer -= delta
-		var alpha: float = hp_gauge_fade_timer / hp_gauge_display_duration
-		if hp_gauge:
-			hp_gauge.modulate.a = alpha
-			# タイマーが切れたら非表示
-			if hp_gauge_fade_timer <= 0.0:
-				hp_gauge.visible = false
 
 	# 画面内の場合のみプレイヤー検知処理を実行
 	if on_screen:
@@ -647,7 +633,7 @@ func _die() -> void:
 		detection_area.monitoring = false
 	# HPゲージを非表示
 	if hp_gauge:
-		hp_gauge.visible = false
+		hp_gauge.hide_gauge()
 	# エネミーを削除
 	queue_free()
 
@@ -655,49 +641,20 @@ func _die() -> void:
 
 ## HPゲージを作成
 func _create_hp_gauge() -> void:
-	# HPゲージ用のControlノードを作成
-	hp_gauge = Control.new()
+	# enemy_hp_gauge.gdのインスタンスを作成
+	var EnemyHPGauge: Script = preload("res://scripts/ui/enemy_hp_gauge.gd")
+	hp_gauge = EnemyHPGauge.new()
 	hp_gauge.name = "HPGauge"
-	# Sprite2Dの上に配置（Y座標はマイナスで上方向）
 	hp_gauge.position = Vector2(0, -80)
-	# 初期状態では非表示
-	hp_gauge.visible = false
-	hp_gauge.modulate.a = 0.0
+	hp_gauge.max_hp = max_hp
+	hp_gauge.current_hp = current_hp
 	add_child(hp_gauge)
 
 ## HPゲージを更新
 func _update_hp_gauge() -> void:
 	if not hp_gauge:
 		return
-
-	# 既存の子ノードを削除
-	for child in hp_gauge.get_children():
-		child.queue_free()
-
-	# ドット1つのサイズ
-	var dot_size: int = 4
-	# ドット間の間隔（0で継ぎ目なし）
-	var dot_spacing: int = 0
-	# ゲージの開始位置（中央揃え）
-	var total_width: int = (dot_size + dot_spacing) * max_hp - dot_spacing
-	var start_x: float = -total_width / 2.0
-
-	# 各HPドットを描画
-	for i in range(max_hp):
-		var dot: ColorRect = ColorRect.new()
-		dot.size = Vector2(dot_size, dot_size)
-		dot.position = Vector2(start_x + i * (dot_size + dot_spacing), 0)
-		# 現在のHP以下の場合はオレンジ色、それ以外は暗い色
-		if i < current_hp:
-			dot.color = Color(1.0, 0.5, 0.0)  # オレンジ色
-		else:
-			dot.color = Color(0.2, 0.2, 0.2)  # 暗い色
-		hp_gauge.add_child(dot)
-
-	# HPゲージを表示してフェードタイマーを開始
-	hp_gauge.visible = true
-	hp_gauge.modulate.a = 1.0
-	hp_gauge_fade_timer = hp_gauge_display_duration
+	hp_gauge.update_hp(current_hp, max_hp)
 
 # ======================== クリーンアップ処理 ========================
 
