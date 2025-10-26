@@ -20,6 +20,18 @@ func handle_input(delta: float) -> void:
 	if player.disable_input:
 		return
 
+	# 回避後の硬直中の入力処理
+	if player.dodge_recovery_time > 0.0:
+		# 硬直中でもfightingとshootingの入力は受け付ける
+		if is_fight_input():
+			player.change_state("FIGHTING")
+			return
+		if is_shooting_input():
+			player.change_state("SHOOTING")
+			return
+		# その他の入力は無視
+		return
+
 	# ダブルタップ検出（回避）
 	var dodge_direction: float = check_dodge_double_tap()
 	if dodge_direction != 0.0:

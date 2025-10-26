@@ -10,15 +10,12 @@ var start_position: Vector2 = Vector2.ZERO  # 開始位置
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
-	# 全てのhurtboxを無効化（前のstateのhurtboxをクリア）
-	player.disable_all_collision_boxes()
-
 	# 回避状態初期化
 	distance_traveled = 0.0
 	start_position = player.global_position
 	max_dodging_distance = get_parameter("move_dodging_distance")
 
-	# 前進速度の設定（closingと同じ倍率適用で素早く回避）
+	# 前進速度の設定（run状態の倍率適用で素早く回避）
 	var base_run_speed: float = get_parameter("move_run_speed")
 	var speed_multiplier: float = get_parameter("move_dodging_speed_multiplier")
 	var forward_speed: float = base_run_speed * speed_multiplier
@@ -26,23 +23,14 @@ func initialize_state() -> void:
 	var direction: float = 1.0 if sprite_2d.flip_h else -1.0
 	player.velocity.x = direction * forward_speed
 
-# ======================== 入力処理 ========================
+# ======================== 状態クリーンアップ ========================
 
-## 入力処理
-func handle_input(delta: float) -> void:
-	# 基底クラスのdisable_inputチェックを実行（イベント中の入力無効化）
-	super.handle_input(delta)
-	if player.disable_input:
-		return
-
-	# 回避中はジャンプとしゃがみのみ受け付ける
-	if can_jump():
-		perform_jump()
-		return
-
-	if can_transition_to_squat():
-		player.change_state("SQUAT")
-		return
+## AnimationTree状態終了時の処理
+func cleanup_state() -> void:
+	# 回避終了後の硬直時間を設定
+	player.dodge_recovery_time = 0.1
+	# 速度をゼロにして慣性を消す
+	player.velocity.x = 0.0
 
 # ======================== 物理演算処理 ========================
 

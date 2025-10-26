@@ -85,6 +85,8 @@ var disable_input: bool = false
 var examine_indicator: ActionIndicator = null
 ## Examineエリア内にいるかどうかのフラグ（エリア内では一部のアクション入力を抑制）
 var in_examine_area: bool = false
+## 回避後の硬直時間（秒）
+var dodge_recovery_time: float = 0.0
 
 # ======================== ステート管理システム ========================
 
@@ -276,6 +278,10 @@ func _physics_process(delta: float) -> void:
 
 	# 無敵エフェクトを更新
 	invincibility_effect.update_invincibility_effect(delta)
+
+	# 回避後の硬直時間を減少
+	if dodge_recovery_time > 0.0:
+		dodge_recovery_time -= delta
 
 	# 自動移動モードでない場合のみ入力処理を実行
 	if not auto_move_mode:
