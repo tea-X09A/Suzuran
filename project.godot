@@ -17,7 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-GameSettings="*res://scripts/autoload/game_settings.gd"
+GameSettings="*res://scripts/autoload/game_settings_manager.gd"
 FPSDisplay="*res://scripts/autoload/fps_display.gd"
 PauseManager="*res://scripts/autoload/pause_manager.gd"
 TransitionManager="*res://scenes/ui/transition_manager.tscn"
