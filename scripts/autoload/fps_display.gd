@@ -17,7 +17,14 @@ func _ready() -> void:
 	fps_label.add_theme_color_override("font_color", Color.WHITE)
 	fps_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	fps_label.add_theme_constant_override("outline_size", 2)
-	fps_label.visible = false
+
+	# デバッグビルドの場合は初期状態でFPS表示をオン
+	if OS.is_debug_build():
+		fps_visible = true
+		fps_label.visible = true
+	else:
+		fps_label.visible = false
+
 	add_child(fps_label)
 
 # ======================== 入力処理 ========================
