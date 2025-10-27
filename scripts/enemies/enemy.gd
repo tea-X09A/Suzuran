@@ -48,12 +48,8 @@ var patrol_range: float = 100.0
 var wait_duration: float = 3.0
 # ノックバックの力
 var knockback_force: float = 300.0
-# キャプチャ時の状態（アニメーション名に使用、初期値をnormalとする）
-var capture_condition: String = "normal"
 # 画面内にいるかどうかのフラグ
 var on_screen: bool = false
-# CAPTURE状態中かどうかのフラグ
-var is_in_capture_mode: bool = false
 # 重力加速度
 var GRAVITY: float
 # 現在の目標位置
@@ -72,14 +68,6 @@ var last_movement_direction: float = 0.0
 var distance_since_collision: float = 0.0
 # 壁衝突判定を再開する距離
 var min_distance_from_wall: float = 20.0
-# 現在のHP
-var current_hp: int
-# ノックバック方向
-var knockback_velocity: Vector2 = Vector2.ZERO
-# ノックバック後に向くべき方向（0.0なら変更なし）
-var direction_to_face_after_knockback: float = 0.0
-# HPゲージへの参照（scripts/ui/enemy_hp_gauge.gd）
-var hp_gauge: Control = null
 
 # ======================== コンポーネント ========================
 
@@ -87,6 +75,12 @@ var hp_gauge: Control = null
 var vision_component = null
 ## プレイヤー検知管理コンポーネント
 var detection_component = null
+## HP管理コンポーネント
+var health_component = null
+## キャプチャ管理コンポーネント
+var capture_component = null
+## コリジョン管理コンポーネント
+var collision_component = null
 
 # ======================== ステート管理システム ========================
 
@@ -106,9 +100,6 @@ func _ready() -> void:
 	if sprite:
 		initial_sprite_scale_x = abs(sprite.scale.x)
 
-	# HPの初期化
-	current_hp = max_hp
-
 	# コンポーネントの初期化
 	_initialize_components()
 
@@ -122,13 +113,9 @@ func _ready() -> void:
 		detection_area.body_entered.connect(_on_detection_area_body_entered)
 		detection_area.body_exited.connect(_on_detection_area_body_exited)
 
-	# 初期状態ではhitboxとhurtboxを無効化
-	_disable_collision_areas()
-	# detection_areaも初期状態では無効化（画面内に入ったら有効化）
+	# detection_areaを初期状態では無効化（画面内に入ったら有効化）
 	if detection_area:
 		detection_area.monitoring = false
-	# HPゲージを作成
-	_create_hp_gauge()
 	# AnimationTreeの初期化
 	_initialize_animation_tree()
 	# ステート管理システムの初期化
@@ -163,9 +150,26 @@ func _initialize_components() -> void:
 	detection_component.lose_sight_delay = 2.0
 	detection_component.capture_cooldown = 0.5
 
+	# HealthComponentの初期化
+	health_component = HealthComponent.new(self)
+	health_component.initialize(max_hp, knockback_force)
+
+	# CaptureComponentの初期化
+	capture_component = CaptureComponent.new(self)
+	capture_component.initialize(enemy_id)
+
+	# CollisionComponentの初期化
+	collision_component = CollisionComponent.new(self, hitbox, hurtbox)
+	collision_component.initialize()
+
 	# コンポーネントのシグナルに接続
 	detection_component.player_chase_started.connect(_on_player_chase_started)
 	detection_component.player_lost.connect(_on_player_lost)
+	health_component.health_changed.connect(_on_health_changed)
+	health_component.died.connect(_on_died)
+	health_component.knockback_applied.connect(_on_knockback_applied)
+	capture_component.capture_state_entered.connect(_on_capture_state_entered)
+	capture_component.capture_state_exited.connect(_on_capture_state_exited)
 
 # ======================== ステート管理システム初期化 ========================
 
@@ -209,7 +213,7 @@ func change_state(new_state_name: String) -> void:
 
 func _physics_process(delta: float) -> void:
 	# CAPTURE状態中は処理をスキップ
-	if is_in_capture_mode:
+	if capture_component and capture_component.is_capturing():
 		return
 
 	# 視界の更新（間引き処理、画面外でも実行して形状を更新）
@@ -227,10 +231,10 @@ func _physics_process(delta: float) -> void:
 		detection_component.handle_lose_sight_timer(delta)
 
 	# 画面内の場合のみキャプチャ処理を実行
-	if on_screen and current_overlapping_player:
+	if on_screen and current_overlapping_player and capture_component:
 		# hitboxがplayerを検知した場合、動きを止める
 		velocity.x = 0.0
-		_try_capture_player(current_overlapping_player)
+		capture_component.try_capture_player(current_overlapping_player, detection_component)
 	elif current_state:
 		# プレイヤーと重なっていない場合のみステート処理を実行
 		current_state.physics_update(delta)
@@ -258,124 +262,47 @@ func _on_player_lost(lost_player: Node2D) -> void:
 	# 継承先で追加処理を行うための仮想関数（元の_on_player_lostを呼び出す）
 	_on_player_lost_override(lost_player)
 
-# ======================== Hitboxによるプレイヤー検知 ========================
+## HP変更時の処理（HealthComponentのシグナルから呼び出される）
+func _on_health_changed(_current_hp: int, _max_hp: int) -> void:
+	# 継承先で追加処理を行うための仮想関数
+	pass
 
-## キャプチャ処理を試行
-func _try_capture_player(player_node: Node2D) -> void:
-	# プレイヤーを追跡していない場合は、追跡を開始してCHASE状態に遷移
-	if not detection_component.is_player_tracked():
-		detection_component.start_chasing_player(player_node)
+## 死亡時の処理（HealthComponentのシグナルから呼び出される）
+func _on_died() -> void:
+	# コリジョンを無効化
+	if collision_component:
+		collision_component.disable_collision_areas()
+	if detection_area:
+		detection_area.monitoring = false
+	# エネミーを削除
+	queue_free()
 
-	# クールダウン中は処理しない
-	if detection_component.is_capture_on_cooldown():
-		return
+## ノックバック適用時の処理（HealthComponentのシグナルから呼び出される）
+func _on_knockback_applied(_knockback_vel: Vector2, _direction_to_face: float) -> void:
+	# ノックバック状態に遷移
+	change_state("KNOCKBACK")
 
-	# 実際にキャプチャを適用した場合のみタイマーを更新
-	if apply_capture_to_player(player_node):
-		detection_component.record_capture()
+## キャプチャ状態開始時の処理（CaptureComponentのシグナルから呼び出される）
+func _on_capture_state_entered() -> void:
+	# 共通の無効化処理を呼び出す
+	disable()
 
-## プレイヤーにキャプチャを適用
-func apply_capture_to_player(body: Node2D) -> bool:
-	# プレイヤーが無敵状態の場合はキャプチャしない
-	if body.has_method("is_invincible") and body.is_invincible():
-		return false
+## キャプチャ状態終了時の処理（CaptureComponentのシグナルから呼び出される）
+func _on_capture_state_exited() -> void:
+	# 共通の有効化処理を呼び出す
+	enable()
 
-	# 敵からプレイヤーへの方向を計算
-	var direction_to_player: Vector2 = (body.global_position - global_position).normalized()
-
-	# プレイヤーの敵ヒット処理を呼び出す（hpによるknockback判定）
-	var should_knockback: bool = false
-	if body.has_method("handle_enemy_hit"):
-		should_knockback = body.handle_enemy_hit(direction_to_player)
-
-	# knockback処理が実行された場合はここで終了
-	if should_knockback:
-		return true
-
-	# knockbackが発生しない場合（プレイヤーのhpが0の場合）、CAPTURE状態へ遷移
-	_transition_to_capture(body)
-	return true
-
-## プレイヤーをCAPTURE状態に遷移させる
-func _transition_to_capture(body: Node2D) -> void:
-	# プレイヤーの速度を完全に停止
-	if body is CharacterBody2D:
-		body.velocity = Vector2.ZERO
-
-	# 使用するキャプチャアニメーションを選択
-	var capture_animation: String = _select_capture_animation(body)
-
-	# プレイヤーに使用するアニメーションを設定
-	body.capture_animation_name = capture_animation
-
-	# プレイヤーをCAPTURE状態に遷移
-	if body.has_method("change_state"):
-		body.change_state("CAPTURE")
-
-	print("敵がプレイヤーをキャプチャ: アニメーション=", capture_animation)
-
-## キャプチャアニメーションを選択
-func _select_capture_animation(body: Node2D) -> String:
-	# プレイヤーのconditionを取得してcapture_conditionに設定
-	if body.has_method("get_condition"):
-		var player_condition: int = body.get_condition()
-		# enumを文字列に変換（0: NORMAL, 1: EXPANSION）
-		capture_condition = "normal" if player_condition == 0 else "expansion"
-
-	# プレイヤーの現在の状態を確認
-	var player_state_name: String = _get_player_state_name(body)
-
-	# プレイヤーがDOWNまたはKNOCKBACK状態の場合、接触時の位置で判定
-	if player_state_name in ["DOWN", "KNOCKBACK"]:
-		# 着地している場合はdownアニメーション、空中の場合はidleアニメーション
-		return get_capture_animation_down() if body.is_on_floor() else get_capture_animation_normal()
-	else:
-		return get_capture_animation_normal()
-
-## プレイヤーの現在の状態名を取得
-func _get_player_state_name(body: Node2D) -> String:
-	if not body.has_method("get_animation_tree"):
-		return ""
-
-	var anim_tree: AnimationTree = body.get_animation_tree()
-	if not anim_tree:
-		return ""
-
-	var state_machine: AnimationNodeStateMachinePlayback = anim_tree.get("parameters/playback")
-	if state_machine:
-		return str(state_machine.get_current_node())
-	return ""
-
-## キャプチャアニメーション（通常時）を取得
-func get_capture_animation_normal() -> String:
-	return "enemy_" + enemy_id + "_" + capture_condition + "_idle"
-
-## キャプチャアニメーション（DOWN/KNOCKBACK時）を取得
-func get_capture_animation_down() -> String:
-	return "enemy_" + enemy_id + "_" + capture_condition + "_down"
-
-# ======================== コリジョン管理 ========================
-
-## コリジョンエリアの有効/無効を一括設定（hitboxとhurtboxのみ）
-func _set_collision_areas(enabled: bool) -> void:
-	# Hitbox: プレイヤーのHurtboxを検知するため、monitoringとmonitorableの両方を設定
-	# 物理演算中の変更に対応するため、set_deferredを使用（CLAUDE.mdガイドライン準拠）
-	if hitbox:
-		hitbox.set_deferred("monitoring", enabled)
-		hitbox.set_deferred("monitorable", enabled)
-
-	# Hurtbox: プレイヤーの攻撃から検知されるだけなので、monitorableのみ設定
-	if hurtbox:
-		hurtbox.set_deferred("monitoring", false)
-		hurtbox.set_deferred("monitorable", enabled)
+# ======================== コリジョン管理（互換性のため維持） ========================
 
 ## コリジョンエリアを有効化
 func _enable_collision_areas() -> void:
-	_set_collision_areas(true)
+	if collision_component:
+		collision_component.enable_collision_areas()
 
 ## コリジョンエリアを無効化
 func _disable_collision_areas() -> void:
-	_set_collision_areas(false)
+	if collision_component:
+		collision_component.disable_collision_areas()
 
 # ======================== 画面内外シグナルハンドラ ========================
 
@@ -456,108 +383,32 @@ func enable() -> void:
 	# パトロールを再開
 	change_state("IDLE")
 
-# ======================== CAPTURE状態制御 ========================
-
-## CAPTURE状態開始時の処理
-func enter_capture_state() -> void:
-	# CAPTURE状態フラグを立てる
-	is_in_capture_mode = true
-	# 共通の無効化処理を呼び出す
-	disable()
-
-## CAPTURE状態終了時の処理
-func exit_capture_state() -> void:
-	# CAPTURE状態フラグを解除
-	is_in_capture_mode = false
-	# 共通の有効化処理を呼び出す
-	enable()
-
-# ======================== ダメージ処理 ========================
+# ======================== ダメージ処理（互換性のため維持） ========================
 
 ## ダメージを受ける処理
 func take_damage(damage: int, direction: Vector2, attacker: Node = null) -> void:
-	# すでに死んでいる場合は処理しない
-	if current_hp <= 0:
-		return
+	if health_component:
+		health_component.take_damage(damage, direction, attacker, state_instances, current_state)
 
-	# パトロール状態または待機状態の場合の特別処理
-	if current_state == state_instances["PATROL"] or current_state == state_instances["IDLE"]:
-		# FightingHitboxからの攻撃の場合は即死
-		if attacker and attacker.name == "FightingHitbox":
-			current_hp = 0
-			_die()
-			return
-		# Kunai（shooting）からの攻撃の場合はプレイヤーの方向へ向く
-		elif attacker and attacker is Kunai:
-			# プレイヤーへの参照を取得
-			var kunai_owner: Node2D = attacker.owner_character
-			if kunai_owner:
-				# プレイヤーの方向を計算
-				var direction_to_player: float = sign(kunai_owner.global_position.x - global_position.x)
-				if direction_to_player != 0:
-					direction_to_face_after_knockback = direction_to_player
+## ノックバック速度プロパティ（ステートからアクセス可能）
+var knockback_velocity: Vector2:
+	get:
+		if health_component:
+			return health_component.knockback_velocity
+		return Vector2.ZERO
+	set(value):
+		if health_component:
+			health_component.knockback_velocity = value
 
-	# ダメージを適用
-	current_hp -= damage
-	print("[%s] ダメージ: %d, 残りHP: %d/%d" % [name, damage, current_hp, max_hp])
-
-	# HPゲージを更新
-	_update_hp_gauge()
-
-	# ノックバックを適用
-	_apply_knockback(direction, attacker)
-
-	# HPが0以下になったら死亡処理
-	if current_hp <= 0:
-		_die()
-
-## ノックバックを適用
-func _apply_knockback(direction: Vector2, attacker: Node = null) -> void:
-	# ノックバック速度を設定
-	var current_knockback_force: float = knockback_force
-	var vertical_force: float = -100.0
-
-	# FightingHitboxからの攻撃の場合、2倍の力
-	if attacker and attacker.name == "FightingHitbox":
-		current_knockback_force *= 2.0
-		vertical_force = -150.0
-
-	knockback_velocity = Vector2(direction.x * current_knockback_force, vertical_force)
-
-	# ノックバック状態に遷移
-	change_state("KNOCKBACK")
-
-## 死亡処理
-func _die() -> void:
-	print("[%s] 死亡" % name)
-	# コリジョンを無効化
-	_disable_collision_areas()
-	if detection_area:
-		detection_area.monitoring = false
-	# HPゲージを非表示
-	if hp_gauge:
-		hp_gauge.hide_gauge()
-	# エネミーを削除
-	queue_free()
-
-# ======================== HPゲージ処理 ========================
-
-## HPゲージを作成
-func _create_hp_gauge() -> void:
-	# enemy_hp_gauge.gdのインスタンスを作成
-	var EnemyHPGauge: Script = preload("res://scripts/ui/enemy_hp_gauge.gd")
-	hp_gauge = EnemyHPGauge.new()
-	hp_gauge.name = "HPGauge"
-	hp_gauge.position = Vector2(0, -80)
-	hp_gauge.max_hp = max_hp
-	hp_gauge.current_hp = current_hp
-	add_child(hp_gauge)
-
-## HPゲージを更新
-func _update_hp_gauge() -> void:
-	if not hp_gauge:
-		return
-	hp_gauge.update_hp(current_hp, max_hp)
+## ノックバック後に向くべき方向プロパティ（ステートからアクセス可能）
+var direction_to_face_after_knockback: float:
+	get:
+		if health_component:
+			return health_component.direction_to_face_after_knockback
+		return 0.0
+	set(value):
+		if health_component:
+			health_component.direction_to_face_after_knockback = value
 
 # ======================== クリーンアップ処理 ========================
 
@@ -587,6 +438,28 @@ func _exit_tree() -> void:
 	if vision_component:
 		vision_component.cleanup()
 
+	if health_component:
+		if health_component.health_changed.is_connected(_on_health_changed):
+			health_component.health_changed.disconnect(_on_health_changed)
+		if health_component.died.is_connected(_on_died):
+			health_component.died.disconnect(_on_died)
+		if health_component.knockback_applied.is_connected(_on_knockback_applied):
+			health_component.knockback_applied.disconnect(_on_knockback_applied)
+		health_component.cleanup()
+
+	if capture_component:
+		if capture_component.capture_state_entered.is_connected(_on_capture_state_entered):
+			capture_component.capture_state_entered.disconnect(_on_capture_state_entered)
+		if capture_component.capture_state_exited.is_connected(_on_capture_state_exited):
+			capture_component.capture_state_exited.disconnect(_on_capture_state_exited)
+		capture_component.cleanup()
+
+	if collision_component:
+		collision_component.cleanup()
+
 	# 参照のクリア
 	vision_component = null
 	detection_component = null
+	health_component = null
+	capture_component = null
+	collision_component = null
