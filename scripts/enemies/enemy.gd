@@ -319,11 +319,15 @@ func _get_overlapping_player() -> Node2D:
 
 	return null
 
+## 範囲外フラグをリセット（共通処理）
+func _reset_out_of_range_flags() -> void:
+	player_out_of_range = false
+	time_out_of_range = 0.0
+
 ## プレイヤーの追跡を開始（共通処理）
 func _start_chasing_player(player_node: Node2D) -> void:
 	player_ref = weakref(player_node)
-	player_out_of_range = false
-	time_out_of_range = 0.0
+	_reset_out_of_range_flags()
 	change_state("CHASE")
 
 ## プレイヤーを見失う処理
@@ -338,9 +342,8 @@ func _lose_player() -> void:
 	if not is_on_wall():
 		hit_wall = false
 		distance_since_collision = 0.0
-	# 範囲外フラグは常にリセット
-	player_out_of_range = false
-	time_out_of_range = 0.0
+	# 範囲外フラグをリセット
+	_reset_out_of_range_flags()
 	# 継承先で追加処理を行うための仮想関数
 	_on_player_lost(lost_player)
 
@@ -370,7 +373,7 @@ func apply_capture_to_player(body: Node2D) -> bool:
 	# 敵からプレイヤーへの方向を計算
 	var direction_to_player: Vector2 = (body.global_position - global_position).normalized()
 
-	# プレイヤーの敵ヒット処理を呼び出す（シールドによるknockback判定）
+	# プレイヤーの敵ヒット処理を呼び出す（hpによるknockback判定）
 	var should_knockback: bool = false
 	if body.has_method("handle_enemy_hit"):
 		should_knockback = body.handle_enemy_hit(direction_to_player)
@@ -379,7 +382,7 @@ func apply_capture_to_player(body: Node2D) -> bool:
 	if should_knockback:
 		return true
 
-	# シールドが0の場合、CAPTURE状態へ遷移
+	# knockbackが発生しない場合（プレイヤーのhpが0の場合）、CAPTURE状態へ遷移
 	_transition_to_capture(body)
 	return true
 
@@ -490,8 +493,7 @@ func _on_screen_exited() -> void:
 		# 追跡中だった場合はIDLE状態に戻る
 		change_state("IDLE")
 		# 範囲外フラグをリセット
-		player_out_of_range = false
-		time_out_of_range = 0.0
+		_reset_out_of_range_flags()
 	# 視界の色をリセット（検知状態の色をクリア）
 	_update_vision()
 
