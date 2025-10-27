@@ -1,5 +1,5 @@
 ## 敵キャラクターのベースクラス
-## ステートパターンによる AI制御、視界判定、ダメージ処理を実装
+## ステートパターンによるAI制御、コンポーネントベースの視界・検知システム、ダメージ処理を実装
 class_name Enemy
 extends CharacterBody2D
 
@@ -46,16 +46,6 @@ var move_speed: float = 50.0
 var patrol_range: float = 100.0
 ## 待機時間（秒）
 var wait_duration: float = 3.0
-## プレイヤーを見失うまでの遅延時間（秒）
-var lose_sight_delay: float = 2.0
-# キャプチャのクールダウン時間（秒）
-var capture_cooldown: float = 0.5
-# 視界のRayCast本数
-var vision_ray_count: int = 20
-# 視界の最大距離
-var vision_distance: float = 509.0
-# 視界の角度（度数、片側）
-var vision_angle: float = 10.0
 # ノックバックの力
 var knockback_force: float = 300.0
 # キャプチャ時の状態（アニメーション名に使用、初期値をnormalとする）
@@ -64,8 +54,6 @@ var capture_condition: String = "normal"
 var on_screen: bool = false
 # CAPTURE状態中かどうかのフラグ
 var is_in_capture_mode: bool = false
-# プレイヤーノードへの弱参照（メモリリーク防止）
-var player_ref: WeakRef = null
 # 重力加速度
 var GRAVITY: float
 # 現在の目標位置
@@ -84,20 +72,6 @@ var last_movement_direction: float = 0.0
 var distance_since_collision: float = 0.0
 # 壁衝突判定を再開する距離
 var min_distance_from_wall: float = 20.0
-# プレイヤーが検知範囲外にいるかどうか
-var player_out_of_range: bool = false
-# プレイヤーが範囲外にいる時間
-var time_out_of_range: float = 0.0
-# 最後にキャプチャした時間
-var last_capture_time: float = 0.0
-# 視界判定用のRayCast2D配列
-var raycasts: Array[RayCast2D] = []
-# 視界更新のフレームカウンター
-var vision_update_counter: int = 0
-# 視界更新の間隔（フレーム数）
-var vision_update_interval: int = 5
-# hitboxと重なっているプレイヤー（キャッシュ用）
-var overlapping_player: Node2D = null
 # 現在のHP
 var current_hp: int
 # ノックバック方向
@@ -106,6 +80,13 @@ var knockback_velocity: Vector2 = Vector2.ZERO
 var direction_to_face_after_knockback: float = 0.0
 # HPゲージへの参照（scripts/ui/enemy_hp_gauge.gd）
 var hp_gauge: Control = null
+
+# ======================== コンポーネント ========================
+
+## 視界管理コンポーネント
+var vision_component = null
+## プレイヤー検知管理コンポーネント
+var detection_component = null
 
 # ======================== ステート管理システム ========================
 
@@ -128,8 +109,8 @@ func _ready() -> void:
 	# HPの初期化
 	current_hp = max_hp
 
-	# 視界更新のタイミングをずらす（各敵のインスタンスIDを基にオフセットを設定）
-	vision_update_counter = get_instance_id() % vision_update_interval
+	# コンポーネントの初期化
+	_initialize_components()
 
 	# VisibleOnScreenNotifier2Dのシグナルに接続
 	if visibility_notifier:
@@ -146,8 +127,6 @@ func _ready() -> void:
 	# detection_areaも初期状態では無効化（画面内に入ったら有効化）
 	if detection_area:
 		detection_area.monitoring = false
-	# 視界判定用のRayCastを生成
-	_setup_vision_raycasts()
 	# HPゲージを作成
 	_create_hp_gauge()
 	# AnimationTreeの初期化
@@ -170,6 +149,24 @@ func _initialize_animation_tree() -> void:
 	if animation_state_machine:
 		animation_state_machine.travel("IDLE")
 
+# ======================== コンポーネント初期化 ========================
+
+## コンポーネントの初期化
+func _initialize_components() -> void:
+	# VisionComponentの初期化
+	vision_component = VisionComponent.new(self, detection_area, vision_shape, detection_collision)
+	vision_component.set_vision_parameters(20, 509.0, 10.0)
+	vision_component.initialize()
+
+	# DetectionComponentの初期化
+	detection_component = DetectionComponent.new(self, hitbox)
+	detection_component.lose_sight_delay = 2.0
+	detection_component.capture_cooldown = 0.5
+
+	# コンポーネントのシグナルに接続
+	detection_component.player_chase_started.connect(_on_player_chase_started)
+	detection_component.player_lost.connect(_on_player_lost)
+
 # ======================== ステート管理システム初期化 ========================
 
 ## ステート管理システムの初期化
@@ -186,12 +183,10 @@ func _initialize_state_system() -> void:
 
 # ======================== プレイヤー参照管理 ========================
 
-## プレイヤー参照を取得（弱参照から実体を取得）
+## プレイヤー参照を取得（DetectionComponentから取得）
 func get_player() -> Node2D:
-	if player_ref:
-		var player_instance = player_ref.get_ref()
-		if player_instance:
-			return player_instance as Node2D
+	if detection_component:
+		return detection_component.get_player()
 	return null
 
 ## 状態遷移
@@ -217,30 +212,25 @@ func _physics_process(delta: float) -> void:
 	if is_in_capture_mode:
 		return
 
-	# 画面内の場合のみプレイヤー検知処理を実行
-	if on_screen:
-		# hitboxと重なっているプレイヤーをチェック（1フレームに1回のみ）
-		overlapping_player = _get_overlapping_player()
-
-		# プレイヤーが範囲外にいる時間のカウント
-		var player: Node2D = get_player()
-		if player_out_of_range and player:
-			time_out_of_range += delta
-			# 遅延時間を超えたらプレイヤーを見失う
-			if time_out_of_range >= lose_sight_delay:
-				_lose_player()
-
 	# 視界の更新（間引き処理、画面外でも実行して形状を更新）
-	vision_update_counter += 1
-	if vision_update_counter >= vision_update_interval:
-		vision_update_counter = 0
-		_update_vision()
+	if vision_component:
+		var is_detecting: bool = detection_component.is_player_tracked()
+		vision_component.update_vision(is_detecting)
+
+	# 画面内の場合のみプレイヤー検知処理を実行
+	var current_overlapping_player: Node2D = null
+	if on_screen and detection_component:
+		# hitboxと重なっているプレイヤーをチェック（1フレームに1回のみ）
+		current_overlapping_player = detection_component.check_overlapping_player()
+
+		# プレイヤーが範囲外にいる時間のカウント（見失い処理）
+		detection_component.handle_lose_sight_timer(delta)
 
 	# 画面内の場合のみキャプチャ処理を実行
-	if on_screen and overlapping_player:
+	if on_screen and current_overlapping_player:
 		# hitboxがplayerを検知した場合、動きを止める
 		velocity.x = 0.0
-		_try_capture_player(overlapping_player)
+		_try_capture_player(current_overlapping_player)
 	elif current_state:
 		# プレイヤーと重なっていない場合のみステート処理を実行
 		current_state.physics_update(delta)
@@ -248,93 +238,16 @@ func _physics_process(delta: float) -> void:
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
 
-# ======================== プレイヤー検知と追跡 ========================
+# ======================== コンポーネントシグナルハンドラ ========================
 
-## 視界判定用のRayCast2Dを生成
-func _setup_vision_raycasts() -> void:
-	if not detection_area:
-		return
-
-	# 既存のRayCastをクリア
-	for raycast in raycasts:
-		raycast.queue_free()
-	raycasts.clear()
-
-	# 扇形の角度範囲でRayCastを生成
-	for i in range(vision_ray_count):
-		var raycast: RayCast2D = RayCast2D.new()
-		# 角度を計算（-vision_angle から +vision_angle まで）
-		var angle_step: float = (vision_angle * 2.0) / float(vision_ray_count - 1) if vision_ray_count > 1 else 0.0
-		var angle_deg: float = -vision_angle + (angle_step * float(i))
-		var angle_rad: float = deg_to_rad(angle_deg)
-
-		# RayCastの方向を設定
-		raycast.target_position = Vector2(cos(angle_rad) * vision_distance, sin(angle_rad) * vision_distance)
-		# コリジョンマスクを設定（壁やプラットフォームのレイヤー1を検知）
-		raycast.collision_mask = 1
-		raycast.enabled = true
-		raycast.visible = false
-
-		# DetectionAreaの子として追加
-		detection_area.add_child(raycast)
-		raycasts.append(raycast)
-
-## 視界を更新（RayCastの衝突判定を行い、VisionShapeを更新）
-func _update_vision() -> void:
-	if not vision_shape or not detection_collision or raycasts.is_empty():
-		return
-
-	# 新しいpolygonを構築
-	var new_polygon: PackedVector2Array = PackedVector2Array([Vector2.ZERO])
-
-	# 各RayCastの衝突点を収集
-	for raycast in raycasts:
-		# RayCastの衝突判定を強制的に更新
-		raycast.force_raycast_update()
-		if raycast.is_colliding():
-			# 衝突した場合は衝突点を使用
-			new_polygon.append(detection_area.to_local(raycast.get_collision_point()))
-		else:
-			# 衝突しなかった場合は最大距離の点を使用
-			new_polygon.append(raycast.target_position)
-
-	# VisionShapeとDetectionCollisionのpolygonを更新
-	vision_shape.polygon = new_polygon
-	detection_collision.polygon = new_polygon
-	# 検知中の場合は色を変更（HitboxCollisionと同じ色）
-	vision_shape.color = Color(0.858824, 0.305882, 0.501961, 0.419608) if get_player() != null else Color(0.309804, 0.65098, 0.835294, 0.2)
-
-## hitboxと重なっているプレイヤーを取得
-func _get_overlapping_player() -> Node2D:
-	if not hitbox or not hitbox.monitoring:
-		return null
-
-	# プレイヤーのHurtboxとの重なりをチェック
-	for area in hitbox.get_overlapping_areas():
-		# Hurtboxの親ノードを取得
-		var parent_node: Node = area.get_parent()
-		# 親ノードがプレイヤーグループに所属しているか確認
-		if parent_node and parent_node.is_in_group("player"):
-			return parent_node
-
-	return null
-
-## 範囲外フラグをリセット（共通処理）
-func _reset_out_of_range_flags() -> void:
-	player_out_of_range = false
-	time_out_of_range = 0.0
-
-## プレイヤーの追跡を開始（共通処理）
-func _start_chasing_player(player_node: Node2D) -> void:
-	player_ref = weakref(player_node)
-	_reset_out_of_range_flags()
+## プレイヤーの追跡を開始（DetectionComponentのシグナルから呼び出される）
+func _on_player_chase_started(player_node: Node2D) -> void:
 	change_state("CHASE")
+	# 継承先で追加処理を行うための仮想関数
+	_on_player_detected(player_node)
 
-## プレイヤーを見失う処理
-func _lose_player() -> void:
-	# プレイヤー参照をnullにする前に保存
-	var lost_player: Node2D = get_player()
-	player_ref = null
+## プレイヤーを見失う処理（DetectionComponentのシグナルから呼び出される）
+func _on_player_lost(lost_player: Node2D) -> void:
 	velocity.x = 0.0
 	# 待機状態へ移行
 	change_state("IDLE")
@@ -342,27 +255,24 @@ func _lose_player() -> void:
 	if not is_on_wall():
 		hit_wall = false
 		distance_since_collision = 0.0
-	# 範囲外フラグをリセット
-	_reset_out_of_range_flags()
-	# 継承先で追加処理を行うための仮想関数
-	_on_player_lost(lost_player)
+	# 継承先で追加処理を行うための仮想関数（元の_on_player_lostを呼び出す）
+	_on_player_lost_override(lost_player)
 
 # ======================== Hitboxによるプレイヤー検知 ========================
 
 ## キャプチャ処理を試行
 func _try_capture_player(player_node: Node2D) -> void:
 	# プレイヤーを追跡していない場合は、追跡を開始してCHASE状態に遷移
-	if not get_player():
-		_start_chasing_player(player_node)
+	if not detection_component.is_player_tracked():
+		detection_component.start_chasing_player(player_node)
 
 	# クールダウン中は処理しない
-	var current_time: float = Time.get_unix_time_from_system()
-	if current_time - last_capture_time < capture_cooldown:
+	if detection_component.is_capture_on_cooldown():
 		return
 
 	# 実際にキャプチャを適用した場合のみタイマーを更新
 	if apply_capture_to_player(player_node):
-		last_capture_time = current_time
+		detection_component.record_capture()
 
 ## プレイヤーにキャプチャを適用
 func apply_capture_to_player(body: Node2D) -> bool:
@@ -480,40 +390,31 @@ func _on_screen_entered() -> void:
 ## 画面外に出た時の処理
 func _on_screen_exited() -> void:
 	on_screen = false
-	# プレイヤー検知をクリア
-	overlapping_player = null
 	# hitboxとhurtboxのみ無効化
 	_disable_collision_areas()
 	# detection_areaのmonitoringを無効化（視覚的には表示されたまま）
 	if detection_area:
 		detection_area.monitoring = false
 	# プレイヤー追跡を解除
-	if get_player():
-		player_ref = null
+	if detection_component and detection_component.is_player_tracked():
+		detection_component.clear_player()
 		# 追跡中だった場合はIDLE状態に戻る
 		change_state("IDLE")
-		# 範囲外フラグをリセット
-		_reset_out_of_range_flags()
-	# 視界の色をリセット（検知状態の色をクリア）
-	_update_vision()
 
 # ======================== 検知エリアシグナルハンドラ ========================
 
 ## 検知エリアに入った時の処理（継承先でオーバーライド可能）
 func _on_detection_area_body_entered(body: Node2D) -> void:
 	# プレイヤーグループのボディのみ処理
-	if body.is_in_group("player"):
-		_start_chasing_player(body)
-		# 継承先で追加処理を行うための仮想関数
-		_on_player_detected(body)
+	if body.is_in_group("player") and detection_component:
+		detection_component.start_chasing_player(body)
 
 ## 検知エリアから出た時の処理（継承先でオーバーライド可能）
 func _on_detection_area_body_exited(body: Node2D) -> void:
 	# プレイヤーグループのボディのみ処理
-	if body.is_in_group("player"):
+	if body.is_in_group("player") and detection_component:
 		# 範囲外フラグを立てて時間のカウントを開始
-		player_out_of_range = true
-		time_out_of_range = 0.0
+		detection_component.mark_player_out_of_range()
 
 # ======================== 仮想関数（継承先でオーバーライド） ========================
 
@@ -522,7 +423,7 @@ func _on_player_detected(_body: Node2D) -> void:
 	pass
 
 ## プレイヤーを見失った時の追加処理（継承先でオーバーライド）
-func _on_player_lost(_body: Node2D) -> void:
+func _on_player_lost_override(_body: Node2D) -> void:
 	pass
 
 # ======================== エネミーの有効化/無効化 ========================
@@ -675,6 +576,17 @@ func _exit_tree() -> void:
 		if detection_area.body_exited.is_connected(_on_detection_area_body_exited):
 			detection_area.body_exited.disconnect(_on_detection_area_body_exited)
 
+	# コンポーネントのシグナル切断とクリーンアップ
+	if detection_component:
+		if detection_component.player_chase_started.is_connected(_on_player_chase_started):
+			detection_component.player_chase_started.disconnect(_on_player_chase_started)
+		if detection_component.player_lost.is_connected(_on_player_lost):
+			detection_component.player_lost.disconnect(_on_player_lost)
+		detection_component.cleanup()
+
+	if vision_component:
+		vision_component.cleanup()
+
 	# 参照のクリア
-	player_ref = null
-	overlapping_player = null
+	vision_component = null
+	detection_component = null
