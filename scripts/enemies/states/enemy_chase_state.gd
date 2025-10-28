@@ -51,7 +51,7 @@ func physics_update(delta: float) -> void:
 		# 壁の法線方向（壁から離れる方向）に移動
 		var wall_normal: Vector2 = enemy.get_wall_normal()
 		var escape_direction: float = sign(wall_normal.x)
-		apply_movement(escape_direction, enemy.move_speed)
+		apply_movement(escape_direction, enemy.chase_move_speed)
 
 		# 移動距離を更新
 		enemy.distance_since_collision += enemy.global_position.distance_to(previous_position)
@@ -62,7 +62,7 @@ func physics_update(delta: float) -> void:
 			enemy.distance_since_collision = 0.0
 	else:
 		# プレイヤーの方向に移動
-		apply_movement(direction, enemy.move_speed)
+		apply_movement(direction, enemy.chase_move_speed)
 
 	# 次フレームのために現在位置を記録
 	previous_position = enemy.global_position

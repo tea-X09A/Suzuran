@@ -37,11 +37,15 @@ var animation_state_machine: AnimationNodeStateMachinePlayback = null
 @export var enemy_id: String = ""
 ## 最大HP
 @export var max_hp: int = 5
+## 敵同士のノックバック伝播時の力（ノックバック状態の敵が他の敵に衝突した際に適用）
+@export var knockback_transfer_force: float = 300.0
 
 # ======================== 状態管理変数 ========================
 
-## 移動速度
-var move_speed: float = 50.0
+## パトロール時の移動速度
+var patrol_move_speed: float = 50.0
+## チェイス時の移動速度（パトロール速度の2倍がデフォルト）
+var chase_move_speed: float = 100.0
 ## パトロール範囲（初期位置からの距離）
 var patrol_range: float = 100.0
 ## 待機時間（秒）
@@ -241,6 +245,46 @@ func _physics_process(delta: float) -> void:
 
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
+
+	# ノックバック状態の場合、敵同士の衝突をチェックして伝播
+	if current_state == state_instances["KNOCKBACK"]:
+		_handle_knockback_enemy_collision()
+
+# ======================== 敵同士のノックバック伝播処理 ========================
+
+## ノックバック状態での敵同士の衝突を処理し、ノックバックを伝播
+func _handle_knockback_enemy_collision() -> void:
+	# 全ての衝突をチェック
+	for i in range(get_slide_collision_count()):
+		var collision: KinematicCollision2D = get_slide_collision(i)
+		var collider: Object = collision.get_collider()
+
+		# 衝突相手が敵かチェック
+		if not collider is Enemy:
+			continue
+
+		var other_enemy: Enemy = collider as Enemy
+
+		# 相手がすでにノックバック状態の場合はスキップ（無限ループ防止）
+		if other_enemy.current_state == other_enemy.state_instances["KNOCKBACK"]:
+			continue
+
+		# ノックバック方向を計算（自分の速度の方向を使用）
+		var knockback_direction: Vector2 = knockback_velocity.normalized()
+		if knockback_direction.length() < 0.1:
+			# 速度がほぼゼロの場合、衝突法線を使用
+			knockback_direction = collision.get_normal() * -1.0
+
+		# ノックバックを適用（伝播用の力を使用）
+		# 水平方向と垂直方向の力を設定
+		var horizontal_force: float = knockback_direction.x * knockback_transfer_force
+		var vertical_force: float = -100.0  # 上方向への力
+		var transfer_velocity: Vector2 = Vector2(horizontal_force, vertical_force)
+
+		# ノックバック状態に遷移
+		other_enemy.change_state("KNOCKBACK")
+		# ノックバック速度を設定
+		other_enemy.knockback_velocity = transfer_velocity
 
 # ======================== コンポーネントシグナルハンドラ ========================
 

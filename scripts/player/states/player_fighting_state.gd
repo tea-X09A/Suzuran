@@ -12,8 +12,7 @@ var fighting_timer: float = 0.0
 var is_fighting_active: bool = false
 var started_airborne: bool = false  # 状態開始時に空中にいたかのフラグ
 var damage: int = 3  # ダメージ値
-var has_hit: bool = false  # 攻撃がヒットしたかのフラグ
-var hit_enemy: Node = null  # 攻撃を当てた敵への参照（シグナル接続用）
+var hit_enemies: Array[WeakRef] = []  # 攻撃済みの敵を記録（多段ヒット防止＆複数敵攻撃対応・weakrefでメモリリーク防止）
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
@@ -30,9 +29,8 @@ func initialize_state() -> void:
 	fighting_timer = get_parameter("move_fighting_duration")
 	started_airborne = not player.is_grounded  # 開始時の空中状態を記録
 
-	# ヒットフラグと敵参照をリセット
-	has_hit = false
-	hit_enemy = null
+	# 攻撃済み敵配列をクリア
+	hit_enemies.clear()
 
 	# ダメージ値の取得
 	damage = PlayerParameters.get_parameter(player.condition, "fighting_damage")
@@ -58,11 +56,18 @@ func cleanup_state() -> void:
 	if fighting_hitbox and fighting_hitbox.area_entered.is_connected(_on_fighting_hitbox_area_entered):
 		fighting_hitbox.area_entered.disconnect(_on_fighting_hitbox_area_entered)
 
-	# 敵のノックバック壁衝突シグナルを切断（メモリリーク防止）
-	if hit_enemy and hit_enemy.has_signal("knockback_wall_collision"):
-		if hit_enemy.knockback_wall_collision.is_connected(_on_enemy_knockback_wall_collision):
-			hit_enemy.knockback_wall_collision.disconnect(_on_enemy_knockback_wall_collision)
-	hit_enemy = null
+	# 全ての敵のシグナルを切断（メモリリーク防止）
+	for enemy_ref in hit_enemies:
+		var enemy: Node = enemy_ref.get_ref()
+		if enemy:
+			# knockback_wall_collisionシグナルの切断
+			if enemy.has_signal("knockback_wall_collision"):
+				if enemy.knockback_wall_collision.is_connected(_on_enemy_knockback_wall_collision):
+					enemy.knockback_wall_collision.disconnect(_on_enemy_knockback_wall_collision)
+			# tree_exitingシグナルの切断（ステートが先に終了する場合のメモリリーク防止）
+			if enemy.tree_exiting.is_connected(_on_enemy_tree_exiting):
+				enemy.tree_exiting.disconnect(_on_enemy_tree_exiting)
+	hit_enemies.clear()
 
 	end_fighting()
 
@@ -140,34 +145,51 @@ func _on_fighting_animation_finished() -> void:
 
 ## FightingHitboxがArea2D（敵のHurtbox）と衝突した時の処理
 func _on_fighting_hitbox_area_entered(area: Area2D) -> void:
-	# 既にヒットしている場合は処理しない（多段ヒット防止）
-	if has_hit:
-		return
-
 	# エリアの親ノードを取得
 	var parent_node: Node = area.get_parent()
 
 	# 親ノードがenemiesグループに所属しているか確認
 	if parent_node and parent_node.is_in_group("enemies"):
+		# 既にこの敵を攻撃済みの場合は処理しない（多段ヒット防止）
+		if _is_enemy_already_hit(parent_node):
+			return
+
 		# 敵がtake_damageメソッドを持っているか確認
 		if parent_node.has_method("take_damage"):
 			# プレイヤーから敵への方向を計算
 			var knockback_direction: Vector2 = (parent_node.global_position - player.global_position).normalized()
 			# ダメージを与える（FightingHitboxを攻撃元として渡す）
 			parent_node.take_damage(damage, knockback_direction, fighting_hitbox)
-			# ヒットフラグを立てる
-			has_hit = true
-			# 敵への参照を保存
-			hit_enemy = parent_node
+			# 攻撃済み敵配列に追加（weakrefで循環参照を防止）
+			hit_enemies.append(weakref(parent_node))
 			# 敵のノックバック壁衝突シグナルに接続
 			if parent_node.has_signal("knockback_wall_collision"):
 				if not parent_node.knockback_wall_collision.is_connected(_on_enemy_knockback_wall_collision):
 					parent_node.knockback_wall_collision.connect(_on_enemy_knockback_wall_collision)
+			# 敵が削除される際にシグナルを切断するための接続
+			if not parent_node.tree_exiting.is_connected(_on_enemy_tree_exiting.bind(parent_node)):
+				parent_node.tree_exiting.connect(_on_enemy_tree_exiting.bind(parent_node))
 
 ## 敵がノックバック中に壁に衝突した時の処理
 func _on_enemy_knockback_wall_collision() -> void:
 	# プレイヤーの水平方向の前進を停止
 	player.velocity.x = 0.0
+
+## 敵が削除される際のコールバック（メモリリーク防止）
+func _on_enemy_tree_exiting(enemy: Node) -> void:
+	# シグナルの切断（敵が存在する間に切断）
+	if enemy.has_signal("knockback_wall_collision"):
+		if enemy.knockback_wall_collision.is_connected(_on_enemy_knockback_wall_collision):
+			enemy.knockback_wall_collision.disconnect(_on_enemy_knockback_wall_collision)
+	# tree_exiting自体の切断は不要（削除されるため）
+
+## 敵が既に攻撃済みかチェック（weakrefから実体を取得）
+func _is_enemy_already_hit(enemy: Node) -> bool:
+	for enemy_ref in hit_enemies:
+		var hit_enemy: Node = enemy_ref.get_ref()
+		if hit_enemy == enemy:
+			return true
+	return false
 
 # ======================== 状態遷移ヘルパー ========================
 

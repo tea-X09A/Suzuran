@@ -64,7 +64,7 @@ func _patrol_movement() -> void:
 		enemy.change_state("IDLE")
 	else:
 		# 目標位置へ移動
-		apply_movement(direction, enemy.move_speed)
+		apply_movement(direction, enemy.patrol_move_speed)
 		# 進もうとしている方向を記録
 		enemy.last_movement_direction = direction
 
