@@ -1,6 +1,6 @@
 ## プレイヤー検知管理コンポーネント
 ## プレイヤー検知、追跡、キャプチャクールダウン管理を提供
-class_name DetectionComponent
+class_name EnemyDetectionComponent
 extends RefCounted
 
 # ======================== シグナル定義 ========================

@@ -1,5 +1,5 @@
 class_name EnemyKnockbackState
-extends BaseEnemyState
+extends EnemyBaseState
 
 # ======================== 変数定義 ========================
 

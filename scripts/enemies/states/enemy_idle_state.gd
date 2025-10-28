@@ -1,5 +1,5 @@
 class_name EnemyIdleState
-extends BaseEnemyState
+extends EnemyBaseState
 
 # ======================== 状態初期化・クリーンアップ ========================
 

@@ -1,5 +1,5 @@
-class_name JumpState
-extends BaseState
+class_name PlayerJumpState
+extends PlayerBaseState
 
 # ======================== 変数定義 ========================
 

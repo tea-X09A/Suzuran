@@ -87,7 +87,7 @@ var collision_component = null
 ## ステートインスタンス辞書
 var state_instances: Dictionary = {}
 ## 現在のアクティブステート
-var current_state: BaseEnemyState
+var current_state: EnemyBaseState
 
 # ======================== 初期化処理 ========================
 
@@ -140,26 +140,26 @@ func _initialize_animation_tree() -> void:
 
 ## コンポーネントの初期化
 func _initialize_components() -> void:
-	# VisionComponentの初期化
-	vision_component = VisionComponent.new(self, detection_area, vision_shape, detection_collision)
+	# EnemyVisionComponentの初期化
+	vision_component = EnemyVisionComponent.new(self, detection_area, vision_shape, detection_collision)
 	vision_component.set_vision_parameters(20, 509.0, 10.0)
 	vision_component.initialize()
 
-	# DetectionComponentの初期化
-	detection_component = DetectionComponent.new(self, hitbox)
+	# EnemyDetectionComponentの初期化
+	detection_component = EnemyDetectionComponent.new(self, hitbox)
 	detection_component.lose_sight_delay = 2.0
 	detection_component.capture_cooldown = 0.5
 
-	# HealthComponentの初期化
-	health_component = HealthComponent.new(self)
+	# EnemyHealthComponentの初期化
+	health_component = EnemyHealthComponent.new(self)
 	health_component.initialize(max_hp, knockback_force)
 
-	# CaptureComponentの初期化
-	capture_component = CaptureComponent.new(self)
+	# EnemyCaptureComponentの初期化
+	capture_component = EnemyCaptureComponent.new(self)
 	capture_component.initialize(enemy_id)
 
-	# CollisionComponentの初期化
-	collision_component = CollisionComponent.new(self, hitbox, hurtbox)
+	# EnemyCollisionComponentの初期化
+	collision_component = EnemyCollisionComponent.new(self, hitbox, hurtbox)
 	collision_component.initialize()
 
 	# コンポーネントのシグナルに接続
@@ -187,7 +187,7 @@ func _initialize_state_system() -> void:
 
 # ======================== プレイヤー参照管理 ========================
 
-## プレイヤー参照を取得（DetectionComponentから取得）
+## プレイヤー参照を取得（EnemyDetectionComponentから取得）
 func get_player() -> Node2D:
 	if detection_component:
 		return detection_component.get_player()
@@ -199,7 +199,7 @@ func change_state(new_state_name: String) -> void:
 		print("[Enemy] 警告: 存在しないステート: ", new_state_name)
 		return
 
-	var new_state: BaseEnemyState = state_instances[new_state_name]
+	var new_state: EnemyBaseState = state_instances[new_state_name]
 	# 前のステートのクリーンアップ
 	if current_state:
 		current_state.cleanup_state()
@@ -244,13 +244,13 @@ func _physics_process(delta: float) -> void:
 
 # ======================== コンポーネントシグナルハンドラ ========================
 
-## プレイヤーの追跡を開始（DetectionComponentのシグナルから呼び出される）
+## プレイヤーの追跡を開始（EnemyDetectionComponentのシグナルから呼び出される）
 func _on_player_chase_started(player_node: Node2D) -> void:
 	change_state("CHASE")
 	# 継承先で追加処理を行うための仮想関数
 	_on_player_detected(player_node)
 
-## プレイヤーを見失う処理（DetectionComponentのシグナルから呼び出される）
+## プレイヤーを見失う処理（EnemyDetectionComponentのシグナルから呼び出される）
 func _on_player_lost(lost_player: Node2D) -> void:
 	velocity.x = 0.0
 	# 待機状態へ移行
@@ -262,12 +262,12 @@ func _on_player_lost(lost_player: Node2D) -> void:
 	# 継承先で追加処理を行うための仮想関数（元の_on_player_lostを呼び出す）
 	_on_player_lost_override(lost_player)
 
-## HP変更時の処理（HealthComponentのシグナルから呼び出される）
+## HP変更時の処理（EnemyHealthComponentのシグナルから呼び出される）
 func _on_health_changed(_current_hp: int, _max_hp: int) -> void:
 	# 継承先で追加処理を行うための仮想関数
 	pass
 
-## 死亡時の処理（HealthComponentのシグナルから呼び出される）
+## 死亡時の処理（EnemyHealthComponentのシグナルから呼び出される）
 func _on_died() -> void:
 	# コリジョンを無効化
 	if collision_component:
@@ -277,17 +277,17 @@ func _on_died() -> void:
 	# エネミーを削除
 	queue_free()
 
-## ノックバック適用時の処理（HealthComponentのシグナルから呼び出される）
+## ノックバック適用時の処理（EnemyHealthComponentのシグナルから呼び出される）
 func _on_knockback_applied(_knockback_vel: Vector2, _direction_to_face: float) -> void:
 	# ノックバック状態に遷移
 	change_state("KNOCKBACK")
 
-## キャプチャ状態開始時の処理（CaptureComponentのシグナルから呼び出される）
+## キャプチャ状態開始時の処理（EnemyCaptureComponentのシグナルから呼び出される）
 func _on_capture_state_entered() -> void:
 	# 共通の無効化処理を呼び出す
 	disable()
 
-## キャプチャ状態終了時の処理（CaptureComponentのシグナルから呼び出される）
+## キャプチャ状態終了時の処理（EnemyCaptureComponentのシグナルから呼び出される）
 func _on_capture_state_exited() -> void:
 	# 共通の有効化処理を呼び出す
 	enable()

@@ -1,4 +1,4 @@
-class_name BaseState
+class_name PlayerBaseState
 extends RefCounted
 
 # ======================== 定数定義 ========================

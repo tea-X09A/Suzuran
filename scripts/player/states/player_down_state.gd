@@ -1,5 +1,5 @@
-class_name DownState
-extends BaseState
+class_name PlayerDownState
+extends PlayerBaseState
 
 signal down_finished
 

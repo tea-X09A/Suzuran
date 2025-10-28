@@ -1,6 +1,6 @@
 ## 視界管理コンポーネント
 ## RayCast2Dベースの視界判定システムを提供
-class_name VisionComponent
+class_name EnemyVisionComponent
 extends RefCounted
 
 # ======================== シグナル定義 ========================

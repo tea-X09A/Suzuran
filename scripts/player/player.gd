@@ -59,9 +59,9 @@ var dodge_recovery_time: float = 0.0
 ## ステートインスタンス辞書
 var state_instances: Dictionary = {}
 ## 現在のアクティブステート
-var current_state: BaseState
+var current_state: PlayerBaseState
 ## DownStateへの参照（頻繁にアクセスするためキャッシュ）
-var down_state: DownState
+var down_state: PlayerDownState
 
 # ======================== コンポーネント ========================
 
@@ -183,22 +183,22 @@ func _initialize_animation_system() -> void:
 ## ステート管理システムの初期化
 func _initialize_state_system() -> void:
 	# 全ステートインスタンスを作成
-	state_instances["IDLE"] = IdleState.new(self)
-	state_instances["WALK"] = WalkState.new(self)
-	state_instances["RUN"] = RunState.new(self)
-	state_instances["CLOSING"] = ClosingState.new(self)
-	state_instances["DODGING"] = DodgingState.new(self)
-	state_instances["JUMP"] = JumpState.new(self)
-	state_instances["FALL"] = FallState.new(self)
-	state_instances["SQUAT"] = SquatState.new(self)
-	state_instances["FIGHTING"] = FightingState.new(self)
-	state_instances["SHOOTING"] = ShootingState.new(self)
-	state_instances["KNOCKBACK"] = KnockbackState.new(self)
-	state_instances["DOWN"] = DownState.new(self)
-	state_instances["CAPTURE"] = CaptureState.new(self)
+	state_instances["IDLE"] = PlayerIdleState.new(self)
+	state_instances["WALK"] = PlayerWalkState.new(self)
+	state_instances["RUN"] = PlayerRunState.new(self)
+	state_instances["CLOSING"] = PlayerClosingState.new(self)
+	state_instances["DODGING"] = PlayerDodgingState.new(self)
+	state_instances["JUMP"] = PlayerJumpState.new(self)
+	state_instances["FALL"] = PlayerFallState.new(self)
+	state_instances["SQUAT"] = PlayerSquatState.new(self)
+	state_instances["FIGHTING"] = PlayerFightingState.new(self)
+	state_instances["SHOOTING"] = PlayerShootingState.new(self)
+	state_instances["KNOCKBACK"] = PlayerKnockbackState.new(self)
+	state_instances["DOWN"] = PlayerDownState.new(self)
+	state_instances["CAPTURE"] = PlayerCaptureState.new(self)
 
 	# 頻繁にアクセスするDownStateの参照をキャッシュ
-	down_state = state_instances["DOWN"] as DownState
+	down_state = state_instances["DOWN"] as PlayerDownState
 
 	# 初期状態をIDLEに設定
 	current_state = state_instances["IDLE"]
@@ -308,7 +308,7 @@ func change_state(new_state_name: String) -> void:
 	if not state_instances.has(new_state_name):
 		return
 
-	var new_state: BaseState = state_instances[new_state_name]
+	var new_state: PlayerBaseState = state_instances[new_state_name]
 	# 前のステートのクリーンアップ
 	if current_state:
 		current_state.cleanup_state()

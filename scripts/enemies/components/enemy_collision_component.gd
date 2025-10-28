@@ -1,6 +1,6 @@
 ## コリジョン管理コンポーネント
 ## HitboxとHurtboxの有効化/無効化、画面内外による自動制御を提供
-class_name CollisionComponent
+class_name EnemyCollisionComponent
 extends RefCounted
 
 # ======================== シグナル定義 ========================

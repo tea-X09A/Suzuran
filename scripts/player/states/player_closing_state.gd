@@ -1,5 +1,5 @@
-class_name ClosingState
-extends BaseState
+class_name PlayerClosingState
+extends PlayerBaseState
 
 # ======================== 状態初期化・クリーンアップ ========================
 

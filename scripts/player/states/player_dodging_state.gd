@@ -1,5 +1,5 @@
-class_name DodgingState
-extends BaseState
+class_name PlayerDodgingState
+extends PlayerBaseState
 
 # ======================== 状態初期化・クリーンアップ ========================
 

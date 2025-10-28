@@ -1,5 +1,5 @@
-class_name ShootingState
-extends BaseState
+class_name PlayerShootingState
+extends PlayerBaseState
 
 # ======================== 射撃パラメータ定義 ========================
 # KunaiPoolManagerから取得するため、定数は不要

@@ -1,5 +1,5 @@
-class_name KnockbackState
-extends BaseState
+class_name PlayerKnockbackState
+extends PlayerBaseState
 
 # ======================== 状態初期化・クリーンアップ ========================
 

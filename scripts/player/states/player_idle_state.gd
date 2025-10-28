@@ -1,5 +1,5 @@
-class_name IdleState
-extends BaseState
+class_name PlayerIdleState
+extends PlayerBaseState
 
 # ======================== 状態初期化・クリーンアップ ========================
 

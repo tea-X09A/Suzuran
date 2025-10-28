@@ -1,5 +1,5 @@
-class_name FallState
-extends BaseState
+class_name PlayerFallState
+extends PlayerBaseState
 
 # ======================== 状態初期化・クリーンアップ ========================
 

@@ -1,6 +1,6 @@
 ## キャプチャ管理コンポーネント
 ## プレイヤーのキャプチャロジック、アニメーション選択、キャプチャ状態管理を提供
-class_name CaptureComponent
+class_name EnemyCaptureComponent
 extends RefCounted
 
 # ======================== シグナル定義 ========================
@@ -51,7 +51,7 @@ func is_capturing() -> bool:
 ## @param player_node: プレイヤーノード
 ## @param detection_component: 検知コンポーネント
 ## @return: キャプチャ処理を実行した場合はtrue
-func try_capture_player(player_node: Node2D, detection_component: DetectionComponent) -> bool:
+func try_capture_player(player_node: Node2D, detection_component: EnemyDetectionComponent) -> bool:
 	# プレイヤーを追跡していない場合は、追跡を開始してCHASE状態に遷移
 	if not detection_component.is_player_tracked():
 		detection_component.start_chasing_player(player_node)

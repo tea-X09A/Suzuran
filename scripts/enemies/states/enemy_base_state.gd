@@ -1,6 +1,6 @@
 ## 敵のステートパターン基底クラス
 ## すべての敵ステートはこのクラスを継承して実装
-class_name BaseEnemyState
+class_name EnemyBaseState
 extends RefCounted
 
 # ======================== 基本参照 ========================

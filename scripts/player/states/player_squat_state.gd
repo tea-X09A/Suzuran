@@ -1,5 +1,5 @@
-class_name SquatState
-extends BaseState
+class_name PlayerSquatState
+extends PlayerBaseState
 
 # ======================== 状態初期化・クリーンアップ ========================
 

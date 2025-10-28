@@ -1,5 +1,5 @@
-class_name FightingState
-extends BaseState
+class_name PlayerFightingState
+extends PlayerBaseState
 
 # ======================== シグナル定義 ========================
 signal fighting_finished

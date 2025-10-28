@@ -32,7 +32,7 @@ func initialize(player: CharacterBody2D, initial_hp: int, initial_max_hp: int) -
 
 # ======================== 無敵状態チェック ========================
 
-## 無敵状態の確認（InvincibilityEffect と DownState を統合）
+## 無敵状態の確認（InvincibilityEffect と PlayerDownState を統合）
 ## @return bool 無敵状態かどうか
 func is_invincible() -> bool:
 	var player: CharacterBody2D = _player_ref.get_ref() as CharacterBody2D

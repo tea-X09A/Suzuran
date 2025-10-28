@@ -1,5 +1,5 @@
 class_name EnemyPatrolState
-extends BaseEnemyState
+extends EnemyBaseState
 
 # ======================== 変数定義 ========================
 

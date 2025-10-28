@@ -1,6 +1,6 @@
 ## HP管理コンポーネント
 ## HP、ダメージ処理、ノックバック、HPゲージ、死亡処理を管理
-class_name HealthComponent
+class_name EnemyHealthComponent
 extends RefCounted
 
 # ======================== シグナル定義 ========================

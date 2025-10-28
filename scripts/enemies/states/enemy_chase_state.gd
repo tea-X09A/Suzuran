@@ -1,5 +1,5 @@
 class_name EnemyChaseState
-extends BaseEnemyState
+extends EnemyBaseState
 
 # ======================== 変数定義 ========================
 
