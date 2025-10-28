@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://cvvb866p8u71i" path="res://assets/images/tilesets/tilesheet_complete.png" id="3_5kr0j"]
 [ext_resource type="PackedScene" uid="uid://daofj62a4corn" path="res://scenes/player/player.tscn" id="3_hghvf"]
 [ext_resource type="PackedScene" uid="uid://cm2ybmb8lcuey" path="res://scenes/backgrounds/level0_bg.tscn" id="4_1nvli"]
-[ext_resource type="PackedScene" uid="uid://ygpxc8s354rc" path="res://scenes/traps/trap_01.tscn" id="4_5kr0j"]
+[ext_resource type="PackedScene" uid="uid://ygpxc8s354rc" path="res://scenes/traps/trap.tscn" id="4_5kr0j"]
 [ext_resource type="PackedScene" uid="uid://cvn3qwq0tl42h" path="res://scenes/enemies/enemy_01.tscn" id="5_ry65h"]
 [ext_resource type="Script" uid="uid://c1mm1jl4mji8d" path="res://scripts/ui/health_gauge.gd" id="6_circular"]
 [ext_resource type="PackedScene" uid="uid://b7y8qr3m4n5p6" path="res://scenes/items/item.tscn" id="6_oem7y"]
@@ -336,7 +336,8 @@ tile_set = SubResource("TileSet_d0grl")
 position = Vector2(2632, -33)
 
 [node name="trap_01" parent="." instance=ExtResource("4_5kr0j")]
-position = Vector2(-499, -73)
+position = Vector2(2365, -73)
+effect_type = "down"
 
 [node name="Enemy" parent="." instance=ExtResource("5_ry65h")]
 position = Vector2(-256, 80)

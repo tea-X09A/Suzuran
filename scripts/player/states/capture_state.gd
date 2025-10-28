@@ -31,7 +31,8 @@ func initialize_state() -> void:
 	# 全てのenemyの移動をキャンセルし、その場で立ち止まらせる
 	EnemyManager.disable_all_enemies(player.get_tree())
 	# 全てのhitboxとhurtboxを無効化
-	player.disable_all_collision_boxes()
+	if player.collision_component:
+		player.collision_component.disable_all_collision_boxes()
 	# カメラ参照を取得してキャッシュ
 	_cache_camera_reference()
 	# カメラをズームイン
@@ -45,7 +46,8 @@ func cleanup_state() -> void:
 	# 全てのenemyを表示し、通常のパトロールを再開させる
 	EnemyManager.enable_all_enemies(player.get_tree())
 	# 全てのhitboxとhurtboxを再度有効化
-	player.enable_all_collision_boxes()
+	if player.collision_component:
+		player.collision_component.enable_all_collision_boxes()
 	# カメラをズームアウト
 	_set_camera_zoom(false)
 	# カメラ参照をクリア
@@ -172,16 +174,9 @@ func _apply_recovery_invincibility() -> void:
 
 ## CAPTURE状態時のEP増加処理
 func _update_hp_depletion(delta: float) -> void:
-	# 2秒ごとに1ずつEP増加
-	player.current_ep += delta * 0.5
-
-	# EPが32を超えないようにクランプ
-	if player.current_ep > 32.0:
-		player.current_ep = 32.0
-
-	# UIのEPゲージを更新
-	if player.ep_gauge:
-		player.ep_gauge.ep_progress = player.current_ep / 32.0
+	# 2秒ごとに1ずつEP増加（energy_componentを使用）
+	if player.energy_component:
+		player.energy_component.heal_ep(delta * 0.5)
 
 # ======================== カメラ制御処理 ========================
 

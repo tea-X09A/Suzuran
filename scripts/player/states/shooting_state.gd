@@ -77,7 +77,7 @@ func physics_update(delta: float) -> void:
 ## 射撃初期化処理
 func handle_shooting() -> void:
 	# 弾数チェック（弾がない場合は射撃をキャンセル）
-	if not player.has_ammo():
+	if not player.ammo_component or not player.ammo_component.has_ammo():
 		handle_action_end_transition()
 		return
 
@@ -100,7 +100,7 @@ func handle_shooting() -> void:
 ## 苦無生成処理
 func spawn_kunai() -> void:
 	# 弾数を消費
-	if not player.consume_ammo():
+	if not player.ammo_component or not player.ammo_component.consume_ammo():
 		return
 
 	# 現在の移動入力を取得

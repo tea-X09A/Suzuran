@@ -233,7 +233,7 @@ func can_transition_to_squat() -> bool:
 ## 攻撃入力チェック
 func is_fight_input() -> bool:
 	# examineエリア内ではこのアクションを抑制
-	if player.in_examine_area:
+	if player.examine_component and player.examine_component.is_in_examine_area():
 		return false
 
 	var fight_key: int = GameSettings.get_key_binding("fight")

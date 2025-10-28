@@ -21,22 +21,6 @@ var animation_tree_playback: AnimationNodeStateMachinePlayback = null
 ## 当たり判定用コリジョン
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
 
-# ======================== Hurtbox/Hitboxノード参照 ========================
-
-@onready var idle_hurtbox_collision: CollisionShape2D = $IdleHurtbox/IdleHurtboxCollision
-@onready var squat_hurtbox_collision: CollisionShape2D = $SquatHurtbox/SquatHurtboxCollision
-@onready var jump_hurtbox_collision: CollisionShape2D = $JumpHurtbox/JumpHurtboxCollision
-@onready var run_hurtbox_collision: CollisionShape2D = $RunHurtbox/RunHurtboxCollision
-@onready var fighting_hurtbox_collision: CollisionShape2D = $FightingHurtbox/FightingHurtboxCollision
-@onready var shooting_hurtbox_collision: CollisionShape2D = $ShootingHurtbox/ShootingHurtboxCollision
-@onready var knockback_hurtbox_collision: CollisionShape2D = $KnockBackHurtbox/KnockBackHurtboxCollision
-@onready var down_hurtbox_collision: CollisionShape2D = $DownHurtbox/DownHurtboxCollision
-@onready var fall_hurtbox_collision: CollisionShape2D = $FallHurtbox/FallHurtboxCollision
-@onready var walk_hurtbox_collision: CollisionShape2D = $WalkHurtbox/WalkHurtboxCollision
-@onready var fighting_hitbox_collision: CollisionShape2D = $FightingHitbox/FightingHitboxCollision
-@onready var closing_hurtbox_collision: CollisionShape2D = $ClosingHurtbox/ClosingHurtboxCollision
-@onready var dodging_hurtbox_collision: CollisionShape2D = $DodgingHurtbox/DodgingHurtboxCollision
-
 # ======================== エクスポート設定 ========================
 
 ## インスペクタで設定可能な初期変身状態
@@ -61,30 +45,12 @@ var is_grounded: bool = false
 var ignore_jump_horizontal_velocity: bool = false
 ## squat状態からキャンセルされたフラグ（squat遷移制限用）
 var squat_was_cancelled: bool = false
-## Hurtbox/Hitboxの初期X位置を保存（反転処理用）
-var original_box_positions: Dictionary = {}
 ## CAPTURE状態時に使用するアニメーション名（enemy.gdが動的に設定）
 var capture_animation_name: String = ""
-## HP残量（初期値3）
-var hp_count: int = 3
-## 現在のEP（初期値0、最大32）
-var current_ep: float = 0.0
-## UI EPゲージへの参照
-var ep_gauge: Control = null
-## ダメージ表記への参照
-var damage_number: DamageNumber = null
 ## 自動移動モード（遷移時の自動歩行用）
 var auto_move_mode: bool = false
-## 投擲物弾数（-1で無限）
-var ammo_count: int = -1
-## UI 弾倉ゲージへの参照
-var ammo_gauge: Control = null
 ## イベント中の入力無効化フラグ
 var disable_input: bool = false
-## Examine機能のインジケーター（ActionIndicator）
-var examine_indicator: ActionIndicator = null
-## Examineエリア内にいるかどうかのフラグ（エリア内では一部のアクション入力を抑制）
-var in_examine_area: bool = false
 ## 回避後の硬直時間（秒）
 var dodge_recovery_time: float = 0.0
 
@@ -97,6 +63,23 @@ var current_state: BaseState
 ## DownStateへの参照（頻繁にアクセスするためキャッシュ）
 var down_state: DownState
 
+# ======================== コンポーネント ========================
+
+## HP管理コンポーネント
+var health_component: PlayerHealthComponent = null
+## EP管理コンポーネント
+var energy_component: PlayerEnergyComponent = null
+## 弾数管理コンポーネント
+var ammo_component: PlayerAmmoComponent = null
+## UI管理コンポーネント
+var ui_component: PlayerUIComponent = null
+## Collision管理コンポーネント
+var collision_component: PlayerCollisionComponent = null
+## 状態データ管理コンポーネント
+var state_data_component: PlayerStateDataComponent = null
+## Examine管理コンポーネント
+var examine_component: ExamineComponent = null
+
 # ======================== 初期化処理 ========================
 
 ## プレイヤーの初期化（ノード準備完了時）
@@ -107,56 +90,45 @@ func _ready() -> void:
 	var is_loading_from_save: bool = SaveLoadManager and not SaveLoadManager.pending_player_data.is_empty()
 
 	if is_loading_from_save:
-		# セーブデータから復元
-		_restore_from_pending_data()
+		# セーブデータから復元（各コンポーネントはinitialize時に復元）
+		var state: Dictionary = SaveLoadManager.pending_player_data
+
+		# 変身状態を復元
+		if state.has("condition"):
+			condition = state["condition"]
+
+		# 座標を復元
+		if state.has("position_x") and state.has("position_y"):
+			position = Vector2(state["position_x"], state["position_y"])
+
+		# 向きを復元
+		if state.has("direction_x"):
+			direction_x = state["direction_x"]
 	else:
 		# 通常の初期化
 		condition = initial_condition
 
 	GRAVITY = ProjectSettings.get_setting("physics/2d/default_gravity")
 	_initialize_systems()
-	_initialize_ui()
-	_initialize_examine_indicator()
+	_initialize_health_component()
+	_initialize_energy_component()
+	_initialize_ammo_component()
+	_initialize_ui_component()
+	_initialize_state_data_component()
+	_initialize_examine_component()
 	_connect_debug_signals()
 
 	# ロード時の後処理
 	if is_loading_from_save:
 		# スプライトの向きを復元（システム初期化後に適用）
 		sprite_2d.flip_h = direction_x > 0.0
-		_update_box_positions(sprite_2d.flip_h)
+		if collision_component:
+			collision_component.update_box_positions(direction_x > 0.0)
 
 		# pending_player_dataをクリア
 		SaveLoadManager.pending_player_data.clear()
 		# フェードインを開始（完了を待つ）
 		await TransitionManager.fade_in()
-
-## pending_player_dataから状態を復元（_ready()で使用）
-func _restore_from_pending_data() -> void:
-	var state: Dictionary = SaveLoadManager.pending_player_data
-
-	# HPを復元
-	if state.has("hp_count"):
-		hp_count = state["hp_count"]
-
-	# EPを復元
-	if state.has("current_ep"):
-		current_ep = state["current_ep"]
-
-	# 弾数を復元
-	if state.has("ammo_count"):
-		ammo_count = state["ammo_count"]
-
-	# 変身状態を復元
-	if state.has("condition"):
-		condition = state["condition"]
-
-	# 座標を復元
-	if state.has("position_x") and state.has("position_y"):
-		position = Vector2(state["position_x"], state["position_y"])
-
-	# 向きを復元（@onready変数は_ready()後に利用可能なため、ここでは変数のみ保存）
-	if state.has("direction_x"):
-		direction_x = state["direction_x"]
 
 ## クリーンアップ処理
 func _exit_tree() -> void:
@@ -164,10 +136,29 @@ func _exit_tree() -> void:
 	if DebugManager and DebugManager.debug_value_changed.is_connected(_on_debug_value_changed):
 		DebugManager.debug_value_changed.disconnect(_on_debug_value_changed)
 
-	# Examineインジケーターの解放
-	if examine_indicator:
-		examine_indicator.queue_free()
-		examine_indicator = null
+	# 全コンポーネントのクリーンアップを配列で一括処理
+	var components: Array = [
+		examine_component,
+		health_component,
+		energy_component,
+		ammo_component,
+		ui_component,
+		collision_component,
+		state_data_component
+	]
+
+	for component in components:
+		if component and component.has_method("cleanup"):
+			component.cleanup()
+
+	# 各コンポーネントをnullに設定
+	examine_component = null
+	health_component = null
+	energy_component = null
+	ammo_component = null
+	ui_component = null
+	collision_component = null
+	state_data_component = null
 
 ## システムコンポーネントの初期化
 func _initialize_systems() -> void:
@@ -177,8 +168,8 @@ func _initialize_systems() -> void:
 	_initialize_animation_system()
 	# ステート管理システムの初期化
 	_initialize_state_system()
-	# Hurtbox/Hitboxの初期位置を保存
-	_initialize_box_positions()
+	# Collision管理コンポーネントの初期化
+	_initialize_collision_component()
 
 ## アニメーションシステムの初期化
 func _initialize_animation_system() -> void:
@@ -212,54 +203,66 @@ func _initialize_state_system() -> void:
 	# 初期状態をIDLEに設定
 	current_state = state_instances["IDLE"]
 
-## Hurtbox/Hitboxの初期X位置を保存
-func _initialize_box_positions() -> void:
-	original_box_positions["idle"] = idle_hurtbox_collision.position.x
-	original_box_positions["squat"] = squat_hurtbox_collision.position.x
-	original_box_positions["jump"] = jump_hurtbox_collision.position.x
-	original_box_positions["run"] = run_hurtbox_collision.position.x
-	original_box_positions["fighting_hurt"] = fighting_hurtbox_collision.position.x
-	original_box_positions["shooting"] = shooting_hurtbox_collision.position.x
-	original_box_positions["knockback"] = knockback_hurtbox_collision.position.x
-	original_box_positions["down"] = down_hurtbox_collision.position.x
-	original_box_positions["fall"] = fall_hurtbox_collision.position.x
-	original_box_positions["walk"] = walk_hurtbox_collision.position.x
-	original_box_positions["fighting_hit"] = fighting_hitbox_collision.position.x
-	original_box_positions["closing"] = closing_hurtbox_collision.position.x
-	original_box_positions["dodging"] = dodging_hurtbox_collision.position.x
+## CollisionComponentの初期化
+func _initialize_collision_component() -> void:
+	# CollisionComponent初期化（initialize内で自動的にCollisionBoxを取得・登録）
+	collision_component = PlayerCollisionComponent.new()
+	collision_component.initialize(self)
 
 	# 初期のsprite向きに基づいて位置を更新
-	_update_box_positions(sprite_2d.flip_h)
+	collision_component.update_box_positions(direction_x > 0.0)
 
-## Examine用インジケーターの初期化
-func _initialize_examine_indicator() -> void:
-	# ActionIndicatorインスタンスを作成
-	examine_indicator = ActionIndicator.new()
-	# Playerの子として追加
-	add_child(examine_indicator)
-	# 初期位置を設定
-	examine_indicator.update_position(sprite_2d)
+## HealthComponentの初期化
+func _initialize_health_component() -> void:
+	var save_data: Dictionary = SaveLoadManager.pending_player_data if SaveLoadManager else {}
+	var initial_hp: int = save_data.get("hp_count", 3)
 
-## UIシステムの初期化
-func _initialize_ui() -> void:
-	# "ui_layer"グループに属するCanvasLayerを検索
-	var ui_layers: Array = get_tree().get_nodes_in_group("ui_layer")
-	if ui_layers.is_empty():
-		push_warning("[Player] ui_layerグループに属するCanvasLayerが見つかりません。")
-		return
+	health_component = PlayerHealthComponent.new()
+	health_component.initialize(self, initial_hp, 3)
 
-	var canvas_layer: CanvasLayer = ui_layers[0] as CanvasLayer
-	if canvas_layer:
-		ep_gauge = canvas_layer.get_node_or_null("EPGauge")
-		if ep_gauge:
-			# HP値とEP値を初期化
-			ep_gauge.hp_value = hp_count
-			ep_gauge.ep_progress = current_ep / 32.0
+## EnergyComponentの初期化
+func _initialize_energy_component() -> void:
+	var save_data: Dictionary = SaveLoadManager.pending_player_data if SaveLoadManager else {}
+	var initial_ep: float = save_data.get("current_ep", 0.0)
 
-		ammo_gauge = canvas_layer.get_node_or_null("AmmoGauge")
-		if ammo_gauge:
-			# 弾数を初期化
-			ammo_gauge.ammo_count = ammo_count
+	energy_component = PlayerEnergyComponent.new()
+	energy_component.initialize(self, initial_ep, 32.0)
+
+## AmmoComponentの初期化
+func _initialize_ammo_component() -> void:
+	var save_data: Dictionary = SaveLoadManager.pending_player_data if SaveLoadManager else {}
+	var initial_ammo: int = save_data.get("ammo_count", -1)
+
+	ammo_component = PlayerAmmoComponent.new()
+	ammo_component.initialize(self, initial_ammo, 99)
+
+## ExamineComponentの初期化
+func _initialize_examine_component() -> void:
+	# ExamineComponent初期化
+	examine_component = ExamineComponent.new()
+	examine_component.initialize(self)
+
+## UIコンポーネントの初期化
+func _initialize_ui_component() -> void:
+	# UIComponent初期化
+	ui_component = PlayerUIComponent.new()
+	ui_component.initialize(self)
+
+	# 初期値設定
+	if health_component and energy_component and ammo_component:
+		ui_component.set_initial_values(
+			health_component.current_hp,
+			health_component.max_hp,
+			energy_component.current_ep,
+			energy_component.max_ep,
+			ammo_component.ammo_count
+		)
+
+## StateDataComponentの初期化
+func _initialize_state_data_component() -> void:
+	# StateDataComponent初期化
+	state_data_component = PlayerStateDataComponent.new()
+	state_data_component.initialize(self)
 
 # ======================== メイン処理ループ ========================
 
@@ -325,60 +328,13 @@ func update_sprite_direction(input_direction_x: float) -> void:
 		return
 
 	if input_direction_x != 0.0:
-		sprite_2d.flip_h = input_direction_x > 0.0
+		var is_facing_right: bool = input_direction_x > 0.0
+		sprite_2d.flip_h = is_facing_right
 		direction_x = input_direction_x
-		# Hurtbox/Hitboxの位置を反転
-		_update_box_positions(sprite_2d.flip_h)
 
-## Hurtbox/Hitboxの位置をspriteの向きに合わせて更新
-func _update_box_positions(is_facing_right: bool) -> void:
-	# 右向き（flip_h=true）の場合はX位置を反転、左向き（flip_h=false）の場合は元の位置
-	var flip_multiplier: float = -1.0 if is_facing_right else 1.0
-
-	# 全てのコリジョンボックスの位置を一括更新
-	var collision_boxes: Array[Dictionary] = [
-		{"collision": idle_hurtbox_collision, "key": "idle"},
-		{"collision": squat_hurtbox_collision, "key": "squat"},
-		{"collision": jump_hurtbox_collision, "key": "jump"},
-		{"collision": run_hurtbox_collision, "key": "run"},
-		{"collision": fighting_hurtbox_collision, "key": "fighting_hurt"},
-		{"collision": shooting_hurtbox_collision, "key": "shooting"},
-		{"collision": knockback_hurtbox_collision, "key": "knockback"},
-		{"collision": down_hurtbox_collision, "key": "down"},
-		{"collision": fall_hurtbox_collision, "key": "fall"},
-		{"collision": walk_hurtbox_collision, "key": "walk"},
-		{"collision": fighting_hitbox_collision, "key": "fighting_hit"},
-		{"collision": closing_hurtbox_collision, "key": "closing"},
-		{"collision": dodging_hurtbox_collision, "key": "dodging"}
-	]
-
-	for box in collision_boxes:
-		box.collision.position.x = original_box_positions[box.key] * flip_multiplier
-
-## 全てのCollision boxを有効化/無効化
-func set_all_collision_boxes_enabled(enabled: bool) -> void:
-	# 全てのhurtboxとhitboxを一括で有効化/無効化
-	idle_hurtbox_collision.disabled = not enabled
-	squat_hurtbox_collision.disabled = not enabled
-	jump_hurtbox_collision.disabled = not enabled
-	run_hurtbox_collision.disabled = not enabled
-	fighting_hurtbox_collision.disabled = not enabled
-	shooting_hurtbox_collision.disabled = not enabled
-	knockback_hurtbox_collision.disabled = not enabled
-	down_hurtbox_collision.disabled = not enabled
-	fall_hurtbox_collision.disabled = not enabled
-	walk_hurtbox_collision.disabled = not enabled
-	fighting_hitbox_collision.disabled = not enabled
-	closing_hurtbox_collision.disabled = not enabled
-	dodging_hurtbox_collision.disabled = not enabled
-
-## 全てのCollision boxを有効化
-func enable_all_collision_boxes() -> void:
-	set_all_collision_boxes_enabled(true)
-
-## 全てのCollision boxを無効化
-func disable_all_collision_boxes() -> void:
-	set_all_collision_boxes_enabled(false)
+		# CollisionComponent経由でBox位置を更新
+		if collision_component:
+			collision_component.update_box_positions(is_facing_right)
 
 # ======================== プロパティアクセサ ========================
 
@@ -406,53 +362,20 @@ func get_animation_tree() -> AnimationTree:
 
 ## 無敵状態の確認（trapから呼び出される）
 func is_invincible() -> bool:
-	# invincibility_effectによる無敵状態をチェック
-	if invincibility_effect and invincibility_effect.is_invincible:
-		return true
-
-	# down_stateによる無敵状態をチェック
-	if down_state:
-		return down_state.is_in_invincible_state()
+	if health_component:
+		return health_component.is_invincible()
 	return false
 
-## トラップからのダメージ処理
+## トラップからの効果処理（effect_typeに応じてknockback/down）
 func handle_trap_damage(effect_type: String, direction: Vector2, force: float) -> void:
-	# 無敵状態の場合は何もしない
-	if is_invincible():
-		return
-
-	if down_state:
-		# ダメージ適用（ダメージ量は現在使用していないため0）
-		down_state.handle_damage(0, effect_type, direction, force)
+	if health_component:
+		health_component.handle_trap_damage(effect_type, direction, force)
 
 ## 敵のhitboxとの衝突処理
 func handle_enemy_hit(enemy_direction: Vector2) -> bool:
-	# 無敵状態の場合は何もしない
-	if is_invincible():
-		return false
-
-	# knockback/down状態中の場合は無条件でCAPTURE状態へ
-	if down_state and (down_state.is_in_knockback_state() or down_state.is_in_knockback_landing_state()):
-		velocity = Vector2.ZERO
-		return false  # CAPTUREは敵側で処理する
-
-	# HPが残っている場合
-	if hp_count > 0:
-		# HPを1減らす
-		hp_count -= 1
-		# UIを更新
-		if ep_gauge:
-			ep_gauge.hp_value = hp_count
-
-		# ダメージ表記を表示
-		show_damage_number(-1)
-
-		# knockback処理（トラップのknockbackと同じ処理）
-		if down_state:
-			# knockbackエフェクトを適用（force=500.0はトラップと同じ）
-			down_state.handle_damage(0, "knockback", enemy_direction, 500.0)
-
-		return true
+	# HPが残っている場合はダメージ処理
+	if health_component and health_component.current_hp > 0:
+		return health_component.handle_enemy_hit(enemy_direction)
 
 	# HPが0の場合はCAPTURE状態へ
 	else:
@@ -460,69 +383,17 @@ func handle_enemy_hit(enemy_direction: Vector2) -> bool:
 		velocity = Vector2.ZERO
 		return false  # CAPTUREは敵側で処理する
 
-## ダメージ表記を表示
-func show_damage_number(damage: int) -> void:
-	# 既存のダメージ表記がある場合は削除
-	if damage_number and is_instance_valid(damage_number):
-		damage_number.queue_free()
-
-	# 新規作成
-	damage_number = DamageNumber.new()
-	damage_number.display_value = damage
-
-	# スプライトの中心付近に配置（ここから上方向へフェードアウト）
-	var sprite_height: float = 0.0
-	if sprite_2d and sprite_2d.texture:
-		sprite_height = sprite_2d.texture.get_height()
-	var offset_from_top: float = -20.0  # スプライト頂点からのオフセット（マイナスで下方向）
-	damage_number.position = Vector2(0, -(sprite_height / 2.0 + offset_from_top))
-
-	add_child(damage_number)
-
 # ======================== 回復処理 ========================
 
 ## EP回復処理（負の値を渡すとEPを減少させる）
 func heal_ep(amount: float) -> void:
-	# EPを増減（0.0～32.0の範囲に制限）
-	current_ep = clamp(current_ep + amount, 0.0, 32.0)
-
-	# UIを更新
-	if ep_gauge:
-		ep_gauge.ep_progress = current_ep / 32.0
+	if energy_component:
+		energy_component.heal_ep(amount)
 
 ## HP回復処理
 func heal_hp(amount: int) -> void:
-	# HPを回復（最大値3を超えないように）
-	hp_count = min(hp_count + amount, 3)
-
-	# UIを更新
-	if ep_gauge:
-		ep_gauge.hp_value = hp_count
-
-# ======================== 弾数管理 ========================
-
-## 弾数消費処理
-func consume_ammo() -> bool:
-	# 無限弾の場合は常に成功
-	if ammo_count < 0:
-		return true
-
-	# 弾数が足りない場合は失敗
-	if ammo_count <= 0:
-		return false
-
-	# 弾数を1減らす
-	ammo_count -= 1
-
-	# UIを更新
-	if ammo_gauge:
-		ammo_gauge.ammo_count = ammo_count
-
-	return true
-
-## 弾数を確認
-func has_ammo() -> bool:
-	return ammo_count < 0 or ammo_count > 0
+	if health_component:
+		health_component.heal_hp(amount)
 
 # ======================== イベントシステム連携 ========================
 
@@ -568,65 +439,15 @@ func get_current_state() -> String:
 ## プレイヤーの現在の状態を取得（シーン遷移時に使用）
 ## @return Dictionary 現在の状態を含む辞書
 func get_player_state() -> Dictionary:
-	return {
-		"hp_count": hp_count,
-		"current_ep": current_ep,
-		"ammo_count": ammo_count,
-		"condition": condition,
-		"position_x": position.x,
-		"position_y": position.y,
-		"direction_x": direction_x
-	}
+	if state_data_component:
+		return state_data_component.get_player_state()
+	return {}
 
 ## プレイヤーの状態を復元（シーン遷移後に使用）
 ## @param state Dictionary 復元する状態の辞書
 func restore_player_state(state: Dictionary) -> void:
-	if state.is_empty():
-		return
-
-	# HPを復元
-	if state.has("hp_count"):
-		hp_count = state["hp_count"]
-		if ep_gauge:
-			ep_gauge.hp_value = hp_count
-
-	# EPを復元
-	if state.has("current_ep"):
-		current_ep = state["current_ep"]
-		if ep_gauge:
-			ep_gauge.ep_progress = current_ep / 32.0
-
-	# 弾数を復元
-	if state.has("ammo_count"):
-		ammo_count = state["ammo_count"]
-		if ammo_gauge:
-			ammo_gauge.ammo_count = ammo_count
-
-	# 変身状態を復元
-	if state.has("condition"):
-		condition = state["condition"]
-
-	# 座標を復元
-	if state.has("position_x") and state.has("position_y"):
-		position = Vector2(state["position_x"], state["position_y"])
-
-	# 向きを復元
-	if state.has("direction_x"):
-		direction_x = state["direction_x"]
-		sprite_2d.flip_h = direction_x > 0.0
-		_update_box_positions(sprite_2d.flip_h)
-
-# ======================== Examine機能 ========================
-
-## Examineインジケーターを表示
-func show_examine_indicator() -> void:
-	if examine_indicator:
-		examine_indicator.show_indicator()
-
-## Examineインジケーターを非表示
-func hide_examine_indicator() -> void:
-	if examine_indicator:
-		examine_indicator.hide_indicator()
+	if state_data_component:
+		state_data_component.restore_player_state(state)
 
 # ======================== デバッグ機能 ========================
 
