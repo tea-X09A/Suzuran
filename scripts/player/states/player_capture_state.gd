@@ -5,16 +5,26 @@ extends PlayerBaseState
 
 # CAPTURE状態から復帰時の無敵時間（秒）
 const CAPTURE_RECOVERY_INVINCIBILITY_DURATION: float = 2.0
+# ジャンプ入力の遅延時間（秒）
+const INPUT_DELAY_DURATION: float = 0.1
 
 # ======================== キャッシュされた参照 ========================
 
 # カメラへの参照（initialize_state()でキャッシュ）
 var camera: Camera2D = null
 
+# ======================== タイマー ========================
+
+# ジャンプ入力受付までの遅延タイマー
+var input_delay_timer: float = 0.0
+
 # ======================== 状態初期化 ========================
 
 ## CAPTURE状態開始時の初期化
 func initialize_state() -> void:
+	# ジャンプ入力遅延タイマーを設定
+	input_delay_timer = INPUT_DELAY_DURATION
+
 	# down_stateをクリア（knockback/down判定を解除）
 	if player.down_state:
 		# DownStateの状態をリセット（無敵付与なし）
@@ -40,6 +50,9 @@ func initialize_state() -> void:
 
 ## CAPTURE状態終了時のクリーンアップ
 func cleanup_state() -> void:
+	# タイマーをリセット
+	input_delay_timer = 0.0
+
 	# AnimationTreeを再度有効化
 	if player.animation_tree:
 		player.animation_tree.active = true
@@ -57,6 +70,10 @@ func cleanup_state() -> void:
 
 ## 物理演算ステップでの更新処理
 func physics_update(delta: float) -> void:
+	# ジャンプ入力遅延タイマーを更新
+	if input_delay_timer > 0.0:
+		input_delay_timer -= delta
+
 	# CAPTURE状態では移動を完全に停止
 	player.velocity.x = 0.0
 
@@ -76,6 +93,10 @@ func handle_input(_delta: float) -> void:
 	# 基底クラスのdisable_inputチェックを実行（イベント中の入力無効化）
 	super.handle_input(_delta)
 	if player.disable_input:
+		return
+
+	# 入力遅延タイマーが終了するまでジャンプ入力を受け付けない
+	if input_delay_timer > 0.0:
 		return
 
 	# ジャンプ入力でCAPTURE状態をキャンセル

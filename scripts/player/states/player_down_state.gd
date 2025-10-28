@@ -3,6 +3,10 @@ extends PlayerBaseState
 
 signal down_finished
 
+# ======================== 定数定義 ========================
+
+# ジャンプ入力の遅延時間（秒）
+const INPUT_DELAY_DURATION: float = 0.1
 
 # ======================== 変数定義 ========================
 
@@ -12,6 +16,7 @@ var invincibility_timer: float = 0.0
 var knockback_timer: float = 0.0
 var down_timer: float = 0.0
 var recovery_invincibility_timer: float = 0.0
+var input_delay_timer: float = 0.0
 
 # 状態フラグ
 var is_down: bool = false
@@ -74,6 +79,9 @@ func handle_damage(_damage: int, animation_type: String, direction: Vector2, for
 	knockback_direction = direction
 	knockback_force_value = force
 
+	# ジャンプ入力遅延タイマーを設定（knockback状態開始時）
+	input_delay_timer = INPUT_DELAY_DURATION
+
 	# 効果タイプに応じた処理
 	var knockback_multiplier: float = get_parameter("knockback_multiplier")
 	# down効果の場合は吹き飛びを大きくする
@@ -106,6 +114,10 @@ func update_down_state(delta: float) -> bool:
 	if is_in_down_state:
 		down_timer -= delta
 
+	# ジャンプ入力遅延タイマーを更新
+	if input_delay_timer > 0.0:
+		input_delay_timer -= delta
+
 	# ノックバック継続処理
 	if knockback_timer > 0.0:
 		apply_continuous_knockback()
@@ -129,6 +141,9 @@ func start_down_state() -> void:
 	is_invincible = false
 	invincibility_timer = 0.0
 	player.velocity.x = 0.0
+
+	# ジャンプ入力遅延タイマーを設定（着地時）
+	input_delay_timer = INPUT_DELAY_DURATION
 
 	if effect_type == "knockback":
 		# knockback効果: IDLE状態へ遷移（無敵付与）
@@ -157,11 +172,16 @@ func start_down_state() -> void:
 func finish_down(apply_invincibility: bool = true) -> void:
 	is_down = false
 	is_in_down_state = false
+	is_invincible = false
 	down_duration_timer = 0.0
+	invincibility_timer = 0.0
 	knockback_timer = 0.0
 	down_timer = 0.0
+	input_delay_timer = 0.0
 	effect_type = ""
 	was_in_air = false
+	knockback_direction = Vector2.ZERO
+	knockback_force_value = 0.0
 
 	if apply_invincibility:
 		is_recovery_invincible = true
@@ -192,6 +212,10 @@ func can_jump() -> bool:
 
 ## ダウン状態でのジャンプ入力処理
 func try_recovery_jump() -> bool:
+	# 入力遅延タイマーが終了するまでジャンプ入力を受け付けない
+	if input_delay_timer > 0.0:
+		return false
+
 	var jump_key: int = GameSettings.get_key_binding("jump")
 	if _check_physical_key_just_pressed(jump_key, ALWAYS_ALLOWED_JUMP_KEYS, "jump") and can_jump():
 		handle_recovery_jump()
@@ -201,18 +225,11 @@ func try_recovery_jump() -> bool:
 
 ## 復帰ジャンプ処理
 func handle_recovery_jump() -> void:
-	# 共通処理：速度リセットとジャンプ
-	is_invincible = false
-	invincibility_timer = 0.0
+	# 速度リセットとジャンプ
 	player.velocity.x = 0.0
 	player.velocity.y = get_parameter("jump_initial_velocity")
 
-	# ノックバック状態からの場合は効果をキャンセル
-	if is_in_knockback_state():
-		knockback_timer = 0.0
-		knockback_direction = Vector2.ZERO
-		knockback_force_value = 0.0
-
+	# ダウン状態を終了（finish_down()で各種タイマーと状態フラグをリセット）
 	finish_down()
 	player.change_state("JUMP")
 
