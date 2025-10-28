@@ -25,7 +25,8 @@ const STYLE_BG_ALPHA: float = 0.3
 # ======================== enum ========================
 ## デバッグ項目の種類
 enum DebugItemType {
-	SELECTOR  ## 左右選択式の項目
+	SELECTOR,  ## 左右選択式の項目
+	ACTION     ## ボタンを押すとアクションを実行
 }
 
 # ======================== 変数 ========================
@@ -57,6 +58,12 @@ var previous_pause_state: bool = false
 
 ## Continueボタン
 var continue_button: Button = null
+
+## シグナルパネル関連
+var signal_panel: CanvasLayer = null
+var signal_scroll: ScrollContainer = null
+var signal_label: RichTextLabel = null
+var is_signal_panel_open: bool = false
 
 # ======================== 初期化処理 ========================
 func _ready() -> void:
@@ -99,6 +106,11 @@ func _init_styles() -> void:
 
 # ======================== 入力処理 ========================
 func _process(_delta: float) -> void:
+	## シグナルパネルが開いている時の処理を最優先
+	if is_signal_panel_open:
+		_process_signal_panel_input()
+		return
+
 	## F5キーでシーンをリロード
 	if Input.is_action_just_pressed("reload_scene"):
 		_reload_scene()
@@ -173,6 +185,14 @@ func _handle_accept_input() -> void:
 	## Continueボタンの行の場合はメニューを閉じる
 	if current_row >= debug_items.size():
 		toggle_debug_menu()
+		return
+
+	## 現在の行のデバッグ項目を取得
+	var item: Dictionary = debug_items[current_row]
+	if item["type"] == DebugItemType.ACTION:
+		## ACTION項目の場合はコールバックを実行
+		if item["callback"]:
+			item["callback"].call()
 
 ## シーンをリロードする（クリーンアップ処理付き）
 func _reload_scene() -> void:
@@ -272,6 +292,13 @@ func _setup_default_debug_items() -> void:
 			debug_value_changed.emit("invincible", is_invincible)
 	)
 
+	## シグナル状態を表示する
+	add_debug_item_action(
+		"Memory Leak Check",
+		func():
+			_show_signal_panel()
+	)
+
 	## スペーサーを追加
 	var spacer: Control = Control.new()
 	spacer.custom_minimum_size = Vector2(0, 10)
@@ -342,6 +369,30 @@ func add_debug_item_selector(label_text: String, options: Array[String], default
 
 	## ボタンリストに追加
 	all_buttons.append(value_button)
+
+## アクション実行型の項目を追加
+## label_text: 表示するラベルテキスト
+## callback: ボタンを押した時に呼ばれるコールバック関数
+func add_debug_item_action(label_text: String, callback: Callable) -> void:
+	## ボタンを作成
+	var action_button: Button = Button.new()
+	action_button.text = label_text
+	action_button.custom_minimum_size = Vector2(BUTTON_WIDTH, BUTTON_HEIGHT)
+	FontTheme.apply_to_button(action_button, FontTheme.FONT_SIZE_LARGE, true)
+	action_button.focus_mode = Control.FOCUS_NONE
+	## 初期スタイルを適用
+	_apply_button_style(action_button, _normal_style)
+	menu_container.add_child(action_button)
+
+	## デバッグ項目リストに登録
+	debug_items.append({
+		"type": DebugItemType.ACTION,
+		"button": action_button,
+		"callback": callback
+	})
+
+	## ボタンリストに追加
+	all_buttons.append(action_button)
 
 ## Continueボタンを作成
 func _create_continue_button() -> void:
@@ -451,3 +502,187 @@ func toggle_debug_menu() -> void:
 ## default_value: 値が存在しない場合のデフォルト値
 func get_debug_value(key: String, default_value: Variant = null) -> Variant:
 	return debug_values.get(key, default_value)
+
+# ======================== シグナルパネル関連 ========================
+## シグナル状態パネルを表示する
+func _show_signal_panel() -> void:
+	if is_signal_panel_open:
+		return
+
+	## パネルが未作成の場合は作成
+	if not signal_panel:
+		_build_signal_panel()
+
+	## SignalDebuggerでシーンツリーをスキャン
+	if SignalDebugger:
+		SignalDebugger.scan_scene_tree()
+		## 解放済みオブジェクトをクリーンアップ
+		SignalDebugger.cleanup_freed_objects()
+
+	## パネルを表示
+	is_signal_panel_open = true
+	signal_panel.visible = true
+
+	## コンテンツを更新
+	_update_signal_panel_content()
+
+	## デバッグメニューを非表示にする（パネル表示中は隠す）
+	debug_menu.visible = false
+
+## シグナル状態パネルを非表示にする
+func _hide_signal_panel() -> void:
+	if not is_signal_panel_open:
+		return
+
+	is_signal_panel_open = false
+	if signal_panel:
+		signal_panel.visible = false
+
+	## デバッグメニューを再表示
+	debug_menu.visible = true
+
+## シグナル状態パネルのUIを構築
+func _build_signal_panel() -> void:
+	## 最前面に表示されるCanvasLayerを作成
+	signal_panel = CanvasLayer.new()
+	signal_panel.layer = 100  ## デバッグメニューより前面
+	signal_panel.visible = false
+	add_child(signal_panel)
+
+	## 半透明の黒背景
+	var background: ColorRect = ColorRect.new()
+	background.color = Color(0.0, 0.0, 0.0, 0.8)
+	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	signal_panel.add_child(background)
+
+	## 中央配置用のMarginContainer
+	var margin: MarginContainer = MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", 100)
+	margin.add_theme_constant_override("margin_right", 100)
+	margin.add_theme_constant_override("margin_top", 80)
+	margin.add_theme_constant_override("margin_bottom", 80)
+	signal_panel.add_child(margin)
+
+	## コンテンツコンテナ
+	var vbox: VBoxContainer = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 20)
+	margin.add_child(vbox)
+
+	## タイトルラベル
+	var title: Label = Label.new()
+	title.text = "[Memory Leak Detection]"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	FontTheme.apply_to_label(title, FontTheme.FONT_SIZE_XXL, true)
+	vbox.add_child(title)
+
+	## 操作説明ラベル
+	var help: Label = Label.new()
+	help.text = "ESC or X to close"
+	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	FontTheme.apply_to_label(help, FontTheme.FONT_SIZE_MEDIUM, false)
+	help.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1.0))
+	vbox.add_child(help)
+
+	## スペーサー
+	var spacer: Control = Control.new()
+	spacer.custom_minimum_size = Vector2(0, 20)
+	vbox.add_child(spacer)
+
+	## スクロールコンテナ
+	signal_scroll = ScrollContainer.new()
+	signal_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	signal_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_child(signal_scroll)
+
+	## RichTextLabel（BBCode表示用）
+	signal_label = RichTextLabel.new()
+	signal_label.bbcode_enabled = true
+	signal_label.fit_content = true
+	signal_label.scroll_active = false
+	signal_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	signal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	FontTheme.apply_to_rich_text_label(signal_label, FontTheme.FONT_SIZE_MEDIUM, false)
+	signal_scroll.add_child(signal_label)
+
+## シグナルパネルのコンテンツを更新
+func _update_signal_panel_content() -> void:
+	if not signal_label:
+		return
+
+	## SignalDebuggerからレポートを取得
+	if not SignalDebugger:
+		signal_label.text = "[color=red]SignalDebugger is not available[/color]"
+		return
+
+	var report: Dictionary = SignalDebugger.get_signal_report()
+
+	## BBCodeテキストを構築
+	var text: String = ""
+
+	## サマリー情報（リーク数のみ表示）
+	text += "[b][color=red]Leaked Objects:[/color][/b] %d\n" % report["leaked_objects"]
+	text += "\n"
+
+	## リークしているオブジェクトのみを収集
+	var leaked_objects: Array = []
+	for obj_info in report["objects"]:
+		if obj_info["is_leaked"]:
+			leaked_objects.append(obj_info)
+
+	## リークがない場合
+	if leaked_objects.size() == 0:
+		text += "[b][color=green]No memory leaks detected![/color][/b]\n"
+		text += "[color=gray]All signal connections have been properly cleaned up.[/color]\n"
+	else:
+		## リークしているオブジェクトの詳細を表示（最大100オブジェクトまで）
+		const MAX_DISPLAY_OBJECTS: int = 100
+		var displayed_objects: int = 0
+
+		for obj_info in leaked_objects:
+			if displayed_objects >= MAX_DISPLAY_OBJECTS:
+				break
+			displayed_objects += 1
+			text += _format_object_info(obj_info)
+
+		## 表示されなかったオブジェクトがある場合は通知
+		if leaked_objects.size() > MAX_DISPLAY_OBJECTS:
+			text += "\n[b][color=orange]... and %d more leaked objects (limited to %d for performance)[/color][/b]\n" % [
+				leaked_objects.size() - MAX_DISPLAY_OBJECTS,
+				MAX_DISPLAY_OBJECTS
+			]
+
+	signal_label.text = text
+
+## オブジェクト情報をフォーマットして文字列として返す
+func _format_object_info(obj_info: Dictionary) -> String:
+	var result: String = ""
+
+	## リークしているオブジェクトの情報を表示
+	result += "[b][color=red][LEAKED][/color][/b] "
+	result += "[color=cyan]%s[/color] (ID: %d)\n" % [obj_info["object_name"], obj_info["object_id"]]
+
+	## シグナル情報（まだ接続が残っているもの）
+	var signals: Dictionary = obj_info["signals"]
+	for signal_name in signals.keys():
+		var connections: Array = signals[signal_name]
+		result += "  [color=yellow]Signal '%s'[/color]: %d dangling connection(s)\n" % [signal_name, connections.size()]
+
+		## 各接続の詳細（最大5個まで表示）
+		var max_conn_display: int = min(5, connections.size())
+		for i in range(max_conn_display):
+			var conn = connections[i]
+			result += "    → [color=white]%s[/color]\n" % conn.target_name
+
+		## 接続が5個より多い場合は省略表示
+		if connections.size() > max_conn_display:
+			result += "    [color=gray]... and %d more connection(s)[/color]\n" % (connections.size() - max_conn_display)
+
+	result += "\n"
+	return result
+
+## シグナルパネルの入力処理
+func _process_signal_panel_input() -> void:
+	## ESC/Xキーでパネルを閉じる
+	if Input.is_action_just_pressed("ui_menu_cancel") or Input.is_action_just_pressed("pause"):
+		_hide_signal_panel()
