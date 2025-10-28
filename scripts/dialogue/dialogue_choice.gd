@@ -35,8 +35,8 @@ var is_selected_state: bool = false
 # ======================== 初期化処理 ========================
 
 func _ready() -> void:
-	# FontTheme AutoLoadを使用してフォントを適用（太字バリエーションを使用）
-	FontTheme.apply_to_button(self, choice_font_size, true)
+	# FontTheme AutoLoadを使用してフォントを適用（太字バリエーション）
+	FontTheme.apply_to_button(self, choice_font_size, true, 9, Color.BLACK)
 
 	# ボタンのpressedシグナルに接続
 	pressed.connect(_on_button_pressed)

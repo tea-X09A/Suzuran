@@ -45,7 +45,9 @@ func apply_to_label(label: Label, font_size: int, use_bold: bool = false) -> voi
 ## @param button 対象の Button ノード
 ## @param font_size フォントサイズ
 ## @param use_bold 太字を使用するか（デフォルトは false）
-func apply_to_button(button: Button, font_size: int, use_bold: bool = false) -> void:
+## @param outline_size アウトラインのサイズ（デフォルトは 0 で無効）
+## @param outline_color アウトラインの色（デフォルトは黒）
+func apply_to_button(button: Button, font_size: int, use_bold: bool = false, outline_size: int = 0, outline_color: Color = Color.BLACK) -> void:
 	if not button:
 		push_warning("FontTheme: Button が null です")
 		return
@@ -56,6 +58,11 @@ func apply_to_button(button: Button, font_size: int, use_bold: bool = false) -> 
 		button.add_theme_font_override("font", NOTO_SANS_JP)
 
 	button.add_theme_font_size_override("font_size", font_size)
+
+	# アウトライン設定
+	if outline_size > 0:
+		button.add_theme_color_override("font_outline_color", outline_color)
+		button.add_theme_constant_override("outline_size", outline_size)
 
 ## RichTextLabel にフォントとサイズを適用する
 ## @param rich_label 対象の RichTextLabel ノード
