@@ -3,6 +3,11 @@
 class_name Player
 extends CharacterBody2D
 
+# ======================== シグナル定義 ========================
+
+## イベント準備完了時に発信（idle状態への遷移完了を通知）
+signal event_preparation_complete
+
 # ======================== 定数・Enum定義 ========================
 
 ## プレイヤーの変身状態
@@ -397,24 +402,36 @@ func heal_hp(amount: int) -> void:
 
 # ======================== イベントシステム連携 ========================
 
-## イベント開始時の処理（EventManagerから呼び出される）
+## イベント用の準備処理（EventManagerとevent_areaから呼び出される）
 ##
-## 入力を無効化し、空中状態の場合は水平速度をゼロにします。
-## 地上状態の場合は即座にIDLE状態に遷移します。
-func start_event() -> void:
+## プレイヤーを適切にidle状態に遷移させ、event_preparation_completeシグナルを発信します。
+## - 入力を無効化
+## - 水平・垂直速度を完全にゼロ化
+## - 空中にいる場合: fall状態に遷移 → 着地を待つ → idle状態に遷移
+## - 地上にいる場合: 即座にidle状態に遷移
+func prepare_for_event() -> void:
+	# 入力を無効化
 	disable_input = true
 
-	# 現在のアニメーション状態を取得
-	if animation_tree_playback:
-		var current_anim_state: String = animation_tree_playback.get_current_node()
+	# 速度を完全にゼロ化（水平・垂直両方）
+	velocity = Vector2.ZERO
 
-		# 空中状態（JUMP/FALL）の場合は水平速度をゼロに（垂直落下）
-		if current_anim_state in ["JUMP", "FALL"]:
-			velocity.x = 0.0
-		# 地上状態の場合は即座にIDLEに遷移
-		elif is_grounded:
-			velocity.x = 0.0
-			change_state("IDLE")
+	# 現在の状態に応じて処理を分岐
+	if is_grounded:
+		# 地上にいる場合は即座にIDLE状態に遷移
+		change_state("IDLE")
+	else:
+		# 空中にいる場合はFALL状態に遷移（重力適用と着地判定のため）
+		change_state("FALL")
+		# 着地を待つ（is_on_floor()がtrueになるまで）
+		while not is_on_floor():
+			await get_tree().physics_frame
+		# 着地したらIDLE状態に遷移
+		change_state("IDLE")
+
+	# 状態遷移完了を待ってから完了シグナルを発信
+	await get_tree().process_frame
+	event_preparation_complete.emit()
 
 ## イベント終了時の処理（EventManagerから呼び出される）
 ##

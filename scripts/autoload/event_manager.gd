@@ -55,17 +55,15 @@ func start_event(event: BaseEvent) -> void:
 	# プレイヤーを取得
 	var player: Node = player_ref.get_ref() if player_ref else null
 
-	# プレイヤーの入力を無効化（空中の場合は水平速度もゼロに）
-	if player and player.has_method("start_event"):
-		player.start_event()
+	# プレイヤーをイベント用に準備（入力無効化、速度ゼロ化、idle状態への遷移）
+	if player and player.has_method("prepare_for_event"):
+		player.prepare_for_event()
+		# idle状態になるまで待つ
+		await player.event_preparation_complete
 
 	# 全てのエネミーを無効化（EnemyManager連携）
 	if EnemyManager:
 		EnemyManager.disable_all_enemies(get_tree())
-
-	# 空中状態の場合は着地を待つ
-	if player:
-		await _wait_for_landing(player)
 
 	# イベント開始シグナルを発信
 	event_started.emit()
@@ -108,24 +106,6 @@ func _end_event() -> void:
 		start_event(next_event)
 
 # ======================== 内部処理 ========================
-
-## 着地待機処理（空中状態の場合のみ）
-func _wait_for_landing(player: Node) -> void:
-	# AnimationTreeから現在のアニメーション状態を取得（直接プロパティアクセス）
-	var animation_tree: AnimationTree = player.animation_tree if player.get("animation_tree") != null else null
-	if not animation_tree:
-		return
-
-	var state_machine: AnimationNodeStateMachinePlayback = animation_tree.get("parameters/playback")
-	if not state_machine:
-		return
-
-	var current_state: String = state_machine.get_current_node()
-
-	# JUMP/FALL状態の場合のみ着地を待つ
-	if current_state in ["JUMP", "FALL"]:
-		while not player.is_grounded:
-			await get_tree().process_frame
 
 ## プレイヤーを検索して弱参照を保持
 func _find_player() -> void:
