@@ -12,7 +12,7 @@ const COLLISION_BOX_PATHS: Array[String] = [
 	"JumpHurtbox/JumpHurtboxCollision",
 	"RunHurtbox/RunHurtboxCollision",
 	"FightingHurtbox/FightingHurtboxCollision",
-	"ShootingHurtbox/ShootingHurtboxCollision",
+	"ThrowingHurtbox/ThrowingHurtboxCollision",
 	"KnockBackHurtbox/KnockBackHurtboxCollision",
 	"DownHurtbox/DownHurtboxCollision",
 	"FallHurtbox/FallHurtboxCollision",

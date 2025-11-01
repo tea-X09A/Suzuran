@@ -8,8 +8,8 @@
 [ext_resource type="Texture2D" uid="uid://pukyogw6s3iu" path="res://assets/images/player/normal_down_01/frame_down_01_001.png" id="4_0owmy"]
 [ext_resource type="Texture2D" uid="uid://bs5s1br3tb12e" path="res://assets/images/player/normal_run/名称未設定のアートワーク.png" id="4_75vfm"]
 [ext_resource type="Texture2D" uid="uid://jle21g31pxn5" path="res://assets/images/player/normal_squat/frame_squat_001.png" id="6_0owmy"]
-[ext_resource type="Texture2D" uid="uid://4howketapm5p" path="res://assets/images/player/normal_shooting_01_001/frame_shooting_01_001.png" id="7_5gtgg"]
-[ext_resource type="Texture2D" uid="uid://danti7qvsclca" path="res://assets/images/player/normal_shooting_01_002/frame_shooting_01_002.png" id="10_je7p5"]
+[ext_resource type="Texture2D" uid="uid://4howketapm5p" path="res://assets/images/player/normal_throwing_01_001/frame_throwing_01_001.png" id="7_5gtgg"]
+[ext_resource type="Texture2D" uid="uid://danti7qvsclca" path="res://assets/images/player/normal_throwing_01_002/frame_throwing_01_002.png" id="10_je7p5"]
 [ext_resource type="Texture2D" uid="uid://b50ln74l5mfx3" path="res://assets/images/player/enemy_01/idle/名称未設定のアートワーク (19).png" id="11_fm80t"]
 [ext_resource type="Texture2D" uid="uid://cwpjlvwe42hjt" path="res://assets/images/player/enemy_01/down/名称未設定のアートワーク (18).png" id="12_gx1jg"]
 
@@ -70,7 +70,7 @@ tracks/3/keys = {
 tracks/4/type = "value"
 tracks/4/imported = false
 tracks/4/enabled = true
-tracks/4/path = NodePath("ShootingHurtbox/ShootingHurtboxCollision:disabled")
+tracks/4/path = NodePath("ThrowingHurtbox/ThrowingHurtboxCollision:disabled")
 tracks/4/interp = 1
 tracks/4/loop_wrap = true
 tracks/4/keys = {
@@ -262,7 +262,7 @@ tracks/19/keys = {
 tracks/20/type = "value"
 tracks/20/imported = false
 tracks/20/enabled = true
-tracks/20/path = NodePath("ShootingHurtbox/ShootingHurtboxCollision:visible")
+tracks/20/path = NodePath("ThrowingHurtbox/ThrowingHurtboxCollision:visible")
 tracks/20/interp = 1
 tracks/20/loop_wrap = true
 tracks/20/keys = {
@@ -835,13 +835,13 @@ tracks/2/keys = {
 "values": [true]
 }
 
-[sub_resource type="Animation" id="Animation_shooting"]
-resource_name = "normal_shooting_01"
+[sub_resource type="Animation" id="Animation_throwing"]
+resource_name = "normal_throwing_01"
 length = 0.5
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("ShootingHurtbox/ShootingHurtboxCollision:disabled")
+tracks/0/path = NodePath("ThrowingHurtbox/ThrowingHurtboxCollision:disabled")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
@@ -865,7 +865,7 @@ tracks/1/keys = {
 tracks/2/type = "value"
 tracks/2/imported = false
 tracks/2/enabled = true
-tracks/2/path = NodePath("ShootingHurtbox/ShootingHurtboxCollision:visible")
+tracks/2/path = NodePath("ThrowingHurtbox/ThrowingHurtboxCollision:visible")
 tracks/2/interp = 1
 tracks/2/loop_wrap = true
 tracks/2/keys = {
@@ -876,12 +876,12 @@ tracks/2/keys = {
 }
 
 [sub_resource type="Animation" id="Animation_fcs02"]
-resource_name = "normal_shooting_02"
+resource_name = "normal_throwing_02"
 length = 0.5
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("ShootingHurtbox/ShootingHurtboxCollision:disabled")
+tracks/0/path = NodePath("ThrowingHurtbox/ThrowingHurtboxCollision:disabled")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
@@ -905,7 +905,7 @@ tracks/1/keys = {
 tracks/2/type = "value"
 tracks/2/imported = false
 tracks/2/enabled = true
-tracks/2/path = NodePath("ShootingHurtbox/ShootingHurtboxCollision:visible")
+tracks/2/path = NodePath("ThrowingHurtbox/ThrowingHurtboxCollision:visible")
 tracks/2/interp = 1
 tracks/2/loop_wrap = true
 tracks/2/keys = {
@@ -1011,8 +1011,8 @@ _data = {
 &"normal_jump": SubResource("Animation_jump"),
 &"normal_knockback": SubResource("Animation_h17s1"),
 &"normal_run": SubResource("Animation_ugbui"),
-&"normal_shooting_01": SubResource("Animation_shooting"),
-&"normal_shooting_02": SubResource("Animation_fcs02"),
+&"normal_throwing_01": SubResource("Animation_throwing"),
+&"normal_throwing_02": SubResource("Animation_fcs02"),
 &"normal_squat": SubResource("Animation_squat"),
 &"normal_walk": SubResource("Animation_walk")
 }
@@ -1047,8 +1047,8 @@ animation = &"normal_knockback"
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_6cv16"]
 animation = &"normal_run"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_shooting"]
-animation = &"normal_shooting_01"
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_throwing"]
+animation = &"normal_throwing_01"
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_squat"]
 animation = &"normal_squat"
@@ -1118,10 +1118,10 @@ switch_mode = 1
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_squat_fighting"]
 switch_mode = 1
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_shooting_squat"]
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_throwing_squat"]
 switch_mode = 1
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_squat_shooting"]
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_squat_throwing"]
 switch_mode = 1
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_idle_fighting"]
@@ -1154,34 +1154,34 @@ switch_mode = 1
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_fighting_fall"]
 switch_mode = 1
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_idle_shooting"]
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_idle_throwing"]
 switch_mode = 1
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_shooting_idle"]
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_throwing_idle"]
 switch_mode = 1
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_walk_shooting"]
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_walk_throwing"]
 switch_mode = 1
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_shooting_walk"]
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_throwing_walk"]
 switch_mode = 1
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_run_shooting"]
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_run_throwing"]
 switch_mode = 1
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_shooting_run"]
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_throwing_run"]
 switch_mode = 1
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_jump_shooting"]
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_jump_throwing"]
 switch_mode = 1
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_shooting_jump"]
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_throwing_jump"]
 switch_mode = 1
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_fall_shooting"]
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_fall_throwing"]
 switch_mode = 1
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_shooting_fall"]
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_throwing_fall"]
 switch_mode = 1
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_idle_down"]
@@ -1220,10 +1220,10 @@ switch_mode = 1
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_down_fighting"]
 switch_mode = 1
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_shooting_down"]
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_throwing_down"]
 switch_mode = 1
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_down_shooting"]
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_down_throwing"]
 switch_mode = 1
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_idle_knockback"]
@@ -1244,7 +1244,7 @@ switch_mode = 1
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_fighting_knockback"]
 switch_mode = 1
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_shooting_knockback"]
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_throwing_knockback"]
 switch_mode = 1
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_squat_knockback"]
@@ -1274,7 +1274,7 @@ switch_mode = 1
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_fighting_capture"]
 switch_mode = 1
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_shooting_capture"]
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_throwing_capture"]
 switch_mode = 1
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_squat_capture"]
@@ -1337,14 +1337,14 @@ states/KNOCKBACK/node = SubResource("AnimationNodeAnimation_knockback")
 states/KNOCKBACK/position = Vector2(600, 350)
 states/RUN/node = SubResource("AnimationNodeAnimation_6cv16")
 states/RUN/position = Vector2(400, 350)
-states/SHOOTING/node = SubResource("AnimationNodeAnimation_shooting")
-states/SHOOTING/position = Vector2(800, 250)
+states/THROWING/node = SubResource("AnimationNodeAnimation_throwing")
+states/THROWING/position = Vector2(800, 250)
 states/SQUAT/node = SubResource("AnimationNodeAnimation_squat")
 states/SQUAT/position = Vector2(256.5, 147.75)
 states/Start/position = Vector2(100, 150)
 states/WALK/node = SubResource("AnimationNodeAnimation_walk")
 states/WALK/position = Vector2(400, 250)
-transitions = ["Start", "IDLE", SubResource("AnimationNodeStateMachineTransition_007i1"), "IDLE", "WALK", SubResource("AnimationNodeStateMachineTransition_idle_walk"), "WALK", "IDLE", SubResource("AnimationNodeStateMachineTransition_walk_idle"), "WALK", "RUN", SubResource("AnimationNodeStateMachineTransition_walk_run"), "RUN", "WALK", SubResource("AnimationNodeStateMachineTransition_run_walk"), "RUN", "IDLE", SubResource("AnimationNodeStateMachineTransition_6cv16"), "IDLE", "JUMP", SubResource("AnimationNodeStateMachineTransition_idle_jump"), "WALK", "JUMP", SubResource("AnimationNodeStateMachineTransition_walk_jump"), "RUN", "JUMP", SubResource("AnimationNodeStateMachineTransition_run_jump"), "JUMP", "FALL", SubResource("AnimationNodeStateMachineTransition_jump_fall"), "FALL", "IDLE", SubResource("AnimationNodeStateMachineTransition_fall_idle"), "FALL", "WALK", SubResource("AnimationNodeStateMachineTransition_fall_walk"), "FALL", "RUN", SubResource("AnimationNodeStateMachineTransition_fall_run"), "IDLE", "SQUAT", SubResource("AnimationNodeStateMachineTransition_idle_squat"), "SQUAT", "IDLE", SubResource("AnimationNodeStateMachineTransition_squat_idle"), "WALK", "SQUAT", SubResource("AnimationNodeStateMachineTransition_walk_squat"), "SQUAT", "WALK", SubResource("AnimationNodeStateMachineTransition_squat_walk"), "RUN", "SQUAT", SubResource("AnimationNodeStateMachineTransition_run_squat"), "SQUAT", "RUN", SubResource("AnimationNodeStateMachineTransition_squat_run"), "FIGHTING", "SQUAT", SubResource("AnimationNodeStateMachineTransition_fighting_squat"), "SQUAT", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_squat_fighting"), "SHOOTING", "SQUAT", SubResource("AnimationNodeStateMachineTransition_shooting_squat"), "SQUAT", "SHOOTING", SubResource("AnimationNodeStateMachineTransition_squat_shooting"), "IDLE", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_idle_fighting"), "FIGHTING", "IDLE", SubResource("AnimationNodeStateMachineTransition_fighting_idle"), "WALK", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_walk_fighting"), "FIGHTING", "WALK", SubResource("AnimationNodeStateMachineTransition_fighting_walk"), "RUN", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_run_fighting"), "FIGHTING", "RUN", SubResource("AnimationNodeStateMachineTransition_fighting_run"), "JUMP", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_jump_fighting"), "FIGHTING", "JUMP", SubResource("AnimationNodeStateMachineTransition_fighting_jump"), "FALL", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_fall_fighting"), "FIGHTING", "FALL", SubResource("AnimationNodeStateMachineTransition_fighting_fall"), "IDLE", "SHOOTING", SubResource("AnimationNodeStateMachineTransition_idle_shooting"), "SHOOTING", "IDLE", SubResource("AnimationNodeStateMachineTransition_shooting_idle"), "WALK", "SHOOTING", SubResource("AnimationNodeStateMachineTransition_walk_shooting"), "SHOOTING", "WALK", SubResource("AnimationNodeStateMachineTransition_shooting_walk"), "RUN", "SHOOTING", SubResource("AnimationNodeStateMachineTransition_run_shooting"), "SHOOTING", "RUN", SubResource("AnimationNodeStateMachineTransition_shooting_run"), "JUMP", "SHOOTING", SubResource("AnimationNodeStateMachineTransition_jump_shooting"), "SHOOTING", "JUMP", SubResource("AnimationNodeStateMachineTransition_shooting_jump"), "FALL", "SHOOTING", SubResource("AnimationNodeStateMachineTransition_fall_shooting"), "SHOOTING", "FALL", SubResource("AnimationNodeStateMachineTransition_shooting_fall"), "IDLE", "DOWN", SubResource("AnimationNodeStateMachineTransition_idle_down"), "DOWN", "IDLE", SubResource("AnimationNodeStateMachineTransition_down_idle"), "WALK", "DOWN", SubResource("AnimationNodeStateMachineTransition_walk_down"), "DOWN", "WALK", SubResource("AnimationNodeStateMachineTransition_down_walk"), "RUN", "DOWN", SubResource("AnimationNodeStateMachineTransition_run_down"), "DOWN", "RUN", SubResource("AnimationNodeStateMachineTransition_down_run"), "JUMP", "DOWN", SubResource("AnimationNodeStateMachineTransition_jump_down"), "DOWN", "JUMP", SubResource("AnimationNodeStateMachineTransition_down_jump"), "FALL", "DOWN", SubResource("AnimationNodeStateMachineTransition_fall_down"), "DOWN", "FALL", SubResource("AnimationNodeStateMachineTransition_down_fall"), "FIGHTING", "DOWN", SubResource("AnimationNodeStateMachineTransition_fighting_down"), "DOWN", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_down_fighting"), "SHOOTING", "DOWN", SubResource("AnimationNodeStateMachineTransition_shooting_down"), "DOWN", "SHOOTING", SubResource("AnimationNodeStateMachineTransition_down_shooting"), "IDLE", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_idle_knockback"), "WALK", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_walk_knockback"), "RUN", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_run_knockback"), "JUMP", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_jump_knockback"), "FALL", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_fall_knockback"), "FIGHTING", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_fighting_knockback"), "SHOOTING", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_shooting_knockback"), "SQUAT", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_squat_knockback"), "KNOCKBACK", "DOWN", SubResource("AnimationNodeStateMachineTransition_knockback_down"), "KNOCKBACK", "JUMP", SubResource("AnimationNodeStateMachineTransition_knockback_jump"), "IDLE", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_idle_capture"), "WALK", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_walk_capture"), "RUN", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_run_capture"), "JUMP", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_jump_capture"), "FALL", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_fall_capture"), "FIGHTING", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_fighting_capture"), "SHOOTING", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_shooting_capture"), "SQUAT", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_squat_capture"), "DOWN", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_down_capture"), "CAPTURE", "JUMP", SubResource("AnimationNodeStateMachineTransition_capture_jump"), "CAPTURE", "FALL", SubResource("AnimationNodeStateMachineTransition_capture_fall"), "RUN", "CLOSING", SubResource("AnimationNodeStateMachineTransition_run_closing"), "CLOSING", "IDLE", SubResource("AnimationNodeStateMachineTransition_closing_idle"), "CLOSING", "FALL", SubResource("AnimationNodeStateMachineTransition_closing_fall"), "CLOSING", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_closing_fighting"), "IDLE", "DODGING", SubResource("AnimationNodeStateMachineTransition_idle_dodging"), "WALK", "DODGING", SubResource("AnimationNodeStateMachineTransition_walk_dodging"), "RUN", "DODGING", SubResource("AnimationNodeStateMachineTransition_run_dodging"), "DODGING", "IDLE", SubResource("AnimationNodeStateMachineTransition_dodging_idle"), "DODGING", "FALL", SubResource("AnimationNodeStateMachineTransition_dodging_fall")]
+transitions = ["Start", "IDLE", SubResource("AnimationNodeStateMachineTransition_007i1"), "IDLE", "WALK", SubResource("AnimationNodeStateMachineTransition_idle_walk"), "WALK", "IDLE", SubResource("AnimationNodeStateMachineTransition_walk_idle"), "WALK", "RUN", SubResource("AnimationNodeStateMachineTransition_walk_run"), "RUN", "WALK", SubResource("AnimationNodeStateMachineTransition_run_walk"), "RUN", "IDLE", SubResource("AnimationNodeStateMachineTransition_6cv16"), "IDLE", "JUMP", SubResource("AnimationNodeStateMachineTransition_idle_jump"), "WALK", "JUMP", SubResource("AnimationNodeStateMachineTransition_walk_jump"), "RUN", "JUMP", SubResource("AnimationNodeStateMachineTransition_run_jump"), "JUMP", "FALL", SubResource("AnimationNodeStateMachineTransition_jump_fall"), "FALL", "IDLE", SubResource("AnimationNodeStateMachineTransition_fall_idle"), "FALL", "WALK", SubResource("AnimationNodeStateMachineTransition_fall_walk"), "FALL", "RUN", SubResource("AnimationNodeStateMachineTransition_fall_run"), "IDLE", "SQUAT", SubResource("AnimationNodeStateMachineTransition_idle_squat"), "SQUAT", "IDLE", SubResource("AnimationNodeStateMachineTransition_squat_idle"), "WALK", "SQUAT", SubResource("AnimationNodeStateMachineTransition_walk_squat"), "SQUAT", "WALK", SubResource("AnimationNodeStateMachineTransition_squat_walk"), "RUN", "SQUAT", SubResource("AnimationNodeStateMachineTransition_run_squat"), "SQUAT", "RUN", SubResource("AnimationNodeStateMachineTransition_squat_run"), "FIGHTING", "SQUAT", SubResource("AnimationNodeStateMachineTransition_fighting_squat"), "SQUAT", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_squat_fighting"), "THROWING", "SQUAT", SubResource("AnimationNodeStateMachineTransition_throwing_squat"), "SQUAT", "THROWING", SubResource("AnimationNodeStateMachineTransition_squat_throwing"), "IDLE", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_idle_fighting"), "FIGHTING", "IDLE", SubResource("AnimationNodeStateMachineTransition_fighting_idle"), "WALK", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_walk_fighting"), "FIGHTING", "WALK", SubResource("AnimationNodeStateMachineTransition_fighting_walk"), "RUN", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_run_fighting"), "FIGHTING", "RUN", SubResource("AnimationNodeStateMachineTransition_fighting_run"), "JUMP", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_jump_fighting"), "FIGHTING", "JUMP", SubResource("AnimationNodeStateMachineTransition_fighting_jump"), "FALL", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_fall_fighting"), "FIGHTING", "FALL", SubResource("AnimationNodeStateMachineTransition_fighting_fall"), "IDLE", "THROWING", SubResource("AnimationNodeStateMachineTransition_idle_throwing"), "THROWING", "IDLE", SubResource("AnimationNodeStateMachineTransition_throwing_idle"), "WALK", "THROWING", SubResource("AnimationNodeStateMachineTransition_walk_throwing"), "THROWING", "WALK", SubResource("AnimationNodeStateMachineTransition_throwing_walk"), "RUN", "THROWING", SubResource("AnimationNodeStateMachineTransition_run_throwing"), "THROWING", "RUN", SubResource("AnimationNodeStateMachineTransition_throwing_run"), "JUMP", "THROWING", SubResource("AnimationNodeStateMachineTransition_jump_throwing"), "THROWING", "JUMP", SubResource("AnimationNodeStateMachineTransition_throwing_jump"), "FALL", "THROWING", SubResource("AnimationNodeStateMachineTransition_fall_throwing"), "THROWING", "FALL", SubResource("AnimationNodeStateMachineTransition_throwing_fall"), "IDLE", "DOWN", SubResource("AnimationNodeStateMachineTransition_idle_down"), "DOWN", "IDLE", SubResource("AnimationNodeStateMachineTransition_down_idle"), "WALK", "DOWN", SubResource("AnimationNodeStateMachineTransition_walk_down"), "DOWN", "WALK", SubResource("AnimationNodeStateMachineTransition_down_walk"), "RUN", "DOWN", SubResource("AnimationNodeStateMachineTransition_run_down"), "DOWN", "RUN", SubResource("AnimationNodeStateMachineTransition_down_run"), "JUMP", "DOWN", SubResource("AnimationNodeStateMachineTransition_jump_down"), "DOWN", "JUMP", SubResource("AnimationNodeStateMachineTransition_down_jump"), "FALL", "DOWN", SubResource("AnimationNodeStateMachineTransition_fall_down"), "DOWN", "FALL", SubResource("AnimationNodeStateMachineTransition_down_fall"), "FIGHTING", "DOWN", SubResource("AnimationNodeStateMachineTransition_fighting_down"), "DOWN", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_down_fighting"), "THROWING", "DOWN", SubResource("AnimationNodeStateMachineTransition_throwing_down"), "DOWN", "THROWING", SubResource("AnimationNodeStateMachineTransition_down_throwing"), "IDLE", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_idle_knockback"), "WALK", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_walk_knockback"), "RUN", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_run_knockback"), "JUMP", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_jump_knockback"), "FALL", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_fall_knockback"), "FIGHTING", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_fighting_knockback"), "THROWING", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_throwing_knockback"), "SQUAT", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_squat_knockback"), "KNOCKBACK", "DOWN", SubResource("AnimationNodeStateMachineTransition_knockback_down"), "KNOCKBACK", "JUMP", SubResource("AnimationNodeStateMachineTransition_knockback_jump"), "IDLE", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_idle_capture"), "WALK", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_walk_capture"), "RUN", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_run_capture"), "JUMP", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_jump_capture"), "FALL", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_fall_capture"), "FIGHTING", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_fighting_capture"), "THROWING", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_throwing_capture"), "SQUAT", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_squat_capture"), "DOWN", "CAPTURE", SubResource("AnimationNodeStateMachineTransition_down_capture"), "CAPTURE", "JUMP", SubResource("AnimationNodeStateMachineTransition_capture_jump"), "CAPTURE", "FALL", SubResource("AnimationNodeStateMachineTransition_capture_fall"), "RUN", "CLOSING", SubResource("AnimationNodeStateMachineTransition_run_closing"), "CLOSING", "IDLE", SubResource("AnimationNodeStateMachineTransition_closing_idle"), "CLOSING", "FALL", SubResource("AnimationNodeStateMachineTransition_closing_fall"), "CLOSING", "FIGHTING", SubResource("AnimationNodeStateMachineTransition_closing_fighting"), "IDLE", "DODGING", SubResource("AnimationNodeStateMachineTransition_idle_dodging"), "WALK", "DODGING", SubResource("AnimationNodeStateMachineTransition_walk_dodging"), "RUN", "DODGING", SubResource("AnimationNodeStateMachineTransition_run_dodging"), "DODGING", "IDLE", SubResource("AnimationNodeStateMachineTransition_dodging_idle"), "DODGING", "FALL", SubResource("AnimationNodeStateMachineTransition_dodging_fall")]
 graph_offset = Vector2(87.1404, 69.2574)
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_gx1jg"]
@@ -1478,10 +1478,10 @@ position = Vector2(19, 24.5)
 shape = SubResource("CapsuleShape2D_uf5tr")
 disabled = true
 
-[node name="ShootingHurtbox" type="Area2D" parent="."]
+[node name="ThrowingHurtbox" type="Area2D" parent="."]
 collision_layer = 4
 
-[node name="ShootingHurtboxCollision" type="CollisionShape2D" parent="ShootingHurtbox"]
+[node name="ThrowingHurtboxCollision" type="CollisionShape2D" parent="ThrowingHurtbox"]
 visible = false
 position = Vector2(-1, 12.5)
 shape = SubResource("CapsuleShape2D_lgqa7")
