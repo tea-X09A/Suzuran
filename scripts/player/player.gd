@@ -127,8 +127,7 @@ func _ready() -> void:
 	if is_loading_from_save:
 		# スプライトの向きを復元（システム初期化後に適用）
 		sprite_2d.flip_h = direction_x > 0.0
-		if collision_component:
-			collision_component.update_box_positions(direction_x > 0.0)
+		_update_box_positions(direction_x > 0.0)
 
 		# pending_player_dataをクリア
 		SaveLoadManager.pending_player_data.clear()
@@ -215,7 +214,7 @@ func _initialize_collision_component() -> void:
 	collision_component.initialize(self)
 
 	# 初期のsprite向きに基づいて位置を更新
-	collision_component.update_box_positions(direction_x > 0.0)
+	_update_box_positions(direction_x > 0.0)
 
 ## HealthComponentの初期化
 func _initialize_health_component() -> void:
@@ -337,9 +336,13 @@ func update_sprite_direction(input_direction_x: float) -> void:
 		sprite_2d.flip_h = is_facing_right
 		direction_x = input_direction_x
 
-		# CollisionComponent経由でBox位置を更新
-		if collision_component:
-			collision_component.update_box_positions(is_facing_right)
+		# コリジョンボックスの位置を更新
+		_update_box_positions(is_facing_right)
+
+## スプライトの向きに応じてコリジョンボックスの位置を更新（遷移時に外部から呼び出される）
+func _update_box_positions(is_facing_right: bool) -> void:
+	if collision_component:
+		collision_component.update_box_positions(is_facing_right)
 
 # ======================== プロパティアクセサ ========================
 
