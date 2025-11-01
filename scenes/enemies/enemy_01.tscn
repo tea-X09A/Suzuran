@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3 uid="uid://cvn3qwq0tl42h"]
+[gd_scene load_steps=31 format=3 uid="uid://cvn3qwq0tl42h"]
 
 [ext_resource type="Script" uid="uid://g4yn8xxfpyai" path="res://scripts/enemies/enemy.gd" id="1_5f8g2"]
 [ext_resource type="Texture2D" uid="uid://dve0hcsf1db83" path="res://assets/images/enemies/Enemy52.png" id="1_6xk8f"]
@@ -85,13 +85,30 @@ tracks/0/keys = {
 "values": [ExtResource("1_6xk8f")]
 }
 
+[sub_resource type="Animation" id="Animation_stunned"]
+resource_name = "stunned"
+length = 0.5
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:texture")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [ExtResource("1_6xk8f")]
+}
+
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_enemy01"]
 _data = {
 &"RESET": SubResource("Animation_reset"),
 &"chase": SubResource("Animation_chase"),
 &"idle": SubResource("Animation_idle"),
 &"knockback": SubResource("Animation_knockback"),
-&"patrol": SubResource("Animation_patrol")
+&"patrol": SubResource("Animation_patrol"),
+&"stunned": SubResource("Animation_stunned")
 }
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_chase"]
@@ -105,6 +122,9 @@ animation = &"knockback"
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_patrol"]
 animation = &"patrol"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_stunned"]
+animation = &"stunned"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_start_idle"]
 
@@ -135,7 +155,10 @@ switch_mode = 1
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_chase_knockback"]
 switch_mode = 1
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_knockback_idle"]
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_knockback_stunned"]
+switch_mode = 1
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_stunned_idle"]
 switch_mode = 1
 
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_enemy01"]
@@ -147,9 +170,11 @@ states/KNOCKBACK/node = SubResource("AnimationNodeAnimation_knockback")
 states/KNOCKBACK/position = Vector2(400, 300)
 states/PATROL/node = SubResource("AnimationNodeAnimation_patrol")
 states/PATROL/position = Vector2(600, 300)
+states/STUNNED/node = SubResource("AnimationNodeAnimation_stunned")
+states/STUNNED/position = Vector2(600, 450)
 states/Start/position = Vector2(200, 150)
-transitions = ["Start", "IDLE", SubResource("AnimationNodeStateMachineTransition_start_idle"), "IDLE", "PATROL", SubResource("AnimationNodeStateMachineTransition_idle_patrol"), "PATROL", "IDLE", SubResource("AnimationNodeStateMachineTransition_patrol_idle"), "IDLE", "CHASE", SubResource("AnimationNodeStateMachineTransition_idle_chase"), "CHASE", "IDLE", SubResource("AnimationNodeStateMachineTransition_chase_idle"), "PATROL", "CHASE", SubResource("AnimationNodeStateMachineTransition_patrol_chase"), "CHASE", "PATROL", SubResource("AnimationNodeStateMachineTransition_chase_patrol"), "IDLE", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_idle_knockback"), "PATROL", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_patrol_knockback"), "CHASE", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_chase_knockback"), "KNOCKBACK", "IDLE", SubResource("AnimationNodeStateMachineTransition_knockback_idle")]
-graph_offset = Vector2(63.16, 60.46)
+transitions = ["Start", "IDLE", SubResource("AnimationNodeStateMachineTransition_start_idle"), "IDLE", "PATROL", SubResource("AnimationNodeStateMachineTransition_idle_patrol"), "PATROL", "IDLE", SubResource("AnimationNodeStateMachineTransition_patrol_idle"), "IDLE", "CHASE", SubResource("AnimationNodeStateMachineTransition_idle_chase"), "CHASE", "IDLE", SubResource("AnimationNodeStateMachineTransition_chase_idle"), "PATROL", "CHASE", SubResource("AnimationNodeStateMachineTransition_patrol_chase"), "CHASE", "PATROL", SubResource("AnimationNodeStateMachineTransition_chase_patrol"), "IDLE", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_idle_knockback"), "PATROL", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_patrol_knockback"), "CHASE", "KNOCKBACK", SubResource("AnimationNodeStateMachineTransition_chase_knockback"), "KNOCKBACK", "STUNNED", SubResource("AnimationNodeStateMachineTransition_knockback_stunned"), "STUNNED", "IDLE", SubResource("AnimationNodeStateMachineTransition_stunned_idle")]
+graph_offset = Vector2(26.32, 2.52249)
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_uavjf"]
 radius = 48.3333

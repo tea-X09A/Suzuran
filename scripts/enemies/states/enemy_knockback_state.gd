@@ -72,7 +72,7 @@ func physics_update(delta: float) -> void:
 	if not enemy.is_on_floor():
 		was_in_air = true
 
-	# 空中に浮いた後、着地したらIDLE状態へ遷移
+	# 空中に浮いた後、着地したらSTUNNED状態へ遷移
 	if was_in_air and enemy.is_on_floor():
-		enemy.change_state("IDLE")
+		enemy.change_state("STUNNED")
 		return

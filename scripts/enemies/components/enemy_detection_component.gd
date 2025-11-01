@@ -88,7 +88,7 @@ func start_chasing_player(player_node: Node2D) -> void:
 	var is_already_tracking: bool = (current_player == player_node)
 
 	player_ref = weakref(player_node)
-	_reset_out_of_range_flags()
+	reset_out_of_range_flags()
 
 	# 新しくプレイヤーを追跡開始する場合のみシグナルを発火
 	if not is_already_tracking:
@@ -112,6 +112,11 @@ func is_capture_on_cooldown() -> bool:
 func record_capture() -> void:
 	last_capture_time = Time.get_unix_time_from_system()
 
+## 範囲外フラグをリセット（STUNNED状態など、見失いタイマーをリセットする必要がある場合に使用）
+func reset_out_of_range_flags() -> void:
+	player_out_of_range = false
+	time_out_of_range = 0.0
+
 # ======================== 内部メソッド ========================
 
 ## hitboxと重なっているプレイヤーを取得
@@ -129,15 +134,10 @@ func _get_overlapping_player() -> Node2D:
 
 	return null
 
-## 範囲外フラグをリセット
-func _reset_out_of_range_flags() -> void:
-	player_out_of_range = false
-	time_out_of_range = 0.0
-
 ## プレイヤー参照をクリア
 func _clear_player_reference() -> void:
 	player_ref = null
-	_reset_out_of_range_flags()
+	reset_out_of_range_flags()
 
 # ======================== クリーンアップ処理 ========================
 

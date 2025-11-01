@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://cm2ybmb8lcuey" path="res://scenes/backgrounds/level0_bg.tscn" id="3_plydf"]
 [ext_resource type="Script" uid="uid://c1mm1jl4mji8d" path="res://scripts/ui/health_gauge.gd" id="4_5ntmo"]
 [ext_resource type="Script" uid="uid://cem1ykee8ffbe" path="res://scripts/ui/ammo_gauge.gd" id="5_ammo"]
-[ext_resource type="Texture2D" uid="uid://c5dl3pkbmw88x" path="res://assets/images/bullets/kunai.png" id="5_kunai"]
+[ext_resource type="Texture2D" uid="uid://c5dl3pkbmw88x" path="res://assets/images/bullets/projectile.png" id="5_projectile"]
 [ext_resource type="Texture2D" uid="uid://cvvb866p8u71i" path="res://assets/images/tilesets/tilesheet_complete.png" id="5_nkeig"]
 [ext_resource type="PackedScene" uid="uid://dwhuyn1us30js" path="res://scenes/levels/transition_area.tscn" id="8_transition"]
 
@@ -319,7 +319,7 @@ offset_top = 50.0
 offset_right = 350.0
 offset_bottom = 150.0
 script = ExtResource("5_ammo")
-icon_texture = ExtResource("5_kunai")
+icon_texture = ExtResource("5_projectile")
 icon_scale = 0.5
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]

@@ -1,5 +1,5 @@
 extends Area2D
-class_name Kunai
+class_name Projectile
 
 # ======================== エクスポート変数 ========================
 ## 生存時間（秒）
@@ -8,7 +8,7 @@ class_name Kunai
 @export var damage: int = 1
 
 # ======================== 変数定義 ========================
-## クナイの速度ベクトル
+## プロジェクタイルの速度ベクトル
 var velocity: Vector2 = Vector2.ZERO
 ## 発射したキャラクター
 var owner_character: Node2D = null
@@ -33,10 +33,10 @@ func _physics_process(delta: float) -> void:
 	# 生存時間カウントダウン
 	lifetime_timer -= delta
 	if lifetime_timer <= 0.0:
-		destroy_kunai()
+		destroy_projectile()
 
 # ======================== 公開メソッド ========================
-## クナイの初期化（プレイヤーから呼び出される）
+## プロジェクタイルの初期化（プレイヤーから呼び出される）
 func initialize(direction: float, speed: float, shooter: Node2D, damage_value: int = 1) -> void:
 	# 速度設定
 	velocity = Vector2(direction * speed, 0.0)
@@ -56,10 +56,10 @@ func initialize(direction: float, speed: float, shooter: Node2D, damage_value: i
 	else:
 		sprite_2d.flip_h = false
 
-	# クナイをアクティブ化
+	# プロジェクタイルをアクティブ化
 	activate()
 
-## クナイをアクティブ化（プールから取得時）
+## プロジェクタイルをアクティブ化（プールから取得時）
 func activate() -> void:
 	# シグナル接続（重複接続を防止）
 	if not body_entered.is_connected(_on_body_entered):
@@ -71,7 +71,7 @@ func activate() -> void:
 	visible = true
 	set_physics_process(true)
 
-## クナイを非アクティブ化（プール返却時）
+## プロジェクタイルを非アクティブ化（プール返却時）
 func deactivate() -> void:
 	# シグナル接続を安全に解除（CLAUDE.mdガイドライン準拠）
 	if body_entered.is_connected(_on_body_entered):
@@ -97,12 +97,12 @@ func _on_body_entered(body: Node2D) -> void:
 
 	# ダメージ処理（対象がダメージを受けられる場合）
 	if body.has_method("take_damage"):
-		# クナイの進行方向をノックバック方向として使用
+		# プロジェクタイルの進行方向をノックバック方向として使用
 		var knockback_direction: Vector2 = velocity.normalized()
 		body.take_damage(damage, knockback_direction, self)
 
-	# クナイを破壊
-	destroy_kunai()
+	# プロジェクタイルを破壊
+	destroy_projectile()
 
 ## エリア（Area2D）との衝突処理
 func _on_area_entered(area: Area2D) -> void:
@@ -112,35 +112,34 @@ func _on_area_entered(area: Area2D) -> void:
 
 	# 発射したキャラクター以外との衝突をチェック
 	if area != owner_character:
-		# 他のクナイとの衝突処理
-		if area is Kunai:
-			var other_kunai: Kunai = area as Kunai
-			# 同じキャラクターが発射したクナイ同士は衝突しない
-			if other_kunai.owner_character == owner_character:
+		# 他のプロジェクタイルとの衝突処理
+		if area is Projectile:
+			var other_projectile: Projectile = area as Projectile
+			# 同じキャラクターが発射したプロジェクタイル同士は衝突しない
+			if other_projectile.owner_character == owner_character:
 				return
-			# 異なるキャラクターが発射したクナイ同士は両方破壊
-			other_kunai.destroy_kunai()
-			destroy_kunai()
+			# 異なるキャラクターが発射したプロジェクタイル同士は両方破壊
+			other_projectile.destroy_projectile()
+			destroy_projectile()
 		else:
 			# ダメージ処理（対象がダメージを受けられる場合）
 			# Areaの親ノード（敵本体）に対してダメージを与える
 			var target: Node = area.get_parent()
 			if target and target.has_method("take_damage"):
-				# クナイの進行方向をノックバック方向として使用
+				# プロジェクタイルの進行方向をノックバック方向として使用
 				var knockback_direction: Vector2 = velocity.normalized()
 				target.take_damage(damage, knockback_direction, self)
 
-			# クナイを破壊
-			destroy_kunai()
+			# プロジェクタイルを破壊
+			destroy_projectile()
 
-## クナイ破壊処理（プール返却）
-func destroy_kunai() -> void:
-	# オブジェクトプールに返却
-	deactivate()
-	KunaiPoolManager.return_kunai(self)
+## プロジェクタイル破壊処理（プール返却）
+func destroy_projectile() -> void:
+	# オブジェクトプールに返却（deactivate()はPoolManager側で呼ばれる）
+	ProjectilePoolManager.return_projectile(self)
 
 # ======================== クリーンアップ ========================
 ## シーンツリーから削除される際の処理
 func _exit_tree() -> void:
-	# 参照をクリア（メモリリーク防止）
-	owner_character = null
+	# deactivate()でシグナル切断と状態リセットを一括処理（重複削除）
+	deactivate()

@@ -2,7 +2,7 @@ class_name PlayerShootingState
 extends PlayerBaseState
 
 # ======================== 射撃パラメータ定義 ========================
-# KunaiPoolManagerから取得するため、定数は不要
+# ProjectilePoolManagerから取得するため、定数は不要
 
 # 射撃状態管理
 var shooting_timer: float = 0.0
@@ -91,14 +91,14 @@ func handle_shooting() -> void:
 		is_shooting_02 = false
 		_set_shooting_animation("normal_shooting_01")
 
-	spawn_kunai()
+	spawn_projectile()
 
 	# アニメーション完了シグナルの接続（重複接続を防止）
 	if animation_player and not animation_player.animation_finished.is_connected(_on_shooting_animation_finished):
 		animation_player.animation_finished.connect(_on_shooting_animation_finished)
 
-## 苦無生成処理
-func spawn_kunai() -> void:
+## プロジェクタイル生成処理
+func spawn_projectile() -> void:
 	# 弾数を消費
 	if not player.ammo_component or not player.ammo_component.consume_ammo():
 		return
@@ -114,15 +114,15 @@ func spawn_kunai() -> void:
 	else:
 		shooting_direction = 1.0 if sprite_2d.flip_h else -1.0
 
-	# オブジェクトプールからクナイを取得
-	var kunai_instance: Kunai = KunaiPoolManager.get_kunai()
+	# オブジェクトプールからプロジェクタイルを取得
+	var projectile_instance: Projectile = ProjectilePoolManager.get_projectile()
 
 	var spawn_offset: Vector2 = Vector2(shooting_direction * get_parameter("shooting_offset_x"), 0.0)
-	kunai_instance.global_position = sprite_2d.global_position + spawn_offset
+	projectile_instance.global_position = sprite_2d.global_position + spawn_offset
 
-	# クナイを初期化（initialize内でactivate()が呼ばれる）
+	# プロジェクタイルを初期化（initialize内でactivate()が呼ばれる）
 	var damage_value: int = get_parameter("shooting_damage")
-	kunai_instance.initialize(shooting_direction, get_parameter("shooting_kunai_speed"), player, damage_value)
+	projectile_instance.initialize(shooting_direction, get_parameter("shooting_projectile_speed"), player, damage_value)
 
 # ======================== 射撃状態制御 ========================
 

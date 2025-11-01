@@ -87,6 +87,8 @@ var capture_component = null
 var collision_component = null
 ## 検知アイコン管理コンポーネント
 var detection_icon_component = null
+## 昏睡エフェクト管理コンポーネント
+var stun_effect_component = null
 
 # ======================== ステート管理システム ========================
 
@@ -172,6 +174,10 @@ func _initialize_components() -> void:
 	detection_icon_component = EnemyDetectionIconComponent.new(self)
 	detection_icon_component.initialize()
 
+	# EnemyStunEffectComponentの初期化
+	stun_effect_component = EnemyStunEffectComponent.new(self)
+	stun_effect_component.initialize()
+
 	# コンポーネントのシグナルに接続
 	detection_component.player_chase_started.connect(_on_player_chase_started)
 	detection_component.player_lost.connect(_on_player_lost)
@@ -190,6 +196,7 @@ func _initialize_state_system() -> void:
 	state_instances["PATROL"] = EnemyPatrolState.new(self)
 	state_instances["CHASE"] = EnemyChaseState.new(self)
 	state_instances["KNOCKBACK"] = EnemyKnockbackState.new(self)
+	state_instances["STUNNED"] = EnemyStunnedState.new(self)
 
 	# 初期状態をIDLEに設定
 	current_state = state_instances["IDLE"]
@@ -516,6 +523,9 @@ func _exit_tree() -> void:
 	if detection_icon_component:
 		detection_icon_component.cleanup()
 
+	if stun_effect_component:
+		stun_effect_component.cleanup()
+
 	# 参照のクリア
 	vision_component = null
 	detection_component = null
@@ -523,3 +533,4 @@ func _exit_tree() -> void:
 	capture_component = null
 	collision_component = null
 	detection_icon_component = null
+	stun_effect_component = null

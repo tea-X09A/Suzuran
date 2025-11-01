@@ -80,22 +80,29 @@ func take_damage(damage: int, direction: Vector2, attacker: Node, state_instance
 			current_hp = 0
 			_die()
 			return
-		# Kunai（shooting）からの攻撃の場合はプレイヤーの方向へ向く
-		elif attacker and attacker is Kunai:
+		# Projectile（shooting）からの攻撃の場合はプレイヤーの方向へ向く
+		elif attacker and attacker is Projectile:
 			# プレイヤーへの参照を取得
-			var kunai_owner: Node2D = attacker.owner_character
-			if kunai_owner:
+			var projectile_owner: Node2D = attacker.owner_character
+			if projectile_owner:
 				# プレイヤーの方向を計算
-				var direction_to_player: float = sign(kunai_owner.global_position.x - enemy.global_position.x)
+				var direction_to_player: float = sign(projectile_owner.global_position.x - enemy.global_position.x)
 				if direction_to_player != 0:
 					direction_to_face_after_knockback = direction_to_player
 
-	# ダメージを適用
-	current_hp -= damage
-	print("[%s] ダメージ: %d, 残りHP: %d/%d" % [enemy.name, damage, current_hp, max_hp])
+	# Projectileからの攻撃の場合はダメージを与えずスタンのみ
+	var actual_damage: int = damage
+	if attacker and attacker is Projectile:
+		actual_damage = 0
+		print("[%s] Projectile攻撃: ダメージなし、スタンのみ適用" % enemy.name)
+	else:
+		# ダメージを適用
+		current_hp -= actual_damage
+		print("[%s] ダメージ: %d, 残りHP: %d/%d" % [enemy.name, actual_damage, current_hp, max_hp])
 
-	# HPゲージを更新
-	_update_hp_gauge()
+	# HPゲージを更新（ダメージがある場合のみ）
+	if actual_damage > 0:
+		_update_hp_gauge()
 
 	# HPが0以下になったら死亡処理
 	if current_hp <= 0:
