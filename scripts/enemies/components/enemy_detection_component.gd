@@ -83,9 +83,16 @@ func handle_lose_sight_timer(delta: float) -> bool:
 
 ## プレイヤーの追跡を開始（DetectionAreaのbody_enteredシグナルから呼び出す）
 func start_chasing_player(player_node: Node2D) -> void:
+	# すでに同じプレイヤーを追跡中の場合は、シグナルを発火しない
+	var current_player: Node2D = get_player()
+	var is_already_tracking: bool = (current_player == player_node)
+
 	player_ref = weakref(player_node)
 	_reset_out_of_range_flags()
-	player_chase_started.emit(player_node)
+
+	# 新しくプレイヤーを追跡開始する場合のみシグナルを発火
+	if not is_already_tracking:
+		player_chase_started.emit(player_node)
 
 ## プレイヤーが範囲外に出たことを通知（DetectionAreaのbody_exitedシグナルから呼び出す）
 func mark_player_out_of_range() -> void:

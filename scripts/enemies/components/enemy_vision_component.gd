@@ -25,6 +25,8 @@ var raycasts: Array[RayCast2D] = []
 var vision_update_counter: int = 0
 ## 視界更新の間隔（フレーム数）
 var vision_update_interval: int = 5
+## 前回の検知状態（状態変化を検知するため）
+var previous_detecting_state: bool = false
 
 # ======================== ノード参照（WeakRefで保持） ========================
 
@@ -55,18 +57,30 @@ func _init(enemy: Enemy, detection_area_node: Area2D, vision_shape_node: Polygon
 ## 視界システムの初期化（Enemyの_ready()から呼び出す）
 func initialize() -> void:
 	_setup_vision_raycasts()
+	# vision_shapeの初期表示状態を設定（パトロール時は表示）
+	if vision_shape:
+		vision_shape.visible = true
 
 # ======================== 公開メソッド ========================
 
 ## 視界を更新（Enemyの_physics_process()から呼び出す）
 ## @param is_detecting: プレイヤーを検知しているかどうか
 func update_vision(is_detecting: bool) -> void:
+	# 検知状態が変化した場合のみ表示/非表示を更新
+	if is_detecting != previous_detecting_state:
+		previous_detecting_state = is_detecting
+		# パトロール時（未検知）: 表示、検知時: 非表示（アイコンを使用）
+		if vision_shape:
+			vision_shape.visible = not is_detecting
+
 	# 間引き処理
 	vision_update_counter += 1
 	if vision_update_counter >= vision_update_interval:
 		vision_update_counter = 0
 		_update_vision_shape()
-		_update_vision_color(is_detecting)
+		# パトロール時のみ色を更新
+		if not is_detecting:
+			_update_patrol_vision_color()
 		vision_updated.emit()
 
 ## 視界パラメータを設定
@@ -131,12 +145,12 @@ func _update_vision_shape() -> void:
 	vision_shape.polygon = new_polygon
 	detection_collision.polygon = new_polygon
 
-## 視界の色を更新（検知状態に応じて変更）
-func _update_vision_color(is_detecting: bool) -> void:
+## 視界の色を更新（パトロール時の色を設定）
+func _update_patrol_vision_color() -> void:
 	if not vision_shape:
 		return
-	# 検知中の場合は赤系、非検知中は青系
-	vision_shape.color = Color(0.858824, 0.305882, 0.501961, 0.419608) if is_detecting else Color(0.309804, 0.65098, 0.835294, 0.2)
+	# パトロール時の色を設定
+	vision_shape.color = Color(0.309804, 0.65098, 0.835294, 0.2)
 
 # ======================== クリーンアップ処理 ========================
 

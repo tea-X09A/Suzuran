@@ -85,6 +85,8 @@ var health_component = null
 var capture_component = null
 ## コリジョン管理コンポーネント
 var collision_component = null
+## 検知アイコン管理コンポーネント
+var detection_icon_component = null
 
 # ======================== ステート管理システム ========================
 
@@ -165,6 +167,10 @@ func _initialize_components() -> void:
 	# EnemyCollisionComponentの初期化
 	collision_component = EnemyCollisionComponent.new(self, hitbox, hurtbox)
 	collision_component.initialize()
+
+	# EnemyDetectionIconComponentの初期化
+	detection_icon_component = EnemyDetectionIconComponent.new(self)
+	detection_icon_component.initialize()
 
 	# コンポーネントのシグナルに接続
 	detection_component.player_chase_started.connect(_on_player_chase_started)
@@ -291,6 +297,9 @@ func _handle_knockback_enemy_collision() -> void:
 ## プレイヤーの追跡を開始（EnemyDetectionComponentのシグナルから呼び出される）
 func _on_player_chase_started(player_node: Node2D) -> void:
 	change_state("CHASE")
+	# 検知アイコンを表示（!マーク）
+	if detection_icon_component:
+		detection_icon_component.show_detected()
 	# 継承先で追加処理を行うための仮想関数
 	_on_player_detected(player_node)
 
@@ -299,6 +308,9 @@ func _on_player_lost(lost_player: Node2D) -> void:
 	velocity.x = 0.0
 	# 待機状態へ移行
 	change_state("IDLE")
+	# 検知アイコンを表示（?マーク、フェードアウトアニメーション付き）
+	if detection_icon_component:
+		detection_icon_component.show_lost()
 	# 壁に接触していない場合のみ壁衝突フラグをリセット
 	if not is_on_wall():
 		hit_wall = false
@@ -501,9 +513,13 @@ func _exit_tree() -> void:
 	if collision_component:
 		collision_component.cleanup()
 
+	if detection_icon_component:
+		detection_icon_component.cleanup()
+
 	# 参照のクリア
 	vision_component = null
 	detection_component = null
 	health_component = null
 	capture_component = null
 	collision_component = null
+	detection_icon_component = null
