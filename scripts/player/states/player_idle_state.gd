@@ -22,12 +22,12 @@ func handle_input(delta: float) -> void:
 
 	# 回避後の硬直中の入力処理
 	if player.dodge_recovery_time > 0.0:
-		# 硬直中でもfightingとshootingの入力は受け付ける
+		# 硬直中でもfightingとthrowingの入力は受け付ける
 		if is_fight_input():
 			player.change_state("FIGHTING")
 			return
-		if is_shooting_input():
-			player.change_state("SHOOTING")
+		if is_throwing_input():
+			player.change_state("THROWING")
 			return
 		# その他の入力は無視
 		return

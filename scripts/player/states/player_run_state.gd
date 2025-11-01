@@ -34,8 +34,8 @@ func handle_input(delta: float) -> void:
 		player.change_state("SQUAT")
 		return
 
-	if is_shooting_input():
-		player.change_state("SHOOTING")
+	if is_throwing_input():
+		player.change_state("THROWING")
 		return
 
 	# 移動入力処理

@@ -42,7 +42,7 @@ func initialize_state() -> void:
 	# 前進速度の設定
 	if not started_airborne:  # 地上でのfighting時のみ前進
 		var forward_speed: float = get_parameter("move_fighting_initial_speed")
-		# Sprite2Dの向きに応じて前進（shootingと同じ方法で統一）
+		# Sprite2Dの向きに応じて前進（throwingと同じ方法で統一）
 		var direction: float = 1.0 if sprite_2d.flip_h else -1.0
 		player.velocity.x = direction * forward_speed
 

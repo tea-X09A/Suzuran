@@ -196,7 +196,7 @@ func _initialize_state_system() -> void:
 	state_instances["FALL"] = PlayerFallState.new(self)
 	state_instances["SQUAT"] = PlayerSquatState.new(self)
 	state_instances["FIGHTING"] = PlayerFightingState.new(self)
-	state_instances["SHOOTING"] = PlayerShootingState.new(self)
+	state_instances["THROWING"] = PlayerThrowingState.new(self)
 	state_instances["KNOCKBACK"] = PlayerKnockbackState.new(self)
 	state_instances["DOWN"] = PlayerDownState.new(self)
 	state_instances["CAPTURE"] = PlayerCaptureState.new(self)

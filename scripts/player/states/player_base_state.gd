@@ -87,7 +87,7 @@ func physics_update(_delta: float) -> void:
 ## キー状態の更新（毎フレーム呼び出す）
 func update_key_states() -> void:
 	# 全てのアクションキーの現在の状態を記録
-	var actions: Array[String] = ["fight", "shooting", "jump", "left", "right", "squat", "run", "dodge"]
+	var actions: Array[String] = ["fight", "throwing", "jump", "left", "right", "squat", "run", "dodge"]
 	for action in actions:
 		var key: int = GameSettings.get_key_binding(action)
 		if key != KEY_NONE:
@@ -248,19 +248,19 @@ func is_fight_input() -> bool:
 	# ゲームパッドボタンをチェック（カスタム設定のみ）
 	return _check_gamepad_button_just_pressed("fight")
 
-## 射撃入力チェック
-func is_shooting_input() -> bool:
-	var shooting_key: int = GameSettings.get_key_binding("shooting")
+## 投擲入力チェック
+func is_throwing_input() -> bool:
+	var throwing_key: int = GameSettings.get_key_binding("throwing")
 
 	# カスタムキーチェック
-	if shooting_key != KEY_NONE:
-		var is_pressed_now: bool = Input.is_physical_key_pressed(shooting_key)
-		var was_pressed_before: bool = previous_key_states.get(shooting_key, false)
+	if throwing_key != KEY_NONE:
+		var is_pressed_now: bool = Input.is_physical_key_pressed(throwing_key)
+		var was_pressed_before: bool = previous_key_states.get(throwing_key, false)
 		if is_pressed_now and not was_pressed_before:
 			return true
 
 	# ゲームパッドボタンをチェック（カスタム設定のみ）
-	return _check_gamepad_button_just_pressed("shooting")
+	return _check_gamepad_button_just_pressed("throwing")
 
 ## dodge修飾キーがちょうど押されたかチェック
 ## @return bool - dodge修飾キーがちょうど押された場合true
@@ -454,14 +454,14 @@ func handle_common_inputs() -> bool:
 		player.change_state("FIGHTING")
 		return true
 
-	# 射撃入力チェック
-	if is_shooting_input():
-		player.change_state("SHOOTING")
+	# 投擲入力チェック
+	if is_throwing_input():
+		player.change_state("THROWING")
 		return true
 
 	return false
 
-## アクション終了時の状態遷移処理（fighting, shooting状態で共通）
+## アクション終了時の状態遷移処理（fighting, throwing状態で共通）
 func handle_action_end_transition() -> void:
 	if not player.is_grounded:
 		player.change_state("FALL")
@@ -500,16 +500,16 @@ func handle_landing_transition() -> void:
 	else:
 		player.change_state("IDLE")
 
-## 空中でのアクション入力処理（攻撃・射撃）
+## 空中でのアクション入力処理（攻撃・投擲）
 func handle_air_action_input() -> bool:
 	# 攻撃入力チェック（空中攻撃）
 	if is_fight_input():
 		player.change_state("FIGHTING")
 		return true
 
-	# 射撃入力チェック（空中射撃）
-	if is_shooting_input():
-		player.change_state("SHOOTING")
+	# 投擲入力チェック（空中投擲）
+	if is_throwing_input():
+		player.change_state("THROWING")
 		return true
 
 	return false

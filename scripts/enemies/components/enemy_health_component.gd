@@ -80,7 +80,7 @@ func take_damage(damage: int, direction: Vector2, attacker: Node, state_instance
 			current_hp = 0
 			_die()
 			return
-		# Projectile（shooting）からの攻撃の場合はプレイヤーの方向へ向く
+		# Projectile（throwing）からの攻撃の場合はプレイヤーの方向へ向く
 		elif attacker and attacker is Projectile:
 			# プレイヤーへの参照を取得
 			var projectile_owner: Node2D = attacker.owner_character

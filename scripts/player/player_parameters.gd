@@ -27,17 +27,17 @@ static var PARAMETERS: Dictionary = {
 		"landing_speed_retention": 0.3,     # 着地時の速度保持率（0.3 = 30%保持、70%減衰）
 		"landing_speed_threshold": 200.0,   # 着地時の速度減衰を適用する最小速度（ピクセル/秒）
 
-		# ======================== 射撃パラメータ ========================
-		"shooting_projectile_speed": 500.0, # プロジェクタイルの飛行速度（ピクセル/秒）
-		"shooting_animation_duration": 0.5, # 射撃アニメーションの持続時間（秒）
-		"shooting_offset_x": 40.0,          # 射撃位置のX方向オフセット（ピクセル）
+		# ======================== 投擲パラメータ ========================
+		"throwing_projectile_speed": 500.0, # プロジェクタイルの飛行速度（ピクセル/秒）
+		"throwing_animation_duration": 0.5, # 投擲アニメーションの持続時間（秒）
+		"throwing_offset_x": 40.0,          # 投擲位置のX方向オフセット（ピクセル）
 
 		# ======================== 格闘パラメータ ========================
 		"move_fighting_initial_speed": 250.0,  # 格闘の初期移動速度（ピクセル/秒）
 		"move_fighting_duration": 0.5,         # 格闘アクションの持続時間（秒）
 		"fighting_enabled": true,              # 格闘アクションの有効性
 		"fighting_damage": 3,                  # 格闘攻撃のダメージ量
-		"shooting_damage": 1,                  # 射撃攻撃のダメージ量
+		"throwing_damage": 1,                  # 投擲攻撃のダメージ量
 
 		# ======================== CLOSING（追従）パラメータ ========================
 		"move_closing_speed_multiplier": 1.5,  # CLOSING時の速度倍率（run_speedに対する倍率）
@@ -77,17 +77,17 @@ static var PARAMETERS: Dictionary = {
 		"landing_speed_retention": 0.3,     # 着地時の速度保持率（0.3 = 30%保持、70%減衰）
 		"landing_speed_threshold": 200.0,   # 着地時の速度減衰を適用する最小速度（ピクセル/秒）
 
-		# ======================== 射撃パラメータ（強化版） ========================
-		"shooting_projectile_speed": 650.0, # プロジェクタイルの飛行速度（500.0 * 1.3）（ピクセル/秒）
-		"shooting_animation_duration": 0.5, # 射撃アニメーションの持続時間（変更なし）（秒）
-		"shooting_offset_x": 40.0,          # 射撃位置のX方向オフセット（変更なし）（ピクセル）
+		# ======================== 投擲パラメータ（強化版） ========================
+		"throwing_projectile_speed": 650.0, # プロジェクタイルの飛行速度（500.0 * 1.3）（ピクセル/秒）
+		"throwing_animation_duration": 0.5, # 投擲アニメーションの持続時間（変更なし）（秒）
+		"throwing_offset_x": 40.0,          # 投擲位置のX方向オフセット（変更なし）（ピクセル）
 
 		# ======================== 戦闘パラメータ（強化版） ========================
 		"move_fighting_initial_speed": 312.5,  # 戦闘時の初期移動速度（250.0 * 1.25）（ピクセル/秒）
 		"move_fighting_duration": 0.4,         # 戦闘アクションの持続時間（0.5 * 0.8）（秒）
 		"fighting_enabled": false,             # 戦闘アクションの有効性（EXPANSION時は無効）
 		"fighting_damage": 3,                  # 格闘攻撃のダメージ量
-		"shooting_damage": 1,                  # 射撃攻撃のダメージ量
+		"throwing_damage": 1,                  # 投擲攻撃のダメージ量
 
 		# ======================== CLOSING（追従）パラメータ（強化版） ========================
 		"move_closing_speed_multiplier": 1.8,  # CLOSING時の速度倍率（1.5 * 1.2）

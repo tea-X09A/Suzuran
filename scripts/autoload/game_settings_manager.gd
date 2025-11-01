@@ -58,7 +58,7 @@ const DEFAULT_VOICE_VOLUME: int = 5
 ## デフォルトキーバインド設定
 const DEFAULT_KEY_BINDINGS: Dictionary = {
 	"fight": KEY_F,
-	"shooting": KEY_C,
+	"throwing": KEY_C,
 	"jump": KEY_W,
 	"left": KEY_A,
 	"right": KEY_D,
@@ -70,7 +70,7 @@ const DEFAULT_KEY_BINDINGS: Dictionary = {
 ## デフォルトゲームパッドバインド設定
 const DEFAULT_GAMEPAD_BINDINGS: Dictionary = {
 	"fight": JOY_BUTTON_Y,            # Button 3 (Y/Triangle)
-	"shooting": JOY_BUTTON_X,         # Button 2 (X/Square)
+	"throwing": JOY_BUTTON_X,         # Button 2 (X/Square)
 	"jump": JOY_BUTTON_A,             # Button 0 (A/Cross)
 	"left": JOY_BUTTON_DPAD_LEFT,    # Button 13 (D-Pad Left)
 	"right": JOY_BUTTON_DPAD_RIGHT,  # Button 14 (D-Pad Right)

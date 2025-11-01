@@ -11,9 +11,9 @@ const MENU_TEXTS: Dictionary = {
 		"ja": "格闘",
 		"en": "Fight"
 	},
-	"shooting": {
-		"ja": "射撃",
-		"en": "Shooting"
+	"throwing": {
+		"ja": "投擲",
+		"en": "Throwing"
 	},
 	"jump": {
 		"ja": "ジャンプ",
@@ -52,7 +52,7 @@ const MENU_TEXTS: Dictionary = {
 ## アクションの順序を定義（表示順）
 const ACTION_ORDER: Array[String] = [
 	"fight",
-	"shooting",
+	"throwing",
 	"jump",
 	"left",
 	"right",

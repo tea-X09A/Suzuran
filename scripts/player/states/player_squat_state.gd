@@ -30,10 +30,10 @@ func handle_input(delta: float) -> void:
 		player.change_state("FIGHTING")
 		return
 
-	# 射撃入力チェック（しゃがみキャンセル）
-	if is_shooting_input():
+	# 投擲入力チェック（しゃがみキャンセル）
+	if is_throwing_input():
 		player.squat_was_cancelled = true  # キャンセルフラグを設定
-		player.change_state("SHOOTING")
+		player.change_state("THROWING")
 		return
 
 	# しゃがみ入力チェック - 離されたらIDLE状態に遷移
