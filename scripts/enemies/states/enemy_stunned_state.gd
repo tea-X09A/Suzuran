@@ -61,7 +61,7 @@ func cleanup_state() -> void:
 	if enemy_instance.vision_shape:
 		enemy_instance.vision_shape.visible = true
 
-	# spriteを投石がヒットした方向に向かせる
+	# spriteをプロジェクタイルがヒットした方向に向かせる
 	if enemy_instance.sprite:
 		var direction: float = enemy_instance.direction_to_face_after_knockback
 		if direction != 0.0:

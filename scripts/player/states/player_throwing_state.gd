@@ -1,10 +1,12 @@
 class_name PlayerThrowingState
 extends PlayerBaseState
 
-# ======================== 投擲パラメータ定義 ========================
-# ProjectilePoolManagerから取得するため、定数は不要
+# ======================== 投擲状態管理 ========================
+# 投擲のダメージとエフェクトはプレイヤーのconditionに応じて動的に決定されます
+# - NORMAL: ダメージあり、スタンなし（プライマリ投射物）
+# - EXPANSION: ダメージなし、スタンあり（セカンダリ投射物）
 
-# 投擲状態管理
+# 投擲状態管理変数
 var throwing_timer: float = 0.0
 var is_throwing_02: bool = false  # throwing_02アニメーションを使用中かのフラグ
 # AnimationTreeのTHROWINGノード参照（パフォーマンス最適化のためキャッシュ）
@@ -120,9 +122,22 @@ func spawn_projectile() -> void:
 	var spawn_offset: Vector2 = Vector2(throwing_direction * get_parameter("throwing_offset_x"), 0.0)
 	projectile_instance.global_position = sprite_2d.global_position + spawn_offset
 
+	# プレイヤーのconditionに応じて投射物の設定を変更
+	var damage_value: int = 0
+	var stun_effect: bool = false
+
+	match player.condition:
+		Player.PLAYER_CONDITION.NORMAL:
+			# NORMAL時: ダメージあり、スタンなし
+			damage_value = 1
+			stun_effect = false
+		Player.PLAYER_CONDITION.EXPANSION:
+			# EXPANSION時: ダメージなし、スタンあり
+			damage_value = 0
+			stun_effect = true
+
 	# プロジェクタイルを初期化（initialize内でactivate()が呼ばれる）
-	var damage_value: int = get_parameter("throwing_damage")
-	projectile_instance.initialize(throwing_direction, get_parameter("throwing_projectile_speed"), player, damage_value)
+	projectile_instance.initialize(throwing_direction, get_parameter("throwing_projectile_speed"), player, damage_value, stun_effect)
 
 # ======================== 投擲状態制御 ========================
 

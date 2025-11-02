@@ -54,6 +54,8 @@ var wait_duration: float = 3.0
 var knockback_force: float = 300.0
 # 画面内にいるかどうかのフラグ
 var on_screen: bool = false
+# ノックバック後にスタン状態に遷移するかどうか
+var should_stun_after_knockback: bool = false
 # 重力加速度
 var GRAVITY: float
 # 現在の目標位置

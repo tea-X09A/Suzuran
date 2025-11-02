@@ -37,7 +37,6 @@ static var PARAMETERS: Dictionary = {
 		"move_fighting_duration": 0.5,         # 格闘アクションの持続時間（秒）
 		"fighting_enabled": true,              # 格闘アクションの有効性
 		"fighting_damage": 3,                  # 格闘攻撃のダメージ量
-		"throwing_damage": 1,                  # 投擲攻撃のダメージ量
 
 		# ======================== CLOSING（追従）パラメータ ========================
 		"move_closing_speed_multiplier": 1.5,  # CLOSING時の速度倍率（run_speedに対する倍率）
@@ -87,7 +86,6 @@ static var PARAMETERS: Dictionary = {
 		"move_fighting_duration": 0.4,         # 戦闘アクションの持続時間（0.5 * 0.8）（秒）
 		"fighting_enabled": false,             # 戦闘アクションの有効性（EXPANSION時は無効）
 		"fighting_damage": 3,                  # 格闘攻撃のダメージ量
-		"throwing_damage": 1,                  # 投擲攻撃のダメージ量
 
 		# ======================== CLOSING（追従）パラメータ（強化版） ========================
 		"move_closing_speed_multiplier": 1.8,  # CLOSING時の速度倍率（1.5 * 1.2）
