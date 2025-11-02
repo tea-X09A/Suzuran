@@ -1,3 +1,4 @@
+@tool
 ## 敵キャラクターのベースクラス
 ## ステートパターンによるAI制御、コンポーネントベースの視界・検知システム、ダメージ処理を実装
 class_name Enemy
@@ -102,6 +103,12 @@ var current_state: EnemyBaseState
 # ======================== 初期化処理 ========================
 
 func _ready() -> void:
+	# エディタ実行時は視界形状の初期化のみを行う
+	if Engine.is_editor_hint():
+		_initialize_vision_component_for_editor()
+		return
+
+	# ゲーム実行時の初期化処理
 	# enemiesグループに追加
 	add_to_group("enemies")
 	# 重力を取得
@@ -148,11 +155,27 @@ func _initialize_animation_tree() -> void:
 
 # ======================== コンポーネント初期化 ========================
 
+## エディタ用のvision_component初期化（polygon更新のみ、軽量版）
+func _initialize_vision_component_for_editor() -> void:
+	# ノード参照が有効かチェック
+	if not detection_area or not vision_shape or not detection_collision:
+		return
+
+	# エディタ専用の静的メソッドでpolygonのみを更新（RayCast作成なし）
+	# 一時的なインスタンス作成やRayCast生成・削除を回避し、効率的に初期化
+	EnemyVisionComponent.setup_initial_polygon_for_editor(
+		vision_shape,
+		detection_collision,
+		20,      # ray_count
+		300.0,   # distance
+		10.0     # angle
+	)
+
 ## コンポーネントの初期化
 func _initialize_components() -> void:
 	# EnemyVisionComponentの初期化
 	vision_component = EnemyVisionComponent.new(self, detection_area, vision_shape, detection_collision)
-	vision_component.set_vision_parameters(20, 509.0, 10.0)
+	vision_component.set_vision_parameters(20, 300.0, 10.0)
 	vision_component.initialize()
 
 	# EnemyDetectionComponentの初期化
@@ -231,6 +254,10 @@ func change_state(new_state_name: String) -> void:
 # ======================== 物理更新処理 ========================
 
 func _physics_process(delta: float) -> void:
+	# エディタ実行時は処理をスキップ
+	if Engine.is_editor_hint():
+		return
+
 	# CAPTURE状態中は処理をスキップ
 	if capture_component and capture_component.is_capturing():
 		return

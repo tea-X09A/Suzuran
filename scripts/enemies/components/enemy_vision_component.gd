@@ -13,7 +13,7 @@ signal vision_updated
 ## 視界のRayCast本数
 var vision_ray_count: int = 20
 ## 視界の最大距離
-var vision_distance: float = 509.0
+var vision_distance: float = 300.0
 ## 視界の角度（度数、片側）
 var vision_angle: float = 10.0
 
@@ -57,6 +57,8 @@ func _init(enemy: Enemy, detection_area_node: Area2D, vision_shape_node: Polygon
 ## 視界システムの初期化（Enemyの_ready()から呼び出す）
 func initialize() -> void:
 	_setup_vision_raycasts()
+	# 初期の扇形polygonを生成（エディタとゲーム実行時で同じ形状を表示）
+	_generate_initial_vision_polygon()
 	# vision_shapeの初期表示状態を設定（パトロール時は表示）
 	if vision_shape:
 		vision_shape.visible = true
@@ -93,6 +95,46 @@ func set_vision_parameters(ray_count: int, distance: float, angle: float) -> voi
 
 # ======================== 内部メソッド ========================
 
+## 指定されたインデックスの角度を計算するヘルパー関数（コード重複を防止）
+func _calculate_ray_angle(index: int) -> float:
+	var angle_step: float = (vision_angle * 2.0) / float(vision_ray_count - 1) if vision_ray_count > 1 else 0.0
+	var angle_deg: float = -vision_angle + (angle_step * float(index))
+	return deg_to_rad(angle_deg)
+
+## エディタ専用：RayCastを作成せずにpolygonのみを更新（静的メソッド）
+## @param vision_shape_node: 更新対象のPolygon2D
+## @param detection_collision_node: 更新対象のCollisionPolygon2D
+## @param ray_count: RayCastの本数
+## @param distance: 視界の最大距離
+## @param angle: 視界の角度（度数、片側）
+static func setup_initial_polygon_for_editor(
+	vision_shape_node: Polygon2D,
+	detection_collision_node: CollisionPolygon2D,
+	ray_count: int,
+	distance: float,
+	angle: float
+) -> void:
+	if not vision_shape_node or not detection_collision_node:
+		return
+
+	# 新しいpolygonを構築（原点から始まる）
+	var initial_polygon: PackedVector2Array = PackedVector2Array([Vector2.ZERO])
+
+	# 扇形の各頂点を計算
+	for i in range(ray_count):
+		# 角度を計算（_calculate_ray_angle()の静的版）
+		var angle_step: float = (angle * 2.0) / float(ray_count - 1) if ray_count > 1 else 0.0
+		var angle_deg: float = -angle + (angle_step * float(i))
+		var angle_rad: float = deg_to_rad(angle_deg)
+
+		# 扇形の端点を計算
+		var point: Vector2 = Vector2(cos(angle_rad) * distance, sin(angle_rad) * distance)
+		initial_polygon.append(point)
+
+	# VisionShapeとDetectionCollisionのpolygonを設定
+	vision_shape_node.polygon = initial_polygon
+	detection_collision_node.polygon = initial_polygon
+
 ## 視界判定用のRayCast2Dを生成
 func _setup_vision_raycasts() -> void:
 	if not detection_area:
@@ -106,10 +148,8 @@ func _setup_vision_raycasts() -> void:
 	# 扇形の角度範囲でRayCastを生成
 	for i in range(vision_ray_count):
 		var raycast: RayCast2D = RayCast2D.new()
-		# 角度を計算（-vision_angle から +vision_angle まで）
-		var angle_step: float = (vision_angle * 2.0) / float(vision_ray_count - 1) if vision_ray_count > 1 else 0.0
-		var angle_deg: float = -vision_angle + (angle_step * float(i))
-		var angle_rad: float = deg_to_rad(angle_deg)
+		# 角度を計算（ヘルパー関数を使用してコード重複を防止）
+		var angle_rad: float = _calculate_ray_angle(i)
 
 		# RayCastの方向を設定
 		raycast.target_position = Vector2(cos(angle_rad) * vision_distance, sin(angle_rad) * vision_distance)
@@ -151,6 +191,27 @@ func _update_patrol_vision_color() -> void:
 		return
 	# パトロール時の色を設定
 	vision_shape.color = Color(0.309804, 0.65098, 0.835294, 0.2)
+
+## 初期の扇形polygonを生成（障害物がない理想的な視界範囲）
+func _generate_initial_vision_polygon() -> void:
+	if not vision_shape or not detection_collision:
+		return
+
+	# 新しいpolygonを構築（原点から始まる）
+	var initial_polygon: PackedVector2Array = PackedVector2Array([Vector2.ZERO])
+
+	# 扇形の各頂点を計算（vision_ray_countの数だけ）
+	for i in range(vision_ray_count):
+		# 角度を計算（ヘルパー関数を使用してコード重複を防止）
+		var angle_rad: float = _calculate_ray_angle(i)
+
+		# 扇形の端点を計算
+		var point: Vector2 = Vector2(cos(angle_rad) * vision_distance, sin(angle_rad) * vision_distance)
+		initial_polygon.append(point)
+
+	# VisionShapeとDetectionCollisionのpolygonを設定
+	vision_shape.polygon = initial_polygon
+	detection_collision.polygon = initial_polygon
 
 # ======================== クリーンアップ処理 ========================
 

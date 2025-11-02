@@ -23,6 +23,12 @@ const SECONDARY_PROJECTILE_DECELERATION_RATE: float = 0.99
 ## ダメージ量
 @export var damage: int = 1
 
+# ======================== 静的変数（全インスタンスで共有） ========================
+## プライマリ投射物用のコリジョン形状（全インスタンスで共有して最適化）
+static var _shared_primary_shape: CapsuleShape2D = null
+## セカンダリ投射物用のコリジョン形状（全インスタンスで共有して最適化）
+static var _shared_secondary_shape: CircleShape2D = null
+
 # ======================== 変数定義 ========================
 ## プロジェクタイルの速度ベクトル
 var velocity: Vector2 = Vector2.ZERO
@@ -38,6 +44,23 @@ var distance_traveled: float = 0.0
 # ======================== ノード参照キャッシュ ========================
 @onready var sprite_2d: Sprite2D = $Sprite2D
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
+
+# ======================== 初期化処理 ========================
+func _ready() -> void:
+	# 共有shape群を初回のみ作成（全インスタンスで1回だけ実行、メモリ最適化）
+	if _shared_primary_shape == null:
+		# プライマリ投射物用のコリジョン形状（横長の楕円形）
+		# Godot 4.4のCapsuleShape2Dは縦向き（Y軸方向）がデフォルト
+		# - radius: カプセルの両端にある半円の半径（横幅を決定）
+		# - height: カプセル全体の高さ（縦の長さ）
+		# 横長にするため、heightを大きく、radiusを小さくし、initialize()で90度回転させる
+		_shared_primary_shape = CapsuleShape2D.new()
+		_shared_primary_shape.radius = 7.0   # 半円の半径 = 横幅の半分
+		_shared_primary_shape.height = 40.0  # カプセル全体の高さ
+
+		# セカンダリ投射物用のコリジョン形状（円形）
+		_shared_secondary_shape = CircleShape2D.new()
+		_shared_secondary_shape.radius = 12.0  # 円の半径
 
 # ======================== フレーム処理 ========================
 ## 物理演算処理（移動と生存時間カウントダウン）
@@ -84,13 +107,17 @@ func initialize(direction: float, speed: float, shooter: Node2D, damage_value: i
 	# スタンエフェクトフラグを設定
 	applies_stun_effect = stun_effect
 
-	# スタンエフェクトに応じてスプライトとスケールを設定
+	# スタンエフェクトに応じてスプライトとコリジョン形状を設定
 	if applies_stun_effect:
-		# スタンエフェクトあり = セカンダリ投射物
+		# セカンダリ投射物：円形のコリジョン（ダメージなし・スタンあり）
 		sprite_2d.texture = SECONDARY_PROJECTILE_TEXTURE
+		collision_shape_2d.shape = _shared_secondary_shape
+		collision_shape_2d.rotation = 0.0  # 円形は回転不要
 	else:
-		# スタンエフェクトなし = プライマリ投射物
+		# プライマリ投射物：横長楕円形のコリジョン（ダメージあり・スタンなし）
 		sprite_2d.texture = PRIMARY_PROJECTILE_TEXTURE
+		collision_shape_2d.shape = _shared_primary_shape
+		collision_shape_2d.rotation = PI / 2.0  # 縦向きCapsuleShapeを90度回転して横長に
 
 	# テクスチャのサイズを取得し、TARGET_SIZE（50px）になるようにscaleを計算
 	var texture_size: Vector2 = sprite_2d.texture.get_size()
