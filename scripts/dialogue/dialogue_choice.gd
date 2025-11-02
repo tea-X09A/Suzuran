@@ -24,6 +24,14 @@ var choice_index: int = 0
 ## 選択状態
 var is_selected_state: bool = false
 
+# ======================== ノード参照（@onreadyでキャッシュ） ========================
+
+## 影用Label
+@onready var shadow_label: Label = $ShadowLabel
+
+## メインテキスト用Label
+@onready var text_label: Label = $TextLabel
+
 # ======================== スタイル定義（@onreadyでキャッシュ） ========================
 
 ## 選択状態のスタイル
@@ -35,8 +43,11 @@ var is_selected_state: bool = false
 # ======================== 初期化処理 ========================
 
 func _ready() -> void:
-	# FontTheme AutoLoadを使用してフォントを適用（太字バリエーション）
-	FontTheme.apply_to_button(self, choice_font_size, true, 9, Color.BLACK)
+	# 影用Labelにフォントを適用（太字、暗めの色）
+	FontTheme.apply_to_label(shadow_label, choice_font_size, true, Color(0.0, 0.0, 0.0, 0.5))
+
+	# メインテキスト用Labelにフォントを適用（太字、通常の色）
+	FontTheme.apply_to_label(text_label, choice_font_size, true, Color(1.0, 1.0, 1.0, 1.0))
 
 	# ボタンのpressedシグナルに接続
 	pressed.connect(_on_button_pressed)
@@ -51,7 +62,9 @@ func _ready() -> void:
 ## @param choice_text String 選択肢のテキスト
 ## @param index int 選択肢のインデックス
 func setup(choice_text: String, index: int) -> void:
-	text = choice_text
+	# 影用Labelとメインテキスト用Labelの両方にテキストを設定
+	shadow_label.text = choice_text
+	text_label.text = choice_text
 	choice_index = index
 
 ## 選択状態を設定する

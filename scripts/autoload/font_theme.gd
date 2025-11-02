@@ -29,7 +29,8 @@ func create_bold_font(base_font: FontFile = NOTO_SANS_JP) -> FontVariation:
 ## @param label 対象の Label ノード
 ## @param font_size フォントサイズ
 ## @param use_bold 太字を使用するか（デフォルトは false）
-func apply_to_label(label: Label, font_size: int, use_bold: bool = false) -> void:
+## @param font_color フォントの色（デフォルトは白色）
+func apply_to_label(label: Label, font_size: int, use_bold: bool = false, font_color: Color = Color(1.0, 1.0, 1.0, 1.0)) -> void:
 	if not label:
 		push_warning("FontTheme: Label が null です")
 		return
@@ -40,6 +41,7 @@ func apply_to_label(label: Label, font_size: int, use_bold: bool = false) -> voi
 		label.add_theme_font_override("font", NOTO_SANS_JP)
 
 	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", font_color)
 
 ## Button にフォントとサイズを適用する
 ## @param button 対象の Button ノード
@@ -68,7 +70,8 @@ func apply_to_button(button: Button, font_size: int, use_bold: bool = false, out
 ## @param rich_label 対象の RichTextLabel ノード
 ## @param font_size フォントサイズ
 ## @param use_bold 太字を使用するか（デフォルトは false）
-func apply_to_rich_text_label(rich_label: RichTextLabel, font_size: int, use_bold: bool = false) -> void:
+## @param font_color フォントの色（デフォルトは白色）
+func apply_to_rich_text_label(rich_label: RichTextLabel, font_size: int, use_bold: bool = false, font_color: Color = Color(1.0, 1.0, 1.0, 1.0)) -> void:
 	if not rich_label:
 		push_warning("FontTheme: RichTextLabel が null です")
 		return
@@ -82,6 +85,7 @@ func apply_to_rich_text_label(rich_label: RichTextLabel, font_size: int, use_bol
 
 	rich_label.add_theme_font_size_override("normal_font_size", font_size)
 	rich_label.add_theme_font_size_override("bold_font_size", font_size)
+	rich_label.add_theme_color_override("default_color", font_color)
 
 # ======================== ユーティリティ ========================
 ## 任意の Control ノードにフォントとサイズを適用する汎用関数

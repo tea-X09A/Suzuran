@@ -303,6 +303,7 @@ target_path = NodePath("../Player")
 position = Vector2(2816, -94)
 
 [node name="Background" parent="." instance=ExtResource("4_1nvli")]
+visible = false
 offset = Vector2(0, -570)
 scale = Vector2(0.7, 0.7)
 transform = Transform2D(0.7, 0, 0, 0.7, 0, -570)
@@ -336,7 +337,7 @@ tile_set = SubResource("TileSet_d0grl")
 position = Vector2(2632, -33)
 
 [node name="trap_01" parent="." instance=ExtResource("4_5kr0j")]
-position = Vector2(2999, -73)
+position = Vector2(2999, -231)
 effect_type = "down"
 
 [node name="Enemy" parent="." instance=ExtResource("5_ry65h")]

@@ -180,7 +180,11 @@ func _show_choices(choices: Array[DialogueChoiceData]) -> void:
 		var choice: DialogueChoiceData = choices[i]
 		var choice_button: Node = choice_scene.instantiate()
 
-		# 選択肢テキストを設定
+		# コンテナに追加（_ready()を呼ぶためにここで追加）
+		choices_container.add_child(choice_button)
+		choice_buttons.append(choice_button)
+
+		# 選択肢テキストを設定（add_child後に呼ぶ）
 		var choice_text: String = choice.text.get(language, "")
 		if choice_button.has_method("setup"):
 			choice_button.setup(choice_text, i)
@@ -188,10 +192,6 @@ func _show_choices(choices: Array[DialogueChoiceData]) -> void:
 		# シグナルに接続
 		if choice_button.has_signal("choice_selected"):
 			choice_button.choice_selected.connect(_on_choice_selected.bind(choice.next_index))
-
-		# コンテナに追加
-		choices_container.add_child(choice_button)
-		choice_buttons.append(choice_button)
 
 	# 最初の選択肢を選択状態にする
 	selected_choice_index = 0
@@ -317,6 +317,10 @@ func _complete_event() -> void:
 	# 入力監視を停止
 	_stop_choice_input_monitoring()
 	_stop_next_input_monitoring()
+
+	# DialogueBoxのシグナルを切断
+	if is_instance_valid(dialogue_box) and dialogue_box.message_completed.is_connected(_on_message_completed):
+		dialogue_box.message_completed.disconnect(_on_message_completed)
 
 	# DialogueSystemを削除
 	if is_instance_valid(dialogue_system):
