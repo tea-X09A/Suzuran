@@ -116,6 +116,9 @@ func _ready() -> void:
 	# スプライトの初期スケールを保存
 	if sprite:
 		initial_sprite_scale_x = abs(sprite.scale.x)
+	# エネミーは常にプレイヤーを通過させる（コリジョンレイヤーを無効化）
+	# ダメージ/キャプチャ判定はチェイス状態の時のみ行う
+	collision_layer = 0
 
 	# コンポーネントの初期化
 	_initialize_components()
@@ -277,12 +280,13 @@ func _physics_process(delta: float) -> void:
 		detection_component.handle_lose_sight_timer(delta)
 
 	# 画面内の場合のみキャプチャ処理を実行
-	if on_screen and current_overlapping_player and capture_component:
+	# チェイス状態の時のみダメージ/キャプチャ判定を行う
+	if on_screen and current_overlapping_player and capture_component and current_state == state_instances["CHASE"]:
 		# hitboxがplayerを検知した場合、動きを止める
 		velocity.x = 0.0
 		capture_component.try_capture_player(current_overlapping_player, detection_component)
 	elif current_state:
-		# プレイヤーと重なっていない場合のみステート処理を実行
+		# プレイヤーと重なっていない場合、またはチェイス状態でない場合はステート処理を実行
 		current_state.physics_update(delta)
 
 	# Godot物理エンジンによる移動実行
@@ -417,8 +421,8 @@ func _on_screen_exited() -> void:
 	# プレイヤー追跡を解除
 	if detection_component and detection_component.is_player_tracked():
 		detection_component.clear_player()
-		# 追跡中だった場合はIDLE状態に戻る
-		change_state("IDLE")
+		# 追跡中だった場合はパトロール状態に遷移
+		change_state("PATROL")
 
 # ======================== 検知エリアシグナルハンドラ ========================
 
