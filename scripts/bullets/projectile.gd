@@ -96,7 +96,12 @@ func _physics_process(delta: float) -> void:
 ## プロジェクタイルの初期化（プレイヤーから呼び出される）
 func initialize(direction: float, speed: float, shooter: Node2D, damage_value: int = 1, stun_effect: bool = false) -> void:
 	# 速度設定
-	velocity = Vector2(direction * speed, 0.0)
+	if stun_effect:
+		# セカンダリ投射物：放物線を描くように上向きの初期速度を追加
+		velocity = Vector2(direction * speed, -200.0)
+	else:
+		# プライマリ投射物：水平方向のみ
+		velocity = Vector2(direction * speed, 0.0)
 
 	# 発射者を記録
 	owner_character = shooter
