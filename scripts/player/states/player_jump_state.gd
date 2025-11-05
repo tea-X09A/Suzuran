@@ -8,6 +8,10 @@ var jump_start_time: float = 0.0
 
 # ======================== 状態初期化・クリーンアップ ========================
 
+## 状態名を取得
+func get_state_name() -> String:
+	return "JUMP"
+
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
 	jump_start_time = Time.get_ticks_msec() / 1000.0

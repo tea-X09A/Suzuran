@@ -20,6 +20,10 @@ var input_delay_timer: float = 0.0
 
 # ======================== 状態初期化 ========================
 
+## 状態名を取得
+func get_state_name() -> String:
+	return "CAPTURE"
+
 ## CAPTURE状態開始時の初期化
 func initialize_state() -> void:
 	# ジャンプ入力遅延タイマーを設定

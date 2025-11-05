@@ -3,6 +3,10 @@ extends PlayerBaseState
 
 # ======================== 状態初期化・クリーンアップ ========================
 
+## 状態名を取得
+func get_state_name() -> String:
+	return "KNOCKBACK"
+
 ## ノックバック状態初期化
 func initialize_state() -> void:
 	if player.down_state:

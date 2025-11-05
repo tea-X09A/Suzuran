@@ -31,6 +31,10 @@ var knockback_force_value: float = 0.0
 var current_animation_type: String = ""
 var effect_type: String = ""
 
+## 状態名を取得
+func get_state_name() -> String:
+	return "DOWN"
+
 
 # ======================== 状態初期化・クリーンアップ ========================
 

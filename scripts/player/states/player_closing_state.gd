@@ -3,6 +3,10 @@ extends PlayerBaseState
 
 # ======================== 状態初期化・クリーンアップ ========================
 
+## 状態名を取得
+func get_state_name() -> String:
+	return "CLOSING"
+
 # ノード参照キャッシュ
 var detection_area: Area2D = null
 
@@ -10,7 +14,6 @@ var detection_area: Area2D = null
 var distance_traveled: float = 0.0  # 移動距離
 var max_closing_distance: float = 0.0  # 最大追従距離（ピクセル）（パラメータから設定）
 var start_position: Vector2 = Vector2.ZERO  # 開始位置
-var enemy_detected: bool = false  # 敵を検知したかのフラグ
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
@@ -21,8 +24,22 @@ func initialize_state() -> void:
 	# 追従状態初期化
 	distance_traveled = 0.0
 	start_position = player.global_position
-	enemy_detected = false
-	max_closing_distance = get_parameter("move_closing_max_distance")
+
+	# 前の状態に応じて速度と距離を設定
+	var base_run_speed: float = get_parameter("move_run_speed")
+	var speed_multiplier: float
+	var forward_speed: float
+
+	if player.previous_state and player.previous_state.get_state_name() == "RUN":
+		# RUN状態からの遷移：速い速度で長距離追従
+		speed_multiplier = get_parameter("move_closing_speed_multiplier_from_run")
+		max_closing_distance = get_parameter("move_closing_max_distance_from_run")
+	else:
+		# 通常地上状態（IDLE, WALK）からの遷移：run速度で短距離追従
+		speed_multiplier = get_parameter("move_closing_speed_multiplier_from_ground")
+		max_closing_distance = get_parameter("move_closing_max_distance_from_ground")
+
+	forward_speed = base_run_speed * speed_multiplier
 
 	# DetectionAreaのarea_enteredシグナルを接続（重複接続を防止）
 	if detection_area and not detection_area.area_entered.is_connected(_on_detection_area_area_entered):
@@ -31,10 +48,6 @@ func initialize_state() -> void:
 	# Spriteの向きに応じてDetectionAreaの位置を更新（常に同期）
 	_update_detection_area_position()
 
-	# 前進速度の設定（run状態の倍率適用で素早く接近）
-	var base_run_speed: float = get_parameter("move_run_speed")
-	var speed_multiplier: float = get_parameter("move_closing_speed_multiplier")
-	var forward_speed: float = base_run_speed * speed_multiplier
 	# Sprite2Dの向きに応じて前進
 	var direction: float = 1.0 if sprite_2d.flip_h else -1.0
 	player.velocity.x = direction * forward_speed
@@ -44,12 +57,6 @@ func cleanup_state() -> void:
 	# DetectionAreaのシグナル接続を解除（メモリリーク防止）
 	if detection_area and detection_area.area_entered.is_connected(_on_detection_area_area_entered):
 		detection_area.area_entered.disconnect(_on_detection_area_area_entered)
-
-	# 敵を検知せずにclosing状態が終了した場合は硬直時間を追加
-	if not enemy_detected:
-		player.dodge_recovery_time = 0.1
-		# 速度をゼロにして慣性を消す
-		player.velocity.x = 0.0
 
 # ======================== 入力処理 ========================
 
@@ -87,11 +94,10 @@ func physics_update(delta: float) -> void:
 	# 移動距離を計算
 	distance_traveled = abs(player.global_position.x - start_position.x)
 
-	# 最大追従距離に達した場合、敵が見つからなければidle状態へ遷移
+	# 最大追従距離に達した場合、fighting状態へ遷移
 	if distance_traveled >= max_closing_distance:
-		if not enemy_detected:
-			player.change_state("IDLE")
-			return
+		player.change_state("FIGHTING")
+		return
 
 # ======================== ヘルパーメソッド ========================
 
@@ -112,14 +118,8 @@ func _update_detection_area_position() -> void:
 
 ## DetectionAreaがArea2D（敵のHurtbox）と衝突した時の処理
 func _on_detection_area_area_entered(area: Area2D) -> void:
-	# 既に敵を検知している場合は処理しない
-	if enemy_detected:
-		return
-
 	# エリアの親ノードを取得して、enemiesグループに所属しているか確認
 	var parent_node: Node = area.get_parent()
 	if parent_node and parent_node.is_in_group("enemies"):
-		# 敵を検知したフラグを立てる
-		enemy_detected = true
-		# fighting状態へ遷移（runからのボーナスは付けない）
+		# fighting状態へ遷移
 		player.change_state("FIGHTING")

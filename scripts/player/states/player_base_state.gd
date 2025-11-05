@@ -68,6 +68,10 @@ func get_player() -> CharacterBody2D:
 			return player_instance as CharacterBody2D
 	return null
 
+## 状態名を取得（各サブクラスでオーバーライド）
+func get_state_name() -> String:
+	return "BASE"
+
 # ======================== AnimationTree連携メソッド ========================
 ## 状態初期化（AnimationTreeからのコールバック用）
 func initialize_state() -> void:
@@ -230,12 +234,15 @@ func can_transition_to_squat() -> bool:
 
 	return is_squat_just_pressed()
 
+## Examine入力チェック（決定ボタン）
+## キーボード: Z/Enter、ゲームパッド: ○（日本語）/×（英語）
+func is_examine_input() -> bool:
+	# GameSettingsのis_action_menu_accept_pressed()を使用
+	# 言語とデバイスに応じて適切な決定ボタンをチェック
+	return GameSettings.is_action_menu_accept_pressed()
+
 ## 攻撃入力チェック
 func is_fight_input() -> bool:
-	# examineエリア内ではこのアクションを抑制
-	if player.examine_component and player.examine_component.is_in_examine_area():
-		return false
-
 	var fight_key: int = GameSettings.get_key_binding("fight")
 
 	# カスタムキーチェック
@@ -437,8 +444,31 @@ func handle_ground_physics(delta: float) -> bool:
 		return true
 	return false
 
+## 硬直中のexamine入力チェック（共通処理）
+## @return bool examine入力が処理された場合true
+func handle_recovery_examine_input() -> bool:
+	if player.examine_component and player.examine_component.is_in_examine_area():
+		if is_examine_input():
+			player.examine_component.execute_examine()
+			return true
+	return false
+
+## 格闘後の硬直時間処理（共通処理）
+## @return bool 硬直中の場合true（入力処理を続行すべきでない）
+func handle_fighting_recovery() -> bool:
+	if player.fighting_recovery_time > 0.0:
+		# examineエリア内では決定ボタンが最優先
+		handle_recovery_examine_input()
+		# 硬直中は全ての入力を無視
+		return true
+	return false
+
 ## 共通入力処理（idle, walk, run状態で共通）
 func handle_common_inputs() -> bool:
+	# Examine入力チェック（最優先：examineエリア内でのみ有効）
+	if handle_recovery_examine_input():
+		return true
+
 	# ジャンプ入力チェック
 	if can_jump():
 		perform_jump()
@@ -449,9 +479,9 @@ func handle_common_inputs() -> bool:
 		player.change_state("SQUAT")
 		return true
 
-	# 攻撃入力チェック
+	# 攻撃入力チェック（地上状態ではCLOSINGに遷移）
 	if is_fight_input():
-		player.change_state("FIGHTING")
+		player.change_state("CLOSING")
 		return true
 
 	# 投擲入力チェック
@@ -484,20 +514,18 @@ func handle_action_end_transition() -> void:
 
 ## 着地時の状態遷移処理（共通ヘルパー）
 func handle_landing_transition() -> void:
-	# squatボタンが押されていればsquat状態へ遷移
-	if is_squat_input():
-		player.squat_was_cancelled = false
-		player.change_state("SQUAT")
-		return
-
 	# 移動入力チェック
 	var movement_input: float = get_movement_input()
+
 	if movement_input != 0.0:
+		# 移動入力がある場合：硬直をキャンセルしてWALK/RUNに遷移
 		if is_dash_input():
 			player.change_state("RUN")
 		else:
 			player.change_state("WALK")
 	else:
+		# 移動入力がない場合：硬直時間を設定してIDLEに遷移
+		player.landing_recovery_time = get_parameter("landing_recovery_duration")
 		player.change_state("IDLE")
 
 ## 空中でのアクション入力処理（攻撃・投擲）

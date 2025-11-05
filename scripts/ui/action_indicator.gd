@@ -200,5 +200,7 @@ func _get_appropriate_key_text() -> String:
 			return " Enter "
 	# ゲームパッドの場合
 	else:  # GAMEPAD
-		# ui_menu_accept は言語に関わらず Circle (⚪) にマップされている
-		return "⚪︎"
+		if language == GameSettings.Language.JAPANESE:
+			return "⚪︎"
+		else:  # English
+			return "×"

@@ -26,6 +26,7 @@ static var PARAMETERS: Dictionary = {
 		"jump_max_fall_speed": 800.0,       # 最大落下速度（ピクセル/秒）
 		"landing_speed_retention": 0.3,     # 着地時の速度保持率（0.3 = 30%保持、70%減衰）
 		"landing_speed_threshold": 200.0,   # 着地時の速度減衰を適用する最小速度（ピクセル/秒）
+		"landing_recovery_duration": 0.05,  # 着地後の硬直時間（秒）
 
 		# ======================== 投擲パラメータ ========================
 		"throwing_projectile_speed": 500.0, # プロジェクタイルの飛行速度（ピクセル/秒）
@@ -34,18 +35,22 @@ static var PARAMETERS: Dictionary = {
 
 		# ======================== 格闘パラメータ ========================
 		"move_fighting_initial_speed": 250.0,  # 格闘の初期移動速度（ピクセル/秒）
-		"move_fighting_duration": 0.5,         # 格闘アクションの持続時間（秒）
+		"move_fighting_duration": 0.3,         # 格闘アクションの持続時間（秒）
 		"fighting_enabled": true,              # 格闘アクションの有効性
 		"fighting_damage": 3,                  # 格闘攻撃のダメージ量
+		"fighting_recovery_duration": 0.2,     # 地上格闘後の硬直時間（秒）
 
 		# ======================== CLOSING（追従）パラメータ ========================
-		"move_closing_speed_multiplier": 1.5,  # CLOSING時の速度倍率（run_speedに対する倍率）
-		"move_closing_max_distance": 300.0,    # CLOSING時の最大追従距離（ピクセル）
+		"move_closing_speed_multiplier_from_run": 1.5,  # RUN状態からのCLOSING時の速度倍率（run_speedに対する倍率）
+		"move_closing_max_distance_from_run": 300.0,    # RUN状態からのCLOSING時の最大追従距離（ピクセル）
+		"move_closing_speed_multiplier_from_ground": 1.0,  # 通常地上状態からのCLOSING時の速度倍率（run_speedに対する倍率）
+		"move_closing_max_distance_from_ground": 150.0,    # 通常地上状態からのCLOSING時の最大追従距離（ピクセル）
 
 		# ======================== DODGING（回避）パラメータ ========================
 		"move_dodging_speed_multiplier": 1.5,  # DODGING時の速度倍率（run_speedに対する倍率、closingと同じ）
 		"move_dodging_distance": 200.0,        # DODGING時の移動距離（ピクセル）
 		"dodging_double_tap_window": 0.3,      # ダブルタップの許容時間（秒）
+		"dodging_recovery_duration": 0.2,      # 回避後の硬直時間（秒）
 
 		# ======================== ダメージパラメータ ========================
 		"damage_duration": 0.6,                    # ダメージアニメーションの継続時間（秒）
@@ -75,6 +80,7 @@ static var PARAMETERS: Dictionary = {
 		"jump_max_fall_speed": 900.0,       # 最大落下速度（800.0 * 1.125）（ピクセル/秒）
 		"landing_speed_retention": 0.3,     # 着地時の速度保持率（0.3 = 30%保持、70%減衰）
 		"landing_speed_threshold": 200.0,   # 着地時の速度減衰を適用する最小速度（ピクセル/秒）
+		"landing_recovery_duration": 0.05,  # 着地後の硬直時間（秒）
 
 		# ======================== 投擲パラメータ（強化版） ========================
 		"throwing_projectile_speed": 650.0, # プロジェクタイルの飛行速度（500.0 * 1.3）（ピクセル/秒）
@@ -86,15 +92,19 @@ static var PARAMETERS: Dictionary = {
 		"move_fighting_duration": 0.4,         # 戦闘アクションの持続時間（0.5 * 0.8）（秒）
 		"fighting_enabled": false,             # 戦闘アクションの有効性（EXPANSION時は無効）
 		"fighting_damage": 3,                  # 格闘攻撃のダメージ量
+		"fighting_recovery_duration": 0.4,     # 地上格闘後の硬直時間（0.5 * 0.8）（秒）
 
 		# ======================== CLOSING（追従）パラメータ（強化版） ========================
-		"move_closing_speed_multiplier": 1.8,  # CLOSING時の速度倍率（1.5 * 1.2）
-		"move_closing_max_distance": 400.0,    # CLOSING時の最大追従距離（300.0 * 1.33）（ピクセル）
+		"move_closing_speed_multiplier_from_run": 1.8,  # RUN状態からのCLOSING時の速度倍率（1.5 * 1.2）
+		"move_closing_max_distance_from_run": 400.0,    # RUN状態からのCLOSING時の最大追従距離（300.0 * 1.33）（ピクセル）
+		"move_closing_speed_multiplier_from_ground": 1.0,  # 通常地上状態からのCLOSING時の速度倍率（run_speedに対する倍率）
+		"move_closing_max_distance_from_ground": 200.0,    # 通常地上状態からのCLOSING時の最大追従距離（150.0 * 1.33）（ピクセル）
 
 		# ======================== DODGING（回避）パラメータ（強化版） ========================
 		"move_dodging_speed_multiplier": 1.8,  # DODGING時の速度倍率（1.5 * 1.2、closingと同じ）
 		"move_dodging_distance": 260.0,        # DODGING時の移動距離（200.0 * 1.3）（ピクセル）
 		"dodging_double_tap_window": 0.3,      # ダブルタップの許容時間（秒）
+		"dodging_recovery_duration": 0.08,     # 回避後の硬直時間（0.1 * 0.8）（秒）
 
 		# ======================== ダメージパラメータ（強化版） ========================
 		"damage_duration": 0.8,                    # ダメージアニメーションの継続時間（0.6 * 1.33）（秒）

@@ -3,6 +3,10 @@ extends PlayerBaseState
 
 # ======================== 状態初期化・クリーンアップ ========================
 
+## 状態名を取得
+func get_state_name() -> String:
+	return "DODGING"
+
 # 回避状態管理変数
 var distance_traveled: float = 0.0  # 移動距離
 var max_dodging_distance: float = 0.0  # 最大回避距離（ピクセル）（パラメータから設定）
@@ -28,7 +32,7 @@ func initialize_state() -> void:
 ## AnimationTree状態終了時の処理
 func cleanup_state() -> void:
 	# 回避終了後の硬直時間を設定
-	player.dodge_recovery_time = 0.1
+	player.dodge_recovery_time = get_parameter("dodging_recovery_duration")
 	# 速度をゼロにして慣性を消す
 	player.velocity.x = 0.0
 

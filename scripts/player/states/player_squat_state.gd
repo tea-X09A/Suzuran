@@ -3,6 +3,10 @@ extends PlayerBaseState
 
 # ======================== 状態初期化・クリーンアップ ========================
 
+## 状態名を取得
+func get_state_name() -> String:
+	return "SQUAT"
+
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
 	set_animation_state("SQUAT")
@@ -18,7 +22,15 @@ func handle_input(delta: float) -> void:
 	if player.disable_input:
 		return
 
-	# ジャンプ入力チェック（最優先：しゃがみキャンセル）
+	# 格闘後の硬直中の入力処理（共通メソッド使用）
+	if handle_fighting_recovery():
+		return
+
+	# Examine入力チェック（最優先：examineエリア内でのみ有効）
+	if handle_recovery_examine_input():
+		return
+
+	# ジャンプ入力チェック（しゃがみキャンセル）
 	if can_jump():
 		player.squat_was_cancelled = true  # キャンセルフラグを設定
 		perform_jump()
@@ -27,7 +39,7 @@ func handle_input(delta: float) -> void:
 	# 攻撃入力チェック（しゃがみキャンセル）
 	if is_fight_input():
 		player.squat_was_cancelled = true  # キャンセルフラグを設定
-		player.change_state("FIGHTING")
+		player.change_state("CLOSING")
 		return
 
 	# 投擲入力チェック（しゃがみキャンセル）

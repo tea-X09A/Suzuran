@@ -12,6 +12,10 @@ var is_throwing_02: bool = false  # throwing_02アニメーションを使用中
 # AnimationTreeのTHROWINGノード参照（パフォーマンス最適化のためキャッシュ）
 var throwing_animation_node: AnimationNodeAnimation = null
 
+## 状態名を取得
+func get_state_name() -> String:
+	return "THROWING"
+
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
 	# THROWINGノードの参照をキャッシュ（パフォーマンス最適化）

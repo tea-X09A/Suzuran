@@ -14,6 +14,10 @@ var started_airborne: bool = false  # 状態開始時に空中にいたかのフ
 var damage: int = 3  # ダメージ値
 var hit_enemies: Array[WeakRef] = []  # 攻撃済みの敵を記録（多段ヒット防止＆複数敵攻撃対応・weakrefでメモリリーク防止）
 
+## 状態名を取得
+func get_state_name() -> String:
+	return "FIGHTING"
+
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
 	# 攻撃が有効でない場合は処理を停止
@@ -41,10 +45,12 @@ func initialize_state() -> void:
 
 	# 前進速度の設定
 	if not started_airborne:  # 地上でのfighting時のみ前進
-		var forward_speed: float = get_parameter("move_fighting_initial_speed")
-		# Sprite2Dの向きに応じて前進（throwingと同じ方法で統一）
-		var direction: float = 1.0 if sprite_2d.flip_h else -1.0
-		player.velocity.x = direction * forward_speed
+		# CLOSING状態から遷移してきた場合は、その速度を引き継ぐ
+		if not player.previous_state or player.previous_state.get_state_name() != "CLOSING":
+			var forward_speed: float = get_parameter("move_fighting_initial_speed")
+			# Sprite2Dの向きに応じて前進（throwingと同じ方法で統一）
+			var direction: float = 1.0 if sprite_2d.flip_h else -1.0
+			player.velocity.x = direction * forward_speed
 
 	# アニメーション完了シグナルの接続（重複接続を防止）
 	if animation_player and not animation_player.animation_finished.is_connected(_on_fighting_animation_finished):
@@ -197,6 +203,14 @@ func _is_enemy_already_hit(enemy: Node) -> bool:
 func _transition_after_fighting() -> void:
 	if not player.is_grounded:
 		player.change_state("FALL")
+		return
+
+	# 地上でfightingを開始していた場合、硬直時間を設定し、速度を0にする
+	if not started_airborne:
+		player.fighting_recovery_time = get_parameter("fighting_recovery_duration")
+		player.velocity.x = 0.0
+		# 硬直時間中は入力を無視してIDLE状態に遷移
+		player.change_state("IDLE")
 		return
 
 	# 地上での状態判定（移動入力に応じて遷移）

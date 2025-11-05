@@ -3,6 +3,10 @@ extends PlayerBaseState
 
 # ======================== 状態初期化・クリーンアップ ========================
 
+## 状態名を取得
+func get_state_name() -> String:
+	return "IDLE"
+
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
 	# 着地時の慣性を抑制（高速移動からの着地時のみ）
@@ -20,17 +24,27 @@ func handle_input(delta: float) -> void:
 	if player.disable_input:
 		return
 
+	# ======================== 硬直時間処理 ========================
+
+	# 着地後の硬直中の入力処理
+	if player.landing_recovery_time > 0.0:
+		# examineエリア内では決定ボタンが最優先
+		handle_recovery_examine_input()
+		# 硬直中は全ての入力を無視
+		return
+
 	# 回避後の硬直中の入力処理
 	if player.dodge_recovery_time > 0.0:
-		# 硬直中でもfightingとthrowingの入力は受け付ける
-		if is_fight_input():
-			player.change_state("FIGHTING")
-			return
-		if is_throwing_input():
-			player.change_state("THROWING")
-			return
-		# その他の入力は無視
+		# examineエリア内では決定ボタンが最優先
+		handle_recovery_examine_input()
+		# 硬直中は全ての入力を無視
 		return
+
+	# 格闘後の硬直中の入力処理（共通メソッド使用）
+	if handle_fighting_recovery():
+		return
+
+	# ======================== 通常入力処理 ========================
 
 	# ダブルタップ検出（回避）
 	var dodge_direction: float = check_dodge_double_tap()

@@ -58,6 +58,10 @@ var auto_move_mode: bool = false
 var disable_input: bool = false
 ## 回避後の硬直時間（秒）
 var dodge_recovery_time: float = 0.0
+## 格闘後の硬直時間（秒）
+var fighting_recovery_time: float = 0.0
+## 着地後の硬直時間（秒）
+var landing_recovery_time: float = 0.0
 
 # ======================== ステート管理システム ========================
 
@@ -65,6 +69,8 @@ var dodge_recovery_time: float = 0.0
 var state_instances: Dictionary = {}
 ## 現在のアクティブステート
 var current_state: PlayerBaseState
+## 前の状態（CLOSING状態で使用）
+var previous_state: PlayerBaseState = null
 ## DownStateへの参照（頻繁にアクセスするためキャッシュ）
 var down_state: PlayerDownState
 
@@ -286,9 +292,8 @@ func _physics_process(delta: float) -> void:
 	# 無敵エフェクトを更新
 	invincibility_effect.update_invincibility_effect(delta)
 
-	# 回避後の硬直時間を減少
-	if dodge_recovery_time > 0.0:
-		dodge_recovery_time -= delta
+	# 硬直時間を減少（共通処理）
+	_update_recovery_times(delta)
 
 	# 自動移動モードでない場合のみ入力処理を実行
 	if not auto_move_mode:
@@ -307,6 +312,12 @@ func _physics_process(delta: float) -> void:
 	if current_state:
 		current_state.update_key_states()
 
+## 硬直時間タイマーを更新（回避・格闘・着地の硬直時間を減少）
+func _update_recovery_times(delta: float) -> void:
+	dodge_recovery_time = max(0.0, dodge_recovery_time - delta)
+	fighting_recovery_time = max(0.0, fighting_recovery_time - delta)
+	landing_recovery_time = max(0.0, landing_recovery_time - delta)
+
 ## 状態遷移（CLAUDE.md推奨形式）
 func change_state(new_state_name: String) -> void:
 	if not state_instances.has(new_state_name):
@@ -315,6 +326,8 @@ func change_state(new_state_name: String) -> void:
 	var new_state: PlayerBaseState = state_instances[new_state_name]
 	# 前のステートのクリーンアップ
 	if current_state:
+		# 前の状態を記録（CLOSING状態で使用）
+		previous_state = current_state
 		current_state.cleanup_state()
 	# 新しいステートに変更
 	current_state = new_state

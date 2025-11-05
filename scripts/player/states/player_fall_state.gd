@@ -3,6 +3,10 @@ extends PlayerBaseState
 
 # ======================== 状態初期化・クリーンアップ ========================
 
+## 状態名を取得
+func get_state_name() -> String:
+	return "FALL"
+
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
 	# 慣性保持の初期化（BaseStateの共通メソッド使用）
