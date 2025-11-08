@@ -87,9 +87,6 @@ func physics_update(delta: float) -> void:
 	else:
 		player.velocity.y = 0.0
 
-	# HP減少処理（毎秒1ずつ減少）
-	_update_hp_depletion(delta)
-
 # ======================== 入力処理 ========================
 
 ## 入力処理（jumpのみでキャンセル可能）
@@ -194,14 +191,6 @@ func _apply_recovery_invincibility() -> void:
 		player.down_state.recovery_invincibility_timer = CAPTURE_RECOVERY_INVINCIBILITY_DURATION
 		# 視覚効果を設定
 		player.invincibility_effect.set_invincible(CAPTURE_RECOVERY_INVINCIBILITY_DURATION)
-
-# ======================== HP減少処理 ========================
-
-## CAPTURE状態時のEP増加処理
-func _update_hp_depletion(delta: float) -> void:
-	# 2秒ごとに1ずつEP増加（energy_componentを使用）
-	if player.energy_component:
-		player.energy_component.heal_ep(delta * 0.5)
 
 # ======================== カメラ制御処理 ========================
 

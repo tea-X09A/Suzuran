@@ -1,6 +1,11 @@
 class_name PlayerHealthComponent
 extends RefCounted
 
+# ======================== 定数定義 ========================
+
+## デフォルト最大HP（全体で統一）
+const DEFAULT_MAX_HP: int = 50
+
 # ======================== シグナル定義 ========================
 
 ## HP変更時のシグナル（現在HP、最大HP）
@@ -11,9 +16,9 @@ signal damage_taken(damage: int, effect_type: String)
 # ======================== 変数定義 ========================
 
 ## 現在のHP
-var current_hp: int = 3
+var current_hp: int = DEFAULT_MAX_HP
 ## 最大HP
-var max_hp: int = 10
+var max_hp: int = DEFAULT_MAX_HP
 
 ## プレイヤーへの弱参照（メモリリーク防止）
 var _player_ref: WeakRef = null

@@ -82,11 +82,6 @@ func physics_update(delta: float) -> void:
 
 ## 投擲初期化処理
 func handle_throwing() -> void:
-	# 弾数チェック（弾がない場合は投擲をキャンセル）
-	if not player.ammo_component or not player.ammo_component.has_ammo():
-		handle_action_end_transition()
-		return
-
 	throwing_timer = get_parameter("throwing_animation_duration")
 
 	# 空中の場合はthrowing_02を使用
@@ -105,10 +100,6 @@ func handle_throwing() -> void:
 
 ## プロジェクタイル生成処理
 func spawn_projectile() -> void:
-	# 弾数を消費
-	if not player.ammo_component or not player.ammo_component.consume_ammo():
-		return
-
 	# 現在の移動入力を取得
 	var current_input: float = get_movement_input()
 

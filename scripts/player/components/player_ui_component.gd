@@ -5,10 +5,8 @@ extends RefCounted
 
 # ======================== UI参照 ========================
 
-## EPゲージへの参照
-var ep_gauge: Control = null
-## 弾倉ゲージへの参照
-var ammo_gauge: Control = null
+## HPゲージへの参照
+var hp_gauge: Control = null
 
 # ======================== 内部参照 ========================
 
@@ -32,15 +30,10 @@ func _find_ui_references() -> void:
 	if not ui_layer:
 		return
 
-	# EPゲージ取得
-	ep_gauge = ui_layer.get_node_or_null("EPGauge")
-	if not ep_gauge:
-		push_warning("[PlayerUIComponent] EPGauge not found in UILayer")
-
-	# Ammoゲージ取得
-	ammo_gauge = ui_layer.get_node_or_null("AmmoGauge")
-	if not ammo_gauge:
-		push_warning("[PlayerUIComponent] AmmoGauge not found in UILayer")
+	# HPゲージ取得
+	hp_gauge = ui_layer.get_node_or_null("HPGauge")
+	if not hp_gauge:
+		push_warning("[PlayerUIComponent] HPGauge not found in UILayer")
 
 ## UILayer取得
 func _get_ui_layer() -> CanvasLayer:
@@ -61,25 +54,9 @@ func _connect_component_signals(player: CharacterBody2D) -> void:
 		player.health_component.health_changed.connect(_on_health_changed)
 		player.health_component.damage_taken.connect(_on_damage_taken)
 
-	# EnergyComponent のシグナルに接続
-	if player.energy_component:
-		player.energy_component.energy_changed.connect(_on_energy_changed)
-
-	# AmmoComponent のシグナルに接続
-	if player.ammo_component:
-		player.ammo_component.ammo_changed.connect(_on_ammo_changed)
-
 ## HealthComponent からの HP 変更通知
 func _on_health_changed(hp: int, max_hp: int) -> void:
 	update_hp_display(hp, max_hp)
-
-## EnergyComponent からの EP 変更通知
-func _on_energy_changed(ep: float, max_ep: float) -> void:
-	update_ep_display(ep, max_ep)
-
-## AmmoComponent からの弾数変更通知
-func _on_ammo_changed(ammo: int) -> void:
-	update_ammo_display(ammo)
 
 ## HealthComponent からのダメージ通知
 func _on_damage_taken(damage: int, _effect_type: String) -> void:
@@ -89,28 +66,11 @@ func _on_damage_taken(damage: int, _effect_type: String) -> void:
 
 ## HP表示更新
 ## @param hp 現在のHP
-## @param _max_hp 最大HP
-func update_hp_display(hp: int, _max_hp: int) -> void:
-	if ep_gauge:
-		ep_gauge.hp_value = hp
-
-# ======================== EP表示更新 ========================
-
-## EP表示更新
-## @param ep 現在のEP
-## @param max_ep 最大EP
-func update_ep_display(ep: float, max_ep: float) -> void:
-	if ep_gauge:
-		var progress: float = ep / max_ep if max_ep > 0 else 0.0
-		ep_gauge.ep_progress = progress
-
-# ======================== 弾数表示更新 ========================
-
-## 弾数表示更新
-## @param ammo 現在の弾数
-func update_ammo_display(ammo: int) -> void:
-	if ammo_gauge:
-		ammo_gauge.ammo_count = ammo
+## @param max_hp 最大HP
+func update_hp_display(hp: int, max_hp: int) -> void:
+	if hp_gauge:
+		var progress: float = float(hp) / float(max_hp) if max_hp > 0 else 0.0
+		hp_gauge.hp_progress = progress
 
 # ======================== ダメージ表記表示 ========================
 
@@ -147,13 +107,8 @@ func show_damage_number(damage: int) -> void:
 ## 初期値設定（_ready後に呼ばれる想定）
 ## @param hp 初期HP
 ## @param max_hp 最大HP
-## @param ep 初期EP
-## @param max_ep 最大EP
-## @param ammo 初期弾数
-func set_initial_values(hp: int, max_hp: int, ep: float, max_ep: float, ammo: int) -> void:
+func set_initial_values(hp: int, max_hp: int) -> void:
 	update_hp_display(hp, max_hp)
-	update_ep_display(ep, max_ep)
-	update_ammo_display(ammo)
 
 # ======================== クリーンアップ ========================
 
@@ -168,19 +123,10 @@ func cleanup() -> void:
 			if player.health_component.damage_taken.is_connected(_on_damage_taken):
 				player.health_component.damage_taken.disconnect(_on_damage_taken)
 
-		if player.energy_component:
-			if player.energy_component.energy_changed.is_connected(_on_energy_changed):
-				player.energy_component.energy_changed.disconnect(_on_energy_changed)
-
-		if player.ammo_component:
-			if player.ammo_component.ammo_changed.is_connected(_on_ammo_changed):
-				player.ammo_component.ammo_changed.disconnect(_on_ammo_changed)
-
 	# 残存しているダメージ表記を削除
 	if _current_damage_number and is_instance_valid(_current_damage_number):
 		_current_damage_number.queue_free()
 		_current_damage_number = null
 
-	ep_gauge = null
-	ammo_gauge = null
+	hp_gauge = null
 	_player_ref = null

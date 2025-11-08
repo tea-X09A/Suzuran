@@ -314,10 +314,6 @@ func _validate_save_data(save_data: Dictionary) -> bool:
 	var player_data: Dictionary = save_data["player_data"]
 	if not player_data.has("hp_count"):
 		return false
-	if not player_data.has("current_ep"):
-		return false
-	if not player_data.has("ammo_count"):
-		return false
 	if not player_data.has("condition"):
 		return false
 

@@ -78,10 +78,6 @@ var down_state: PlayerDownState
 
 ## HP管理コンポーネント
 var health_component: PlayerHealthComponent = null
-## EP管理コンポーネント
-var energy_component: PlayerEnergyComponent = null
-## 弾数管理コンポーネント
-var ammo_component: PlayerAmmoComponent = null
 ## UI管理コンポーネント
 var ui_component: PlayerUIComponent = null
 ## Collision管理コンポーネント
@@ -122,8 +118,6 @@ func _ready() -> void:
 	GRAVITY = ProjectSettings.get_setting("physics/2d/default_gravity")
 	_initialize_systems()
 	_initialize_health_component()
-	_initialize_energy_component()
-	_initialize_ammo_component()
 	_initialize_ui_component()
 	_initialize_state_data_component()
 	_initialize_examine_component()
@@ -150,8 +144,6 @@ func _exit_tree() -> void:
 	var components: Array = [
 		examine_component,
 		health_component,
-		energy_component,
-		ammo_component,
 		ui_component,
 		collision_component,
 		state_data_component
@@ -164,8 +156,6 @@ func _exit_tree() -> void:
 	# 各コンポーネントをnullに設定
 	examine_component = null
 	health_component = null
-	energy_component = null
-	ammo_component = null
 	ui_component = null
 	collision_component = null
 	state_data_component = null
@@ -225,26 +215,10 @@ func _initialize_collision_component() -> void:
 ## HealthComponentの初期化
 func _initialize_health_component() -> void:
 	var save_data: Dictionary = SaveLoadManager.pending_player_data if SaveLoadManager else {}
-	var initial_hp: int = save_data.get("hp_count", 3)
+	var initial_hp: int = save_data.get("hp_count", PlayerHealthComponent.DEFAULT_MAX_HP)
 
 	health_component = PlayerHealthComponent.new()
-	health_component.initialize(self, initial_hp, 3)
-
-## EnergyComponentの初期化
-func _initialize_energy_component() -> void:
-	var save_data: Dictionary = SaveLoadManager.pending_player_data if SaveLoadManager else {}
-	var initial_ep: float = save_data.get("current_ep", 0.0)
-
-	energy_component = PlayerEnergyComponent.new()
-	energy_component.initialize(self, initial_ep, 32.0)
-
-## AmmoComponentの初期化
-func _initialize_ammo_component() -> void:
-	var save_data: Dictionary = SaveLoadManager.pending_player_data if SaveLoadManager else {}
-	var initial_ammo: int = save_data.get("ammo_count", -1)
-
-	ammo_component = PlayerAmmoComponent.new()
-	ammo_component.initialize(self, initial_ammo, 99)
+	health_component.initialize(self, initial_hp, PlayerHealthComponent.DEFAULT_MAX_HP)
 
 ## ExamineComponentの初期化
 func _initialize_examine_component() -> void:
@@ -259,13 +233,10 @@ func _initialize_ui_component() -> void:
 	ui_component.initialize(self)
 
 	# 初期値設定
-	if health_component and energy_component and ammo_component:
+	if health_component:
 		ui_component.set_initial_values(
 			health_component.current_hp,
-			health_component.max_hp,
-			energy_component.current_ep,
-			energy_component.max_ep,
-			ammo_component.ammo_count
+			health_component.max_hp
 		)
 
 ## StateDataComponentの初期化
@@ -406,11 +377,6 @@ func handle_enemy_hit(enemy_direction: Vector2) -> bool:
 
 # ======================== 回復処理 ========================
 
-## EP回復処理（負の値を渡すとEPを減少させる）
-func heal_ep(amount: float) -> void:
-	if energy_component:
-		energy_component.heal_ep(amount)
-
 ## HP回復処理
 func heal_hp(amount: int) -> void:
 	if health_component:
@@ -502,8 +468,8 @@ func _on_debug_value_changed(key: String, value: Variant) -> void:
 			# 無敵状態の切り替え（invincibility_effectを使用）
 			var enable_invincible: bool = value as bool
 			if enable_invincible:
-				# 無敵状態を有効化（十分に長い時間を設定）
-				invincibility_effect.set_invincible(9999.0)
+				# 無敵状態を有効化（無限時間）
+				invincibility_effect.set_invincible(INF)
 			else:
 				# 無敵状態を解除
 				invincibility_effect.clear_invincible()

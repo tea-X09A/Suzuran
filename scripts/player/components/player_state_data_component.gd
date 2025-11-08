@@ -25,9 +25,7 @@ func get_player_state() -> Dictionary:
 		return {}
 
 	return {
-		"hp_count": player.health_component.current_hp if player.health_component else 3,
-		"current_ep": player.energy_component.current_ep if player.energy_component else 0.0,
-		"ammo_count": player.ammo_component.ammo_count if player.ammo_component else -1,
+		"hp_count": player.health_component.current_hp if player.health_component else PlayerHealthComponent.DEFAULT_MAX_HP,
 		"condition": player.condition,
 		"position_x": player.position.x,
 		"position_y": player.position.y,
@@ -48,14 +46,6 @@ func restore_player_state(state: Dictionary) -> void:
 	if player.health_component and state.has("hp_count"):
 		player.health_component.set_hp(state["hp_count"])
 
-	# EPを復元（setterメソッドを使用）
-	if player.energy_component and state.has("current_ep"):
-		player.energy_component.set_ep(state["current_ep"])
-
-	# 弾数を復元（setterメソッドを使用）
-	if player.ammo_component and state.has("ammo_count"):
-		player.ammo_component.set_ammo_count(state["ammo_count"])
-
 	# 変身状態を復元
 	if state.has("condition"):
 		player.condition = state["condition"]
@@ -74,11 +64,8 @@ func restore_player_state(state: Dictionary) -> void:
 	# UI更新
 	if player.ui_component:
 		player.ui_component.set_initial_values(
-			player.health_component.current_hp if player.health_component else 3,
-			player.health_component.max_hp if player.health_component else 10,
-			player.energy_component.current_ep if player.energy_component else 0.0,
-			player.energy_component.max_ep if player.energy_component else 32.0,
-			player.ammo_component.ammo_count if player.ammo_component else -1
+			player.health_component.current_hp if player.health_component else PlayerHealthComponent.DEFAULT_MAX_HP,
+			player.health_component.max_hp if player.health_component else PlayerHealthComponent.DEFAULT_MAX_HP
 		)
 
 # ======================== クリーンアップ ========================
