@@ -72,8 +72,12 @@ func physics_update(delta: float) -> void:
 
 # ======================== ダメージ・ダウン処理 ========================
 
-## ダメージ処理
-func handle_damage(_damage: int, animation_type: String, direction: Vector2, force: float) -> void:
+## ダメージ処理（HP減少とダウン/ノックバック効果を統合）
+func handle_damage(damage: int, animation_type: String, direction: Vector2, force: float) -> void:
+	# ダメージ処理（HP減少とシグナル発信）
+	if player.health_component:
+		player.health_component.apply_damage(damage)
+
 	is_down = true
 	current_animation_type = animation_type
 	effect_type = animation_type
@@ -209,9 +213,9 @@ func apply_continuous_knockback() -> void:
 
 # ======================== ジャンプ・入力処理 ========================
 
-## ジャンプ入力チェック
+## ジャンプ入力チェック（着地後のDOWN状態でのみジャンプ復帰可能）
 func can_jump() -> bool:
-	return is_in_knockback_state() or is_in_knockback_landing_state()
+	return is_in_knockback_landing_state()
 
 
 ## ダウン状態でのジャンプ入力処理

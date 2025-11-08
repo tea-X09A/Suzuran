@@ -27,7 +27,6 @@ var sprite_2d: Sprite2D
 var animation_player: AnimationPlayer
 var animation_tree: AnimationTree
 var state_machine: AnimationNodeStateMachinePlayback
-var condition: Player.PLAYER_CONDITION
 
 # ======================== 空中慣性保持用変数 ========================
 ## 空中での慣性保持用の水平速度（jump/fall状態で使用）
@@ -58,7 +57,6 @@ func _init(player_instance: CharacterBody2D) -> void:
 	animation_player = player_instance.animation_player
 	animation_tree = player_instance.animation_tree
 	state_machine = animation_tree.get("parameters/playback") as AnimationNodeStateMachinePlayback
-	condition = player_instance.condition
 
 ## プレイヤーインスタンスを取得（弱参照から実体を取得）
 func get_player() -> CharacterBody2D:
@@ -372,11 +370,7 @@ func is_dash_input() -> bool:
 
 ## パラメータ取得
 func get_parameter(key: String) -> Variant:
-	return PlayerParameters.get_parameter(condition, key)
-
-## 条件更新
-func update_condition(new_condition: Player.PLAYER_CONDITION) -> void:
-	condition = new_condition
+	return PlayerParameters.get_parameter(player.condition, key)
 
 ## AnimationTree状態設定（最小限のアニメーション制御）
 func set_animation_state(state_name: String) -> void:
@@ -518,21 +512,25 @@ func handle_landing_transition() -> void:
 	var movement_input: float = get_movement_input()
 
 	if movement_input != 0.0:
-		# 移動入力がある場合：硬直をキャンセルしてWALK/RUNに遷移
+		# 移動入力がある場合：WALK/RUNに遷移
 		if is_dash_input():
 			player.change_state("RUN")
 		else:
 			player.change_state("WALK")
 	else:
-		# 移動入力がない場合：硬直時間を設定してIDLEに遷移
-		player.landing_recovery_time = get_parameter("landing_recovery_duration")
+		# 移動入力がない場合：IDLEに遷移
 		player.change_state("IDLE")
 
-## 空中でのアクション入力処理（攻撃・投擲）
-func handle_air_action_input() -> bool:
-	# 攻撃入力チェック（空中攻撃）
+## アクション入力処理（攻撃・投擲）
+func handle_action_input() -> bool:
+	# 攻撃入力チェック
 	if is_fight_input():
-		player.change_state("FIGHTING")
+		# 接地状態なら地上攻撃（CLOSING経由）
+		if player.is_grounded:
+			player.change_state("CLOSING")
+		else:
+			# 完全に空中にいる場合のみ直接FIGHTING
+			player.change_state("FIGHTING")
 		return true
 
 	# 投擲入力チェック（空中投擲）

@@ -60,8 +60,6 @@ var disable_input: bool = false
 var dodge_recovery_time: float = 0.0
 ## 格闘後の硬直時間（秒）
 var fighting_recovery_time: float = 0.0
-## 着地後の硬直時間（秒）
-var landing_recovery_time: float = 0.0
 
 # ======================== ステート管理システム ========================
 
@@ -86,6 +84,8 @@ var collision_component: PlayerCollisionComponent = null
 var state_data_component: PlayerStateDataComponent = null
 ## Examine管理コンポーネント
 var examine_component: ExamineComponent = null
+## Condition管理コンポーネント
+var condition_component: PlayerConditionComponent = null
 
 # ======================== 初期化処理 ========================
 
@@ -121,6 +121,7 @@ func _ready() -> void:
 	_initialize_ui_component()
 	_initialize_state_data_component()
 	_initialize_examine_component()
+	_initialize_condition_component()
 	_connect_debug_signals()
 
 	# ロード時の後処理
@@ -143,6 +144,7 @@ func _exit_tree() -> void:
 	# 全コンポーネントのクリーンアップを配列で一括処理
 	var components: Array = [
 		examine_component,
+		condition_component,
 		health_component,
 		ui_component,
 		collision_component,
@@ -155,6 +157,7 @@ func _exit_tree() -> void:
 
 	# 各コンポーネントをnullに設定
 	examine_component = null
+	condition_component = null
 	health_component = null
 	ui_component = null
 	collision_component = null
@@ -245,6 +248,12 @@ func _initialize_state_data_component() -> void:
 	state_data_component = PlayerStateDataComponent.new()
 	state_data_component.initialize(self)
 
+## ConditionComponentの初期化
+func _initialize_condition_component() -> void:
+	# ConditionComponent初期化
+	condition_component = PlayerConditionComponent.new()
+	condition_component.initialize(self)
+
 # ======================== メイン処理ループ ========================
 
 ## 物理演算ステップごとの更新処理（移動・物理系）
@@ -283,11 +292,10 @@ func _physics_process(delta: float) -> void:
 	if current_state:
 		current_state.update_key_states()
 
-## 硬直時間タイマーを更新（回避・格闘・着地の硬直時間を減少）
+## 硬直時間タイマーを更新（回避・格闘の硬直時間を減少）
 func _update_recovery_times(delta: float) -> void:
 	dodge_recovery_time = max(0.0, dodge_recovery_time - delta)
 	fighting_recovery_time = max(0.0, fighting_recovery_time - delta)
-	landing_recovery_time = max(0.0, landing_recovery_time - delta)
 
 ## 状態遷移（CLAUDE.md推奨形式）
 func change_state(new_state_name: String) -> void:
@@ -456,14 +464,9 @@ func _connect_debug_signals() -> void:
 		DebugManager.debug_value_changed.connect(_on_debug_value_changed)
 
 ## デバッグ値が変更された時の処理
+## NOTE: "condition"の処理はPlayerConditionComponentに移譲済み
 func _on_debug_value_changed(key: String, value: Variant) -> void:
 	match key:
-		"condition":
-			# コンディションを変更
-			var new_condition: PLAYER_CONDITION = value as PLAYER_CONDITION
-			if new_condition != condition:
-				condition = new_condition
-
 		"invincible":
 			# 無敵状態の切り替え（invincibility_effectを使用）
 			var enable_invincible: bool = value as bool

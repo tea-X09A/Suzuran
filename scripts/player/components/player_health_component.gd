@@ -10,8 +10,6 @@ const DEFAULT_MAX_HP: int = 50
 
 ## HP変更時のシグナル（現在HP、最大HP）
 signal health_changed(current_hp: int, max_hp: int)
-## ダメージ受けた時のシグナル（ダメージ量、エフェクトタイプ）
-signal damage_taken(damage: int, effect_type: String)
 
 # ======================== 変数定義 ========================
 
@@ -56,7 +54,16 @@ func is_invincible() -> bool:
 
 # ======================== ダメージ処理 ========================
 
-## トラップ効果処理（ダメージなし、effect_typeに応じてknockback/down）
+## ダメージを適用（HP減少とシグナル発信を一元管理）
+## @param damage ダメージ量
+func apply_damage(damage: int) -> void:
+	if damage <= 0:
+		return
+
+	current_hp -= damage
+	health_changed.emit(current_hp, max_hp)
+
+## トラップ効果処理（1ダメージ + effect_typeに応じてknockback/down）
 ## @param effect_type トラップの効果タイプ（"knockback" or "down"）
 ## @param direction ノックバック方向ベクトル
 ## @param knockback_force ノックバック力
@@ -68,12 +75,12 @@ func handle_trap_damage(effect_type: String, direction: Vector2, knockback_force
 	if not player:
 		return
 
-	# DownStateへの委譲（ダメージなし、effect_typeに応じてknockback/down）
-	# effect_typeは"knockback"または"down"
-	# - "knockback": knockback後、着地時にIDLE状態へ遷移
-	# - "down": knockback後、着地時にDOWN状態へ遷移
+	# ダメージ量を計算（HP1を保証）
+	var damage_amount: int = 1 if current_hp > 1 else 0
+
+	# DownStateへの委譲（ダメージ処理と効果をunified）
 	if player.down_state:
-		player.down_state.handle_damage(0, effect_type, direction, knockback_force)
+		player.down_state.handle_damage(damage_amount, effect_type, direction, knockback_force)
 
 ## 敵接触ダメージ処理
 ## @param enemy_direction 敵からの方向ベクトル
@@ -92,14 +99,9 @@ func handle_enemy_hit(enemy_direction: Vector2, damage: int = 1) -> bool:
 		if player.down_state.is_in_knockback_state() or player.down_state.is_in_knockback_landing_state():
 			return false
 
-	# HP減少
-	current_hp -= damage
-	damage_taken.emit(-damage, "enemy")
-	health_changed.emit(current_hp, max_hp)
-
-	# DownStateへの委譲
+	# DownStateへの委譲（ダメージ処理と効果をunified）
 	if player.down_state:
-		player.down_state.handle_damage(0, "knockback", enemy_direction, 500.0)
+		player.down_state.handle_damage(damage, "knockback", enemy_direction, 500.0)
 
 	return true
 

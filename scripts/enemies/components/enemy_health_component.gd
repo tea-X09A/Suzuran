@@ -90,7 +90,7 @@ func take_damage(damage: int, direction: Vector2, attacker: Node, state_instance
 				if direction_to_player != 0:
 					direction_to_face_after_knockback = direction_to_player
 
-	# ダメージの適用判定（Projectileの場合はスタンフラグをチェック）
+	# ダメージとスタンの適用判定
 	var actual_damage: int = damage
 	var should_apply_stun: bool = false
 
@@ -100,17 +100,30 @@ func take_damage(damage: int, direction: Vector2, attacker: Node, state_instance
 			# スタンエフェクトが有効な場合はダメージなし、スタンあり
 			actual_damage = 0
 			should_apply_stun = true
-			print("[%s] Projectile攻撃（スタンエフェクト）: ダメージなし、スタンのみ適用" % enemy.name)
 		else:
 			# スタンエフェクトが無効な場合は通常ダメージ、スタンなし
-			current_hp -= actual_damage
 			should_apply_stun = false
-			print("[%s] Projectile攻撃（通常）: ダメージ %d, 残りHP: %d/%d" % [enemy.name, actual_damage, current_hp, max_hp])
+	elif attacker and attacker.name == "FightingHitbox":
+		# FightingHitbox攻撃：ダメージあり、スタンなし
+		should_apply_stun = false
 	else:
-		# ダメージを適用、スタンあり（通常攻撃）
-		current_hp -= actual_damage
+		# その他の攻撃：ダメージあり、スタンあり（デフォルト動作）
 		should_apply_stun = true
-		print("[%s] ダメージ: %d, 残りHP: %d/%d" % [enemy.name, actual_damage, current_hp, max_hp])
+
+	# 共通処理：ダメージを適用（スタンエフェクト以外）
+	current_hp -= actual_damage
+
+	# ダメージログ出力（ダメージ適用後）
+	if attacker and attacker is Projectile:
+		var projectile: Projectile = attacker as Projectile
+		if projectile.applies_stun_effect:
+			print("[%s] Projectile攻撃（スタンエフェクト）: ダメージなし、スタンのみ適用" % enemy.name)
+		else:
+			print("[%s] Projectile攻撃（通常）: ダメージ %d, 残りHP: %d/%d" % [enemy.name, actual_damage, current_hp, max_hp])
+	elif attacker and attacker.name == "FightingHitbox":
+		print("[%s] Fighting攻撃: ダメージ %d, 残りHP: %d/%d（スタンなし）" % [enemy.name, actual_damage, current_hp, max_hp])
+	elif actual_damage > 0:
+		print("[%s] 通常攻撃: ダメージ %d, 残りHP: %d/%d" % [enemy.name, actual_damage, current_hp, max_hp])
 
 	# 敵のスタンフラグを設定
 	enemy.should_stun_after_knockback = should_apply_stun

@@ -22,7 +22,7 @@ func handle_input(_delta: float) -> void:
 		return
 
 	# 空中でのアクション入力（攻撃・射撃）
-	if handle_air_action_input():
+	if handle_action_input():
 		return
 
 	# 空中での移動入力処理（慣性保持考慮 - BaseStateの共通メソッド使用）

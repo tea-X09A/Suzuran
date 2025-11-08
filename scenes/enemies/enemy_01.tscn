@@ -195,7 +195,6 @@ texture = ExtResource("1_6xk8f")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 visible = false
-position = Vector2(-4, 9)
 shape = SubResource("CircleShape2D_5dx81")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
@@ -208,7 +207,6 @@ tree_root = SubResource("AnimationNodeStateMachine_enemy01")
 anim_player = NodePath("../AnimationPlayer")
 
 [node name="Hurtbox" type="Area2D" parent="."]
-position = Vector2(-4, 9)
 collision_layer = 64
 collision_mask = 0
 
@@ -218,7 +216,6 @@ scale = Vector2(0.6, 0.6)
 shape = SubResource("CapsuleShape2D_uavjf")
 
 [node name="Hitbox" type="Area2D" parent="."]
-position = Vector2(-4, 9)
 collision_layer = 0
 collision_mask = 4
 
@@ -228,7 +225,6 @@ shape = SubResource("CircleShape2D_uavjf")
 debug_color = Color(0.858824, 0.305882, 0.501961, 0.419608)
 
 [node name="DetectionArea" type="Area2D" parent="."]
-position = Vector2(-4, 9)
 collision_layer = 0
 collision_mask = 4
 
@@ -241,6 +237,5 @@ visible = false
 polygon = PackedVector2Array(0, 0, 295.442, -52.0945, 296.349, -46.6581, 297.157, -41.2061, 297.863, -35.7401, 298.47, -30.2621, 298.975, -24.7738, 299.38, -19.2772, 299.684, -13.7741, 299.886, -8.2663, 299.987, -2.75574, 299.987, 2.75574, 299.886, 8.2663, 299.684, 13.7741, 299.38, 19.2772, 298.975, 24.7738, 298.47, 30.2621, 297.863, 35.7401, 297.157, 41.2061, 296.349, 46.6581, 295.442, 52.0945)
 
 [node name="VisibleOnScreenNotifier2D" type="VisibleOnScreenNotifier2D" parent="." groups=["traps"]]
-position = Vector2(-4, 9)
 scale = Vector2(0.585714, 0.6)
 rect = Rect2(-70, -70, 140, 140)

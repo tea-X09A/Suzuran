@@ -1,35 +1,31 @@
 ## 敵の昏睡エフェクトコンポーネント
-## 敵の頭上に楕円軌道を描く星を表示（天使の輪のような奥行き表現）
+## 敵の頭上に楕円軌道を描く線の軌跡を表示（天使の輪のような奥行き表現）
 class_name EnemyStunEffectComponent
 extends RefCounted
 
 # ======================== 定数定義 ========================
-## 星の回転速度（度/秒）
-const ROTATION_SPEED: float = 360.0
+## 軌跡の回転速度（度/秒）
+const ROTATION_SPEED: float = 720.0
 ## 楕円の横半径（ピクセル）
-const ELLIPSE_RADIUS_X: float = 50.0
+const ELLIPSE_RADIUS_X: float = 30.0
 ## 楕円の縦半径（ピクセル）- 横半径より小さくして奥行きを表現
-const ELLIPSE_RADIUS_Y: float = 20.0
+const ELLIPSE_RADIUS_Y: float = 6.0
 ## 軌跡の最大保存数
 const TRAIL_MAX_LENGTH: int = 15
 ## 軌跡の色（徐々に薄くなる）
 const TRAIL_COLOR: Color = Color(1.0, 1.0, 0.5, 0.6)
 
 # ======================== 内部Controlクラス ========================
-## 星を描画するカスタムControlノード
+## 軌跡を描画するカスタムControlノード
 class StunStarControl extends Control:
 	# 回転角度（度）
 	var rotation_angle: float = 0.0
-	# ドットサイズ
-	var dot_size: float = 3.0
-	# 星の色
-	var star_color: Color = Color.YELLOW
 	# 軌跡の位置履歴（最新が先頭）
 	var trail_positions: Array[Vector2] = []
 	# 親ノードへの参照（Z順序制御用）
 	var parent_node: Node = null
-	# 現在の星の位置（_processで計算、_drawで使用）
-	var current_star_position: Vector2 = Vector2.ZERO
+	# 現在の軌跡の位置（_processで計算、_drawで使用）
+	var current_position: Vector2 = Vector2.ZERO
 
 	func _process(delta: float) -> void:
 		# 回転角度を更新
@@ -37,16 +33,16 @@ class StunStarControl extends Control:
 		if rotation_angle >= 360.0:
 			rotation_angle -= 360.0
 
-		# 現在の星の位置を計算（Controlノードの中心を原点とする）
+		# 現在の軌跡の位置を計算（Controlノードの中心を原点とする）
 		var angle_rad: float = deg_to_rad(rotation_angle)
-		current_star_position = Vector2(
+		current_position = Vector2(
 			cos(angle_rad) * ELLIPSE_RADIUS_X + size.x / 2.0,
 			sin(angle_rad) * ELLIPSE_RADIUS_Y + size.y / 2.0
 		)
 
 		# 軌跡に追加（重複回避：前回位置と一定距離以上離れている場合のみ）
-		if trail_positions.is_empty() or current_star_position.distance_to(trail_positions[0]) > 3.0:
-			trail_positions.insert(0, current_star_position)
+		if trail_positions.is_empty() or current_position.distance_to(trail_positions[0]) > 3.0:
+			trail_positions.insert(0, current_position)
 			# 軌跡の長さを制限
 			if trail_positions.size() > TRAIL_MAX_LENGTH:
 				trail_positions.resize(TRAIL_MAX_LENGTH)
@@ -62,53 +58,33 @@ class StunStarControl extends Control:
 		queue_redraw()
 
 	func _draw() -> void:
-		# 軌跡を描画
+		# 軌跡を描画（線のみ）
 		_draw_trail()
 
-		# 星パターンを描画（_processで計算済みの位置を使用）
-		_draw_star(current_star_position)
-
 	func _draw_trail() -> void:
-		# 軌跡を古い順（薄い）から新しい順（濃い）に描画
-		for i in range(trail_positions.size() - 1, 0, -1):
+		# 軌跡を線で描画（古い点から新しい点へ）
+		if trail_positions.size() < 2:
+			return
+
+		for i in range(trail_positions.size() - 1):
+			# アルファ値を計算（新しい点ほど濃く）
 			var alpha: float = float(trail_positions.size() - i) / float(TRAIL_MAX_LENGTH)
 			var color: Color = TRAIL_COLOR
 			color.a *= alpha
 
-			# 点として描画
-			var pos: Vector2 = trail_positions[i]
-			var rect: Rect2 = Rect2(
-				pos - Vector2(1.5, 1.5),
-				Vector2(3.0, 3.0)
-			)
-			draw_rect(rect, color)
+			# 線幅を計算（新しい点ほど太く）
+			var line_width: float = 2.0 + alpha * 2.0
 
-	func _draw_star(center: Vector2) -> void:
-		# DotPatternsの星パターンを使用
-		var pattern: Array = DotPatterns.STAR_PATTERN
-		var spacing: float = 3.0
+			# 2点間を線で描画
+			draw_line(trail_positions[i], trail_positions[i + 1], color, line_width)
 
-		for row in range(pattern.size()):
-			for col in range(pattern[row].size()):
-				if pattern[row][col] == 1:
-					# ドットの位置を計算（パターンの中心を基準）
-					var offset: Vector2 = Vector2(
-						(col - 2) * spacing,  # 5x5の中心は2
-						(row - 2) * spacing
-					)
-					var pos: Vector2 = center + offset
-					var rect: Rect2 = Rect2(
-						pos - Vector2(dot_size / 2.0, dot_size / 2.0),
-						Vector2(dot_size, dot_size)
-					)
-					draw_rect(rect, star_color)
 
 # ======================== コンポーネントの状態 ========================
-## 星エフェクトのControlノード
+## 軌跡エフェクトのControlノード
 var star_control: StunStarControl = null
 ## 敵への弱参照（CLAUDE.md準拠：循環参照防止）
 var enemy_ref: WeakRef = null
-## 星の表示位置オフセット（敵の頭上）
+## 軌跡の表示位置オフセット（敵の頭上）
 var star_offset: Vector2 = Vector2(0, -60)
 
 # ======================== 初期化処理 ========================
@@ -122,7 +98,7 @@ func initialize() -> void:
 
 	# カスタムControlノードを作成
 	star_control = StunStarControl.new()
-	star_control.name = "StunStars"
+	star_control.name = "StunTrail"
 	star_control.z_index = 100
 	star_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	star_control.parent_node = enemy  # Z順序制御用
@@ -144,7 +120,7 @@ func initialize() -> void:
 	enemy.add_child(star_control)
 
 # ======================== 公開API ========================
-## 星エフェクトを表示
+## 軌跡エフェクトを表示
 func show_stars() -> void:
 	if not star_control:
 		return
@@ -154,7 +130,7 @@ func show_stars() -> void:
 	star_control.trail_positions.clear()  # 軌跡をリセット
 	star_control.set_process(true)
 
-## 星エフェクトを非表示
+## 軌跡エフェクトを非表示
 func hide_stars() -> void:
 	if not star_control:
 		return
