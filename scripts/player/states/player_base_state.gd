@@ -459,15 +459,10 @@ func handle_fighting_recovery() -> bool:
 		return true
 	return false
 
-## 地上での格闘入力処理（エネミー検知に応じて遷移）
+## 地上での格闘入力処理
 func handle_grounded_fight_transition() -> void:
-	# 前方のエネミーを検知
-	if detect_enemy_in_front():
-		# エネミーが検知された場合：直接FIGHTINGへ
-		player.change_state("FIGHTING")
-	else:
-		# エネミーが検知されなかった場合：CLOSINGへ
-		player.change_state("CLOSING")
+	# 直接FIGHTINGへ遷移
+	player.change_state("FIGHTING")
 
 ## 共通入力処理（idle, walk, run状態で共通）
 func handle_common_inputs() -> bool:
@@ -597,39 +592,3 @@ func handle_movement_state_input(current_state: String, delta: float) -> void:
 
 	# 移動入力処理
 	handle_movement_input_common(current_state, delta)
-
-# ======================== エネミー検知処理 ========================
-
-## Spriteの向きに応じてDetectionAreaの位置を更新
-func update_detection_area_position() -> void:
-	if not player or not player.detection_area:
-		return
-
-	var collision_shape: CollisionShape2D = player.detection_area.get_node_or_null("DetectionCollision")
-	if not collision_shape:
-		return
-
-	# プレイヤーの向きに応じて検知範囲の位置を設定
-	# sprite_2d.flip_h == true: 右向き、false: 左向き
-	var direction: float = 1.0 if sprite_2d.flip_h else -1.0
-	# 検知範囲をプレイヤーの前方60ピクセルの位置に配置（幅120の半分）
-	collision_shape.position = Vector2(direction * 60, 0)
-
-## 前方にエネミーがいるかチェック
-func detect_enemy_in_front() -> bool:
-	if not player or not player.detection_area:
-		return false
-
-	# DetectionAreaの位置を現在のスプライトの向きに同期
-	update_detection_area_position()
-
-	# 現在重なっているエリアを取得
-	var overlapping_areas: Array[Area2D] = player.detection_area.get_overlapping_areas()
-
-	# エリアの親ノードがenemiesグループに所属しているかチェック
-	for area in overlapping_areas:
-		var parent_node: Node = area.get_parent()
-		if parent_node and parent_node.is_in_group("enemies"):
-			return true
-
-	return false

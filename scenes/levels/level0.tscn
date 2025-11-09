@@ -298,7 +298,7 @@ limit_right = 3392
 target_path = NodePath("../Player")
 
 [node name="Player" parent="." instance=ExtResource("3_hghvf")]
-position = Vector2(2816, -94)
+position = Vector2(2808, -96)
 
 [node name="Background" parent="." instance=ExtResource("4_1nvli")]
 visible = false
@@ -332,7 +332,7 @@ effect_type = "down"
 position = Vector2(-256, 80)
 
 [node name="Enemy2" parent="." instance=ExtResource("5_ry65h")]
-position = Vector2(1568, -43)
+position = Vector2(1568, -48)
 
 [node name="Enemy3" parent="." instance=ExtResource("5_ry65h")]
 position = Vector2(688, 80)
@@ -343,6 +343,6 @@ position = Vector2(3264, -256)
 next_level = "level1"
 
 [node name="EventArea" parent="." instance=ExtResource("12_7s2gi")]
-position = Vector2(2857, -256)
+position = Vector2(2856, -256)
 event_id = "001"
 event_type = 1

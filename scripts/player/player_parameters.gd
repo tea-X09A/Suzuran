@@ -46,14 +46,8 @@ static var PARAMETERS: Dictionary = {
 		"fighting_damage": 3,                  # 格闘攻撃のダメージ量
 		"fighting_recovery_duration": 0.2,     # 地上格闘後の硬直時間（秒）
 
-		# ======================== 追従パラメータ ========================
-		"move_closing_speed_multiplier_from_run": 1.5,  # RUN状態からのCLOSING時の速度倍率（run_speedに対する倍率）
-		"move_closing_max_distance_from_run": 300.0,    # RUN状態からのCLOSING時の最大追従距離（ピクセル）
-		"move_closing_speed_multiplier_from_ground": 1.0,  # 通常地上状態からのCLOSING時の速度倍率（run_speedに対する倍率）
-		"move_closing_max_distance_from_ground": 150.0,    # 通常地上状態からのCLOSING時の最大追従距離（ピクセル）
-
 		# ======================== 回避パラメータ ========================
-		"move_dodging_speed_multiplier": 1.5,  # DODGING時の速度倍率（run_speedに対する倍率、closingと同じ）
+		"move_dodging_speed_multiplier": 1.5,  # DODGING時の速度倍率（run_speedに対する倍率）
 		"move_dodging_distance": 250.0,        # DODGING時の移動距離（ピクセル）
 		"dodging_double_tap_window": 0.3,      # ダブルタップの許容時間（秒）
 		"dodging_recovery_duration": 0.2,      # 回避後の硬直時間（秒）

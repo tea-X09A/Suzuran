@@ -45,12 +45,10 @@ func initialize_state() -> void:
 
 	# 前進速度の設定
 	if not started_airborne:  # 地上でのfighting時のみ前進
-		# CLOSING状態から遷移してきた場合は、その速度を引き継ぐ
-		if not player.previous_state or player.previous_state.get_state_name() != "CLOSING":
-			var forward_speed: float = get_parameter("move_fighting_initial_speed")
-			# Sprite2Dの向きに応じて前進（throwingと同じ方法で統一）
-			var direction: float = 1.0 if sprite_2d.flip_h else -1.0
-			player.velocity.x = direction * forward_speed
+		var forward_speed: float = get_parameter("move_fighting_initial_speed")
+		# Sprite2Dの向きに応じて前進（throwingと同じ方法で統一）
+		var direction: float = 1.0 if sprite_2d.flip_h else -1.0
+		player.velocity.x = direction * forward_speed
 
 	# アニメーション完了シグナルの接続（重複接続を防止）
 	if animation_player and not animation_player.animation_finished.is_connected(_on_fighting_animation_finished):

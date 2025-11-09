@@ -39,7 +39,7 @@ func handle_input(delta: float) -> void:
 	# 攻撃入力チェック（しゃがみキャンセル）
 	if is_fight_input():
 		player.squat_was_cancelled = true  # キャンセルフラグを設定
-		player.change_state("CLOSING")
+		player.change_state("FIGHTING")
 		return
 
 	# 投擲入力チェック（しゃがみキャンセル）

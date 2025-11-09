@@ -25,8 +25,6 @@ enum PLAYER_CONDITION { NORMAL, EXPANSION }
 var animation_tree_playback: AnimationNodeStateMachinePlayback = null
 ## 当たり判定用コリジョン
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
-## エネミー検知用Area2D
-@onready var detection_area: Area2D = $DetectionArea
 
 # ======================== エクスポート設定 ========================
 
@@ -69,7 +67,7 @@ var fighting_recovery_time: float = 0.0
 var state_instances: Dictionary = {}
 ## 現在のアクティブステート
 var current_state: PlayerBaseState
-## 前の状態（CLOSING状態で使用）
+## 前の状態
 var previous_state: PlayerBaseState = null
 ## DownStateへの参照（頻繁にアクセスするためキャッシュ）
 var down_state: PlayerDownState
@@ -191,7 +189,6 @@ func _initialize_state_system() -> void:
 	state_instances["IDLE"] = PlayerIdleState.new(self)
 	state_instances["WALK"] = PlayerWalkState.new(self)
 	state_instances["RUN"] = PlayerRunState.new(self)
-	state_instances["CLOSING"] = PlayerClosingState.new(self)
 	state_instances["DODGING"] = PlayerDodgingState.new(self)
 	state_instances["JUMP"] = PlayerJumpState.new(self)
 	state_instances["FALL"] = PlayerFallState.new(self)
@@ -307,7 +304,7 @@ func change_state(new_state_name: String) -> void:
 	var new_state: PlayerBaseState = state_instances[new_state_name]
 	# 前のステートのクリーンアップ
 	if current_state:
-		# 前の状態を記録（CLOSING状態で使用）
+		# 前の状態を記録
 		previous_state = current_state
 		current_state.cleanup_state()
 	# 新しいステートに変更
