@@ -110,6 +110,7 @@ func _process(_delta: float) -> void:
 
 		## ESCキーでメニューを開く
 		if Input.is_action_just_pressed("pause"):
+			AudioManager.play_ui_select()
 			PauseManager.toggle_pause()
 			pause_menu.visible = true
 			menu_just_opened = true
@@ -147,6 +148,7 @@ func _process_menu_input(_delta: float) -> void:
 
 	## ESC/キャンセルボタンでメニューを閉じる（ゲームパッド: 言語により×/⚪︎が切替）
 	if GameSettings.is_action_menu_cancel_pressed() or Input.is_action_just_pressed("pause"):
+		AudioManager.play_ui_back()
 		match current_menu_state:
 			"main":
 				## メインメニューからゲームに戻る
@@ -171,12 +173,14 @@ func _process_menu_input(_delta: float) -> void:
 func _process_main_menu_input() -> void:
 	## メインメニューの入力処理
 	if Input.is_action_just_pressed("ui_menu_up"):
+		AudioManager.play_ui_move()
 		current_selection -= 1
 		if current_selection < 0:
 			current_selection = buttons.size() - 1
 		_update_button_selection()
 
 	elif Input.is_action_just_pressed("ui_menu_down"):
+		AudioManager.play_ui_move()
 		current_selection += 1
 		if current_selection >= buttons.size():
 			current_selection = 0
@@ -184,7 +188,13 @@ func _process_main_menu_input() -> void:
 
 	elif GameSettings.is_action_menu_accept_pressed():
 		if current_selection >= 0 and current_selection < buttons.size():
-			buttons[current_selection].emit_signal("pressed")
+			var button: Button = buttons[current_selection]
+			# continueボタン（ゲームに戻る）はback、それ以外はselectを再生
+			if button.has_meta("text_key") and button.get_meta("text_key") == "continue":
+				AudioManager.play_ui_back()
+			else:
+				AudioManager.play_ui_select()
+			button.emit_signal("pressed")
 
 func _process_submenu_input() -> void:
 	## サブメニューの入力処理

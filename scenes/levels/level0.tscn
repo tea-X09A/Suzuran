@@ -1,6 +1,7 @@
-[gd_scene load_steps=13 format=4 uid="uid://c66yhlgjdohsy"]
+[gd_scene load_steps=14 format=4 uid="uid://c66yhlgjdohsy"]
 
 [ext_resource type="PackedScene" uid="uid://cb3hree4jheeu" path="res://scenes/levels/camera.tscn" id="1_o8kyb"]
+[ext_resource type="Script" uid="uid://crstyvdbk2408" path="res://scripts/levels/base_level.gd" id="2_level0"]
 [ext_resource type="Texture2D" uid="uid://cvvb866p8u71i" path="res://assets/images/tilesets/tilesheet_complete.png" id="3_5kr0j"]
 [ext_resource type="PackedScene" uid="uid://daofj62a4corn" path="res://scenes/player/player.tscn" id="3_hghvf"]
 [ext_resource type="PackedScene" uid="uid://cm2ybmb8lcuey" path="res://scenes/backgrounds/level0_bg.tscn" id="4_1nvli"]
@@ -290,6 +291,8 @@ physics_layer_0/collision_layer = 1
 sources/0 = SubResource("TileSetAtlasSource_ry65h")
 
 [node name="Level0" type="Node2D"]
+script = ExtResource("2_level0")
+bgm_path = "res://assets/audio/bgm/forest.mp3"
 
 [node name="camera" parent="." instance=ExtResource("1_o8kyb")]
 position = Vector2(0, -16)

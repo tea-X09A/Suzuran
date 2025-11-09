@@ -133,6 +133,7 @@ func process_input(_delta: float) -> void:
 
 	# ESC/キャンセルボタンで戻る（ゲームパッド: 言語により×/⚪︎が切替）
 	if GameSettings.is_action_menu_cancel_pressed():
+		AudioManager.play_ui_back()
 		_on_back_pressed()
 		return
 
@@ -147,12 +148,14 @@ func process_input(_delta: float) -> void:
 func _process_1d_navigation() -> void:
 	# 上下キーで選択
 	if Input.is_action_just_pressed("ui_menu_up"):
+		AudioManager.play_ui_move()
 		current_selection -= 1
 		if current_selection < 0:
 			current_selection = buttons.size() - 1
 		_update_button_selection()
 
 	elif Input.is_action_just_pressed("ui_menu_down"):
+		AudioManager.play_ui_move()
 		current_selection += 1
 		if current_selection >= buttons.size():
 			current_selection = 0
@@ -160,9 +163,19 @@ func _process_1d_navigation() -> void:
 
 	elif GameSettings.is_action_menu_accept_pressed():
 		if current_selection >= 0 and current_selection < buttons.size():
-			buttons[current_selection].emit_signal("pressed")
+			var button: Button = buttons[current_selection]
+			_play_button_sound(button)
+			button.emit_signal("pressed")
 
 # ======================== ボタン管理メソッド ========================
+
+## ボタン押下時の音声フィードバックを再生
+func _play_button_sound(button: Button) -> void:
+	# 戻るボタンの場合はback、それ以外はselectを再生
+	if button == back_button:
+		AudioManager.play_ui_back()
+	else:
+		AudioManager.play_ui_select()
 
 ## ボタンの選択状態を更新（効率化：キャッシュされたスタイルを使用）
 func _update_button_selection() -> void:
@@ -316,6 +329,7 @@ func _update_back_button_text() -> void:
 func _process_2d_navigation() -> void:
 	# 上キーで行を上に移動
 	if Input.is_action_just_pressed("ui_menu_up"):
+		AudioManager.play_ui_move()
 		current_row -= 1
 		if current_row < 0:
 			current_row = navigation_rows.size() - 1
@@ -328,6 +342,7 @@ func _process_2d_navigation() -> void:
 
 	# 下キーで行を下に移動
 	elif Input.is_action_just_pressed("ui_menu_down"):
+		AudioManager.play_ui_move()
 		current_row += 1
 		if current_row >= navigation_rows.size():
 			current_row = 0
@@ -340,15 +355,18 @@ func _process_2d_navigation() -> void:
 
 	# 左右キーは派生クラスでオーバーライド
 	elif Input.is_action_just_pressed("ui_menu_left"):
+		AudioManager.play_ui_move()
 		_handle_left_input()
 
 	elif Input.is_action_just_pressed("ui_menu_right"):
+		AudioManager.play_ui_move()
 		_handle_right_input()
 
 	elif GameSettings.is_action_menu_accept_pressed():
 		if current_selection >= 0 and current_selection < buttons.size():
 			var button: Button = buttons[current_selection]
 			if not button.disabled:
+				_play_button_sound(button)
 				button.emit_signal("pressed")
 
 # ======================== 左右入力処理（派生クラスでオーバーライド） ========================

@@ -357,20 +357,26 @@ func process_input(_delta: float) -> void:
 		# 確認画面表示中の入力処理
 		# 上キー: 「はい」を選択
 		if Input.is_action_just_pressed("ui_menu_up"):
+			AudioManager.play_ui_move()
 			current_selection = 0
 			_update_confirm_button_selection()
 		# 下キー: 「いいえ」を選択
 		elif Input.is_action_just_pressed("ui_menu_down"):
+			AudioManager.play_ui_move()
 			current_selection = 1
 			_update_confirm_button_selection()
 		# 決定キー: 選択を実行（言語を考慮）
 		elif GameSettings.is_action_menu_accept_pressed():
+			# 「はい」の場合はselect、「いいえ」の場合はbackを再生
 			if current_selection == 0:
+				AudioManager.play_ui_select()
 				_on_confirm_yes()
 			else:
+				AudioManager.play_ui_back()
 				_on_confirm_no()
 		# ESC/キャンセルボタン: 「いいえ」を実行（ゲームパッド: 言語により×/⚪︎が切替）
 		elif GameSettings.is_action_menu_cancel_pressed() or Input.is_action_just_pressed("pause"):
+			AudioManager.play_ui_back()
 			_on_confirm_no()
 		return
 
@@ -380,6 +386,7 @@ func process_input(_delta: float) -> void:
 
 	# ESC/キャンセルボタンで戻る（ゲームパッド: 言語により×/⚪︎が切替）
 	if GameSettings.is_action_menu_cancel_pressed():
+		AudioManager.play_ui_back()
 		_on_back_pressed()
 		return
 
@@ -387,12 +394,14 @@ func process_input(_delta: float) -> void:
 	if Input.is_action_just_pressed("ui_menu_up"):
 		var next_selection: int = _find_next_enabled_button(current_selection, -1)
 		if next_selection != current_selection:
+			AudioManager.play_ui_move()
 			current_selection = next_selection
 			_update_button_selection()
 
 	elif Input.is_action_just_pressed("ui_menu_down"):
 		var next_selection: int = _find_next_enabled_button(current_selection, 1)
 		if next_selection != current_selection:
+			AudioManager.play_ui_move()
 			current_selection = next_selection
 			_update_button_selection()
 
@@ -401,6 +410,7 @@ func process_input(_delta: float) -> void:
 			var button: Button = buttons[current_selection]
 			# 無効化されていないボタンのみ押下可能
 			if not button.disabled:
+				_play_button_sound(button)
 				button.emit_signal("pressed")
 
 # ======================== ヘルパーメソッド ========================

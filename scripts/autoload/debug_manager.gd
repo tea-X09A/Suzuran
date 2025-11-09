@@ -483,6 +483,7 @@ func toggle_debug_menu() -> void:
 
 	if is_open:
 		## 現在のポーズ状態を保存してからメニューを開く
+		AudioManager.play_ui_select()
 		previous_pause_state = get_tree().paused
 		get_tree().paused = true
 		current_row = 0

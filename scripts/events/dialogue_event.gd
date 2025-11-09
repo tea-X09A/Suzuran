@@ -236,15 +236,18 @@ func _process_choice_input() -> void:
 
 	# ↑↓ / WSキーで選択移動
 	if Input.is_action_just_pressed("ui_menu_up"):
+		AudioManager.play_ui_move()
 		selected_choice_index = max(0, selected_choice_index - 1)
 		_update_choice_selection()
 	elif Input.is_action_just_pressed("ui_menu_down"):
+		AudioManager.play_ui_move()
 		selected_choice_index = min(choice_buttons.size() - 1, selected_choice_index + 1)
 		_update_choice_selection()
 
 	# 決定ボタンで選択（キーボード: Z/Enter、ゲームパッド: 言語により⚪︎/×が切替）
 	if GameSettings.is_action_menu_accept_pressed():
 		if selected_choice_index < choice_buttons.size():
+			AudioManager.play_ui_select()
 			var button: Node = choice_buttons[selected_choice_index]
 			if button.has_method("_on_button_pressed"):
 				button._on_button_pressed()
