@@ -110,9 +110,6 @@ func _ready() -> void:
 	# スプライトの初期スケールを保存
 	if sprite:
 		initial_sprite_scale_x = abs(sprite.scale.x)
-	# エネミーは常にプレイヤーを通過させる（コリジョンレイヤーを無効化）
-	# ダメージ/キャプチャ判定はチェイス状態の時のみ行う
-	collision_layer = 0
 
 	# コンポーネントの初期化
 	_initialize_components()

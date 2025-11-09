@@ -9,13 +9,13 @@ const SECONDARY_PROJECTILE_TEXTURE: Texture2D = preload("res://assets/images/bul
 ## プロジェクタイルの統一表示サイズ（ピクセル）
 const TARGET_SIZE: float = 50.0
 ## プライマリ投射物の最大飛距離（ピクセル）
-const PRIMARY_PROJECTILE_MAX_DISTANCE: float = 400.0
+const PRIMARY_PROJECTILE_MAX_DISTANCE: float = 500.0
 ## セカンダリ投射物の重力加速度（ピクセル/秒^2）
 const SECONDARY_PROJECTILE_GRAVITY: float = 980.0
 ## セカンダリ投射物の減衰開始距離（ピクセル）
 const SECONDARY_PROJECTILE_DECELERATION_START: float = 100.0
 ## セカンダリ投射物の減衰率（0.0-1.0、小さいほど減衰が強い）
-const SECONDARY_PROJECTILE_DECELERATION_RATE: float = 0.99
+const SECONDARY_PROJECTILE_DECELERATION_RATE: float = 0.995
 
 # ======================== エクスポート変数 ========================
 ## 生存時間（秒）
