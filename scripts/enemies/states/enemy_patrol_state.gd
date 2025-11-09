@@ -1,55 +1,37 @@
 class_name EnemyPatrolState
 extends EnemyBaseState
 
-# ======================== 変数定義 ========================
-
-## 前フレームの位置を記録する変数
-var previous_position: Vector2 = Vector2.ZERO
-
 # ======================== 状態初期化・クリーンアップ ========================
 
 ## ステート開始時の処理
 func initialize_state() -> void:
-	# パトロール目標位置を生成
-	# 壁衝突後の場合は逆方向へ移動
-	if enemy.hit_wall:
-		_generate_reverse_patrol_target()
-		enemy.distance_since_collision = 0.0
-	else:
-		_generate_random_patrol_target()
+	# パトロール目標位置を生成（常にランダム生成）
+	_generate_random_patrol_target()
 
 # ======================== 物理演算処理 ========================
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:
-	# 前フレームの位置を記録
-	if previous_position == Vector2.ZERO:
-		previous_position = enemy.global_position
-
 	# 重力を適用
 	apply_gravity(delta)
 
+	# 壁衝突判定
+	if enemy.is_on_wall():
+		var wall_normal: Vector2 = enemy.get_wall_normal()
+		var direction_to_target: float = sign(enemy.target_position.x - enemy.global_position.x)
+		# wall_normalは壁から離れる方向を指す
+		# 移動方向と壁法線の符号が異なる場合、壁に向かって移動している
+		var moving_into_wall: bool = sign(wall_normal.x) != sign(direction_to_target)
+
+		# 壁に向かって移動しようとしている場合のみ、逆方向へターゲットを再設定
+		if moving_into_wall:
+			# 逆方向移動のために現在の移動方向を記録
+			enemy.last_movement_direction = direction_to_target
+			_generate_reverse_patrol_target()
+			return
+
 	# パトロール移動
 	_patrol_movement()
-
-	# 壁衝突後の移動距離が一定以上の場合のみ壁衝突判定を行う
-	if not (enemy.hit_wall and enemy.distance_since_collision < enemy.min_distance_from_wall) and enemy.is_on_wall():
-		# 壁に衝突した場合の処理
-		enemy.hit_wall = true
-		enemy.distance_since_collision = 0.0
-		# 待機状態へ移行
-		enemy.change_state("IDLE")
-
-	# 移動距離を更新（壁衝突後の場合）
-	if enemy.hit_wall:
-		enemy.distance_since_collision += enemy.global_position.distance_to(previous_position)
-
-		if enemy.distance_since_collision >= enemy.min_distance_from_wall:
-			# 十分な距離を移動したので hit_wall フラグをクリア
-			enemy.hit_wall = false
-
-	# 次フレームのために現在位置を記録
-	previous_position = enemy.global_position
 
 # ======================== プライベートメソッド ========================
 
@@ -57,10 +39,10 @@ func physics_update(delta: float) -> void:
 func _patrol_movement() -> void:
 	# 目標位置への方向を計算
 	var direction: float = sign(enemy.target_position.x - enemy.global_position.x)
+	var distance_to_target: float = abs(enemy.target_position.x - enemy.global_position.x)
 
 	# 目標位置に到達したかチェック
-	if abs(enemy.target_position.x - enemy.global_position.x) <= enemy.arrival_threshold:
-		# 到達したら待機状態へ移行
+	if distance_to_target <= enemy.arrival_threshold:
 		enemy.change_state("IDLE")
 	else:
 		# 目標位置へ移動

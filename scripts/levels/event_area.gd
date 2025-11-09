@@ -38,6 +38,9 @@ var player_in_area: bool = false
 ## プレイヤーへの参照（EXAMINE用インジケーター制御に使用）
 var player_reference: Player = null
 
+## ExamineComponentへの参照（キャッシュ）
+var examine_component: ExamineComponent = null
+
 ## EventConfigDataリソース（キャッシュ）
 @onready var event_config_data: EventConfigData = _load_event_config_data()
 
@@ -55,11 +58,16 @@ func _ready() -> void:
 
 ## フレーム処理（EXAMINEタイプのZキー入力チェック）
 func _process(_delta: float) -> void:
-	# プレイヤーがエリア内にいる場合のみ入力をチェック
-	if player_in_area and not EventManager.is_event_running:
-		# GameSettingsの言語別入力判定を使用
-		if GameSettings.is_action_menu_accept_pressed():
-			_trigger_event()
+	# 早期returnで条件を整理
+	if not player_in_area or EventManager.is_event_running:
+		return
+
+	if not examine_component or not examine_component.is_examine_allowed_state():
+		return
+
+	# GameSettingsの言語別入力判定を使用
+	if GameSettings.is_action_menu_accept_pressed():
+		_trigger_event()
 
 ## クリーンアップ処理
 func _exit_tree() -> void:
@@ -71,7 +79,8 @@ func _exit_tree() -> void:
 	if event_type == EventType.EXAMINE:
 		if body_exited.is_connected(_on_body_exited):
 			body_exited.disconnect(_on_body_exited)
-		# プレイヤー参照をクリア
+		# キャッシュをクリア
+		examine_component = null
 		player_reference = null
 
 # ======================== イベント処理 ========================
@@ -82,14 +91,16 @@ func _on_body_entered(body: Node2D) -> void:
 		if event_type == EventType.EXAMINE:
 			player_in_area = true
 			player_reference = body as Player
+			# ExamineComponentを一度だけ取得してキャッシュ
+			examine_component = player_reference.examine_component
 			# ExamineComponentのメソッドを使用してカプセル化を維持
-			if player_reference.examine_component:
+			if examine_component:
 				# one_shotが有効で既に発火済みの場合はフラグのみ設定
 				if one_shot and is_activated:
-					player_reference.examine_component.in_examine_area = true
+					examine_component.in_examine_area = true
 				else:
 					# enter_examine_area()でフラグ設定とインジケーター表示を一括処理
-					player_reference.examine_component.enter_examine_area()
+					examine_component.enter_examine_area()
 			return
 
 		# AUTOタイプの場合は、従来通り即座にイベントを発動
@@ -100,8 +111,10 @@ func _on_body_exited(body: Node2D) -> void:
 	if body is Player:
 		player_in_area = false
 		# インジケーターを非表示し、examineエリア内フラグをOFF
-		if player_reference and player_reference.examine_component:
-			player_reference.examine_component.exit_examine_area()
+		if examine_component:
+			examine_component.exit_examine_area()
+		# キャッシュをクリア
+		examine_component = null
 		player_reference = null
 
 ## イベント発動処理（AUTOとEXAMINEの両方で使用）
@@ -144,8 +157,8 @@ func _trigger_event() -> void:
 	is_activated = true
 
 	# インジケーターを非表示（イベント実行中は表示しない）
-	if player_reference and player_reference.examine_component:
-		player_reference.examine_component.hide_examine_indicator()
+	if examine_component:
+		examine_component.hide_examine_indicator()
 
 	# DialogueDataリソースを読み込み
 	var dialogue_data: DialogueData = load(dialogue_resource_path)
@@ -164,9 +177,10 @@ func _trigger_event() -> void:
 func reset() -> void:
 	is_activated = false
 	player_in_area = false
-	# インジケーターを非表示にし、examineエリア内フラグをOFFにしてプレイヤー参照をクリア
-	if player_reference and player_reference.examine_component:
-		player_reference.examine_component.exit_examine_area()
+	# インジケーターを非表示にし、examineエリア内フラグをOFFにして参照をクリア
+	if examine_component:
+		examine_component.exit_examine_area()
+	examine_component = null
 	player_reference = null
 
 # ======================== 内部ヘルパー関数 ========================

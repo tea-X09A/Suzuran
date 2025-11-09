@@ -3,6 +3,11 @@
 class_name ExamineComponent
 extends RefCounted
 
+# ======================== 定数 ========================
+
+## Examine実行が許可されるステート
+const ALLOWED_STATES: Array[String] = ["IDLE", "WALK", "RUN"]
+
 # ======================== シグナル ========================
 
 ## Examine可能エリアに入ったときに発火
@@ -54,25 +59,55 @@ func cleanup() -> void:
 	in_examine_area = false
 	_player_ref = null
 
+# ======================== ステートチェック ========================
+
+## 現在のステートがExamine実行を許可しているかチェック
+## @return bool 許可されたステート（IDLE/WALK/RUN）の場合true
+func is_examine_allowed_state() -> bool:
+	var player: CharacterBody2D = _player_ref.get_ref() if _player_ref else null
+	if not player or not player.current_state:
+		return false
+
+	var current_state_name: String = player.current_state.get_state_name()
+	return current_state_name in ALLOWED_STATES
+
 # ======================== Examineインジケーター制御 ========================
 
 ## Examineインジケーターを表示
 func show_examine_indicator() -> void:
 	if examine_indicator:
 		examine_indicator.show_indicator()
-		examine_available.emit()
 
 ## Examineインジケーターを非表示
 func hide_examine_indicator() -> void:
 	if examine_indicator:
 		examine_indicator.hide_indicator()
 
+## インジケーターの表示状態を現在のステートとイベント状態に応じて動的に更新
+func update_indicator_visibility() -> void:
+	if not in_examine_area:
+		return
+
+	# イベント実行中は非表示
+	if EventManager.is_event_running:
+		hide_examine_indicator()
+		return
+
+	# 許可されたステートの場合のみインジケーターを表示
+	if is_examine_allowed_state():
+		show_examine_indicator()
+	else:
+		hide_examine_indicator()
+
 # ======================== Examineエリア管理 ========================
 
 ## Examineエリアに入ったときの処理
 func enter_examine_area() -> void:
 	in_examine_area = true
-	show_examine_indicator()
+	# エリア進入時にインジケーターの表示状態を即座に更新
+	update_indicator_visibility()
+	# エリア進入時のみシグナルを発火
+	examine_available.emit()
 
 ## Examineエリアから出たときの処理
 func exit_examine_area() -> void:
@@ -87,6 +122,7 @@ func is_in_examine_area() -> bool:
 # ======================== Examineアクション ========================
 
 ## Examine実行処理
+## 許可されたステート（IDLE/WALK/RUN）でのみ実行可能
 func execute_examine() -> void:
-	if in_examine_area:
+	if in_examine_area and is_examine_allowed_state():
 		examine_activated.emit()

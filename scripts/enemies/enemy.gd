@@ -67,14 +67,8 @@ var initial_sprite_scale_x: float = 0.0
 var wait_timer: float = 0.0
 # 目標位置への到達判定距離
 var arrival_threshold: float = 5.0
-# 壁に衝突したかどうか
-var hit_wall: bool = false
 # 直前に進もうとした方向（-1: 左, 1: 右）
 var last_movement_direction: float = 0.0
-# 壁衝突後に移動した距離
-var distance_since_collision: float = 0.0
-# 壁衝突判定を再開する距離
-var min_distance_from_wall: float = 20.0
 
 # ======================== コンポーネント ========================
 
@@ -351,10 +345,6 @@ func _on_player_lost(lost_player: Node2D) -> void:
 	# 検知アイコンを表示（?マーク、フェードアウトアニメーション付き）
 	if detection_icon_component:
 		detection_icon_component.show_lost()
-	# 壁に接触していない場合のみ壁衝突フラグをリセット
-	if not is_on_wall():
-		hit_wall = false
-		distance_since_collision = 0.0
 	# 継承先で追加処理を行うための仮想関数（元の_on_player_lostを呼び出す）
 	_on_player_lost_override(lost_player)
 

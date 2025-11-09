@@ -1,26 +1,17 @@
 class_name EnemyChaseState
 extends EnemyBaseState
 
-# ======================== 変数定義 ========================
-
-## 前フレームの位置を記録する変数
-var previous_position: Vector2 = Vector2.ZERO
-
 # ======================== 状態初期化・クリーンアップ ========================
 
 ## ステート開始時の処理
 func initialize_state() -> void:
 	# 追跡開始時の処理
-	previous_position = Vector2.ZERO
+	pass
 
 # ======================== 物理演算処理 ========================
 
 ## 物理演算処理
 func physics_update(delta: float) -> void:
-	# 前フレームの位置を記録
-	if previous_position == Vector2.ZERO:
-		previous_position = enemy.global_position
-
 	# 重力を適用
 	apply_gravity(delta)
 
@@ -35,34 +26,26 @@ func physics_update(delta: float) -> void:
 	# プレイヤーの方向を計算
 	var direction: float = sign(player.global_position.x - enemy.global_position.x)
 
-	# 壁衝突後の移動距離が一定以上の場合のみ壁衝突判定を行う
-	if not (enemy.hit_wall and enemy.distance_since_collision < enemy.min_distance_from_wall) and enemy.is_on_wall():
-		# 壁の方向を取得
+	# 壁衝突判定
+	if enemy.is_on_wall():
 		var wall_normal: Vector2 = enemy.get_wall_normal()
-		var moving_into_wall: bool = sign(wall_normal.x) == sign(direction)
+		# wall_normalは壁から離れる方向を指す
+		# 移動方向と壁法線の符号が異なる場合、壁に向かって移動している
+		var moving_into_wall: bool = sign(wall_normal.x) != sign(direction)
 
 		if moving_into_wall:
-			# 壁に向かって移動しようとしている場合、壁衝突フラグを立てる
-			enemy.hit_wall = true
-			enemy.distance_since_collision = 0.0
+			# プレイヤーを見失う処理
+			var detection_comp = enemy.detection_component
+			if detection_comp:
+				var lost_player: Node2D = detection_comp.get_player()
+				if lost_player:
+					# 検知状態をリセットしてから見失いシグナルを発火
+					detection_comp.clear_player()
+					detection_comp.player_lost.emit(lost_player)
+			else:
+				# detection_componentがない場合は直接IDLE状態へ
+				enemy.change_state("IDLE")
+			return
 
-	# 壁衝突フラグが立っている場合、壁から離れる方向に移動
-	if enemy.hit_wall:
-		# 壁の法線方向（壁から離れる方向）に移動
-		var wall_normal: Vector2 = enemy.get_wall_normal()
-		var escape_direction: float = sign(wall_normal.x)
-		apply_movement(escape_direction, enemy.chase_move_speed)
-
-		# 移動距離を更新
-		enemy.distance_since_collision += enemy.global_position.distance_to(previous_position)
-
-		# 十分な距離を移動したら hit_wall フラグをクリア
-		if enemy.distance_since_collision >= enemy.min_distance_from_wall:
-			enemy.hit_wall = false
-			enemy.distance_since_collision = 0.0
-	else:
-		# プレイヤーの方向に移動
-		apply_movement(direction, enemy.chase_move_speed)
-
-	# 次フレームのために現在位置を記録
-	previous_position = enemy.global_position
+	# プレイヤーの方向に移動
+	apply_movement(direction, enemy.chase_move_speed)

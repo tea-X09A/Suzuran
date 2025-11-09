@@ -316,6 +316,10 @@ func change_state(new_state_name: String) -> void:
 	if animation_tree_playback:
 		animation_tree_playback.travel(new_state_name)
 
+	# Examineインジケーターの表示状態を更新（ステート変更時のみ）
+	if examine_component:
+		examine_component.update_indicator_visibility()
+
 
 ## スプライト方向制御
 func update_sprite_direction(input_direction_x: float) -> void:

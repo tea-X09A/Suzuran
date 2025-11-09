@@ -159,6 +159,10 @@ func hide_icon() -> void:
 	# 処理を停止
 	icon_control.set_process(false)
 
+## アイコンの位置を更新（スプライト反転時に外部から呼び出し可能）
+func update_icon_position() -> void:
+	_update_icon_position()
+
 # ======================== 内部メソッド ========================
 
 ## エネミー参照を取得

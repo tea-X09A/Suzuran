@@ -103,6 +103,14 @@ func update_sprite_direction(direction: float) -> void:
 	if not enemy_instance:
 		return
 
+	# 現在のスプライト方向を取得（符号のみ）
+	var current_direction: float = sign(sprite.scale.x) if sprite else 0.0
+	var new_direction: float = sign(direction)
+
+	# 実際に方向が変わる場合のみ更新（不要な処理を回避）
+	if current_direction == new_direction:
+		return
+
 	# Sprite2Dの反転（初期スケールを保持して反転）
 	if sprite and enemy_instance.initial_sprite_scale_x > 0.0:
 		sprite.scale.x = enemy_instance.initial_sprite_scale_x * direction
@@ -111,6 +119,10 @@ func update_sprite_direction(direction: float) -> void:
 	for node in [detection_area, hitbox, hurtbox]:
 		if node:
 			node.scale.x = direction
+
+	# 検知アイコンの位置更新
+	if enemy_instance.detection_icon_component:
+		enemy_instance.detection_icon_component.update_icon_position()
 
 ## 重力の適用
 func apply_gravity(delta: float) -> void:

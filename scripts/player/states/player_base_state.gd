@@ -439,6 +439,8 @@ func handle_ground_physics(delta: float) -> bool:
 	return false
 
 ## 硬直中のexamine入力チェック（共通処理）
+## ExamineComponent側でステートチェック（IDLE/WALK/RUN）が行われるため、
+## 許可されたステートでのみexamineが実行される
 ## @return bool examine入力が処理された場合true
 func handle_recovery_examine_input() -> bool:
 	if player.examine_component and player.examine_component.is_in_examine_area():
