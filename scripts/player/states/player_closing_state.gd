@@ -7,9 +7,6 @@ extends PlayerBaseState
 func get_state_name() -> String:
 	return "CLOSING"
 
-# ノード参照キャッシュ
-var detection_area: Area2D = null
-
 # 追従状態管理変数
 var distance_traveled: float = 0.0  # 移動距離
 var max_closing_distance: float = 0.0  # 最大追従距離（ピクセル）（パラメータから設定）
@@ -17,10 +14,6 @@ var start_position: Vector2 = Vector2.ZERO  # 開始位置
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
-	# DetectionAreaノードを取得（初回のみ）
-	if not detection_area:
-		detection_area = player.get_node_or_null("DetectionArea")
-
 	# 追従状態初期化
 	distance_traveled = 0.0
 	start_position = player.global_position
@@ -41,22 +34,13 @@ func initialize_state() -> void:
 
 	forward_speed = base_run_speed * speed_multiplier
 
-	# DetectionAreaのarea_enteredシグナルを接続（重複接続を防止）
-	if detection_area and not detection_area.area_entered.is_connected(_on_detection_area_area_entered):
-		detection_area.area_entered.connect(_on_detection_area_area_entered)
-
-	# Spriteの向きに応じてDetectionAreaの位置を更新（常に同期）
-	_update_detection_area_position()
-
 	# Sprite2Dの向きに応じて前進
 	var direction: float = 1.0 if sprite_2d.flip_h else -1.0
 	player.velocity.x = direction * forward_speed
 
 ## AnimationTree状態終了時の処理
 func cleanup_state() -> void:
-	# DetectionAreaのシグナル接続を解除（メモリリーク防止）
-	if detection_area and detection_area.area_entered.is_connected(_on_detection_area_area_entered):
-		detection_area.area_entered.disconnect(_on_detection_area_area_entered)
+	pass
 
 # ======================== 入力処理 ========================
 
@@ -91,6 +75,11 @@ func physics_update(delta: float) -> void:
 		player.change_state("IDLE")
 		return
 
+	# 前方のエネミーを検知（ポーリング方式）
+	if detect_enemy_in_front():
+		player.change_state("FIGHTING")
+		return
+
 	# 移動距離を計算
 	distance_traveled = abs(player.global_position.x - start_position.x)
 
@@ -98,28 +87,3 @@ func physics_update(delta: float) -> void:
 	if distance_traveled >= max_closing_distance:
 		player.change_state("FIGHTING")
 		return
-
-# ======================== ヘルパーメソッド ========================
-
-## Spriteの向きに応じてDetectionAreaの位置を更新
-func _update_detection_area_position() -> void:
-	if not detection_area:
-		return
-
-	var collision_shape: CollisionShape2D = detection_area.get_node_or_null("DetectionCollision")
-	if not collision_shape:
-		return
-
-	# プレイヤーの向きに応じて検知範囲の位置を設定
-	# sprite_2d.flip_h == true: 右向き、false: 左向き
-	var direction: float = 1.0 if sprite_2d.flip_h else -1.0
-	# 検知範囲をプレイヤーの前方50ピクセルの位置に配置（幅100の半分）
-	collision_shape.position = Vector2(direction * 50, 0)
-
-## DetectionAreaがArea2D（敵のHurtbox）と衝突した時の処理
-func _on_detection_area_area_entered(area: Area2D) -> void:
-	# エリアの親ノードを取得して、enemiesグループに所属しているか確認
-	var parent_node: Node = area.get_parent()
-	if parent_node and parent_node.is_in_group("enemies"):
-		# fighting状態へ遷移
-		player.change_state("FIGHTING")

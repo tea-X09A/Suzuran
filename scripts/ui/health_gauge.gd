@@ -56,6 +56,12 @@ extends Control
 @export var gauge_shadow_color: Color = Color(0.0, 0.0, 0.0, 0.5)
 ## ゲージの影のオフセット
 @export var gauge_shadow_offset: Vector2 = Vector2(2.0, 2.0)
+## プレイヤー名を表示するかどうか
+@export var show_player_name: bool = true
+## 自動フェードアウトを有効にするか
+@export var enable_auto_fade: bool = false
+## フェードアウトまでの表示時間（秒）
+@export var fade_duration: float = 4.0
 
 # ======================== 内部変数 ========================
 
@@ -63,13 +69,26 @@ extends Control
 var previous_hp_progress: float = 1.0
 ## ダメージを受けた時刻（秒）
 var damage_time: float = 0.0
+## フェードタイマー
+var fade_timer: float = 0.0
+## フェードアウト中かどうか
+var is_fading: bool = false
 
 # ======================== 初期化処理 ========================
 
 func _ready() -> void:
 	previous_hp_progress = hp_progress
-	# サイズを設定（名前表示用のスペースを確保）
-	custom_minimum_size = Vector2(bar_width, bar_height + name_font_size + name_margin)
+	# サイズを設定（名前表示の有無に応じて調整）
+	if show_player_name:
+		custom_minimum_size = Vector2(bar_width, bar_height + name_font_size + name_margin)
+	else:
+		custom_minimum_size = Vector2(bar_width, bar_height)
+
+	# 自動フェードが有効な場合は初期状態で非表示
+	if enable_auto_fade:
+		visible = false
+		modulate.a = 0.0
+
 	queue_redraw()
 
 # ======================== 更新処理 ========================
@@ -85,15 +104,27 @@ func _process(delta: float) -> void:
 			previous_hp_progress = move_toward(previous_hp_progress, hp_progress, damage_lerp_speed * delta)
 			queue_redraw()
 
+	# フェードアウト処理
+	if enable_auto_fade and is_fading and fade_timer > 0.0:
+		fade_timer -= delta
+		var alpha: float = fade_timer / fade_duration
+		modulate.a = clamp(alpha, 0.0, 1.0)
+
+		if fade_timer <= 0.0:
+			visible = false
+			is_fading = false
+
 # ======================== 描画処理 ========================
 
 ## メイン描画処理
 func _draw() -> void:
-	var name_height: float = name_font_size + name_margin
-	var bar_y_offset: float = name_height
-
-	# プレイヤー名を描画
-	_draw_player_name(name_height)
+	# 名前表示の有無に応じてバーのY座標オフセットを調整
+	var bar_y_offset: float = 0.0
+	if show_player_name:
+		var name_height: float = name_font_size + name_margin
+		bar_y_offset = name_height
+		# プレイヤー名を描画
+		_draw_player_name(name_height)
 
 	# バーの内側の領域を計算
 	var inner_width: float = bar_width - border_width * 2.0
@@ -191,3 +222,45 @@ func _draw_rounded_rect(pos: Vector2, rect_size: Vector2, radius: float, color: 
 		points.append(pos + Vector2(rect_size.x - actual_radius, actual_radius) + offset)
 
 	draw_colored_polygon(points, color)
+
+# ======================== 公開メソッド ========================
+
+## HPゲージを表示してフェードタイマーを開始
+func show_gauge() -> void:
+	if enable_auto_fade:
+		visible = true
+		modulate.a = 1.0
+		fade_timer = fade_duration
+		is_fading = true
+
+## HPゲージを即座に非表示
+func hide_gauge() -> void:
+	if enable_auto_fade:
+		visible = false
+		modulate.a = 0.0
+		fade_timer = 0.0
+		is_fading = false
+
+## 敵用にゲージを設定（プリセット設定）
+func setup_for_enemy(position_offset: Vector2 = Vector2(-30, -80)) -> void:
+	# 敵用の小さいサイズに設定
+	bar_width = 60.0
+	bar_height = 8.0
+	border_width = 1.0
+	corner_radius = 4.0
+
+	# プレイヤー名を非表示
+	show_player_name = false
+
+	# 自動フェードアウトを有効化
+	enable_auto_fade = true
+	fade_duration = 4.0
+
+	# 影のオフセットを小さく
+	gauge_shadow_offset = Vector2(1.0, 1.0)
+
+	# 位置を設定（敵の頭上）
+	position = position_offset
+
+	# サイズを再設定
+	custom_minimum_size = Vector2(bar_width, bar_height)

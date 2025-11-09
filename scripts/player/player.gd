@@ -25,6 +25,8 @@ enum PLAYER_CONDITION { NORMAL, EXPANSION }
 var animation_tree_playback: AnimationNodeStateMachinePlayback = null
 ## 当たり判定用コリジョン
 @onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
+## エネミー検知用Area2D
+@onready var detection_area: Area2D = $DetectionArea
 
 # ======================== エクスポート設定 ========================
 
@@ -311,6 +313,11 @@ func change_state(new_state_name: String) -> void:
 	# 新しいステートに変更
 	current_state = new_state
 	current_state.initialize_state()
+
+	# デバッグ環境でのみステート遷移をログ出力
+	if OS.is_debug_build():
+		var previous_state_name: String = previous_state.get_state_name() if previous_state else "None"
+		print("[State Transition] %s -> %s" % [previous_state_name, new_state_name])
 
 	# アニメーション状態も更新
 	if animation_tree_playback:

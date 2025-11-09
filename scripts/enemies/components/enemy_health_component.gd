@@ -27,7 +27,7 @@ var current_hp: int = 0
 var knockback_velocity: Vector2 = Vector2.ZERO
 ## ノックバック後に向くべき方向（0.0なら変更なし）
 var direction_to_face_after_knockback: float = 0.0
-## HPゲージへの参照（scripts/ui/enemy_hp_gauge.gd）
+## HPゲージへの参照（scripts/ui/health_gauge.gd）
 var hp_gauge: Control = null
 
 # ======================== ノード参照（WeakRefで保持） ========================
@@ -195,20 +195,27 @@ func _create_hp_gauge() -> void:
 	if not enemy:
 		return
 
-	# enemy_hp_gauge.gdのインスタンスを作成
-	var EnemyHPGauge: Script = preload("res://scripts/ui/enemy_hp_gauge.gd")
-	hp_gauge = EnemyHPGauge.new()
+	# health_gauge.gdのインスタンスを作成（プレイヤーと同じゲージを使用）
+	var HealthGaugeScript: Script = preload("res://scripts/ui/health_gauge.gd")
+	hp_gauge = HealthGaugeScript.new()
 	hp_gauge.name = "HPGauge"
-	hp_gauge.position = Vector2(0, -80)
-	hp_gauge.max_hp = max_hp
-	hp_gauge.current_hp = current_hp
+
+	# 敵用のプリセット設定を適用
+	hp_gauge.setup_for_enemy()
+
+	# HPの初期値を設定
+	hp_gauge.hp_progress = float(current_hp) / float(max_hp)
+
 	enemy.add_child(hp_gauge)
 
 ## HPゲージを更新
 func _update_hp_gauge() -> void:
 	if not hp_gauge:
 		return
-	hp_gauge.update_hp(current_hp, max_hp)
+	# HP進行度を更新
+	hp_gauge.hp_progress = float(current_hp) / float(max_hp) if max_hp > 0 else 0.0
+	# ゲージを表示してフェードタイマーをリセット
+	hp_gauge.show_gauge()
 
 # ======================== クリーンアップ処理 ========================
 
