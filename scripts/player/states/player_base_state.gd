@@ -372,6 +372,15 @@ func is_dash_input() -> bool:
 func get_parameter(key: String) -> Variant:
 	return PlayerParameters.get_parameter(player.condition, key)
 
+## 速度パラメータ取得（バフの影響を適用）
+## 速度系パラメータの場合は自動的に speed_multiplier を適用
+func get_speed_parameter(key: String) -> float:
+	var base_speed: float = get_parameter(key)
+	# 速度系パラメータの場合のみ speed_multiplier を適用
+	if key in ["move_walk_speed", "move_run_speed"]:
+		return base_speed * player.speed_multiplier
+	return base_speed
+
 ## AnimationTree状態設定（最小限のアニメーション制御）
 func set_animation_state(state_name: String) -> void:
 	if state_machine:
@@ -487,6 +496,9 @@ func handle_common_inputs() -> bool:
 
 	# 投擲入力チェック
 	if is_throwing_input():
+		# クールタイム中は投擲不可
+		if not player.can_throw():
+			return false
 		player.change_state("THROWING")
 		return true
 
@@ -542,6 +554,9 @@ func handle_action_input() -> bool:
 
 	# 投擲入力チェック（空中投擲）
 	if is_throwing_input():
+		# クールタイム中は投擲不可
+		if not player.can_throw():
+			return false
 		player.change_state("THROWING")
 		return true
 
@@ -556,7 +571,7 @@ func handle_airborne_movement_input() -> void:
 	var movement_input: float = get_movement_input()
 	if movement_input != 0.0:
 		# 入力方向への速度を計算（基本は歩行速度）
-		var input_speed: float = get_parameter("move_walk_speed")
+		var input_speed: float = get_speed_parameter("move_walk_speed")
 		# 空中開始時の速度（jump/run/walkの慣性）と入力速度の大きい方を使用
 		var target_speed: float = max(input_speed, initial_horizontal_speed)
 		apply_movement(movement_input, target_speed)
@@ -568,7 +583,7 @@ func handle_movement_input_common(current_state: String, delta: float) -> void:
 	if movement_input != 0.0:
 		var is_running: bool = is_dash_input()
 		var speed_key: String = "move_walk_speed" if current_state == "WALK" else "move_run_speed"
-		var speed: float = get_parameter(speed_key)
+		var speed: float = get_speed_parameter(speed_key)
 
 		# 状態遷移判定
 		if current_state == "WALK" and is_running:

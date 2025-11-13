@@ -40,17 +40,16 @@ func cleanup_state() -> void:
 		# フラグをリセット
 		enemy.direction_to_face_after_knockback = 0.0
 
-	# hitboxとdetection_areaのvisibleを常に復元
-	if hitbox:
-		hitbox.visible = true
+	# detection_areaのvisibleを復元（hitboxはFIGHTING状態でのみ表示）
 	if detection_area:
 		detection_area.visible = true
 
 	# 画面内の場合のみmonitoringを再有効化
 	if enemy.on_screen:
+		# hitboxはFIGHTING状態でのみ有効化されるため、ここでは無効のまま
 		if hitbox:
-			hitbox.set_deferred("monitoring", true)
-			hitbox.set_deferred("monitorable", true)
+			hitbox.set_deferred("monitoring", false)
+			hitbox.set_deferred("monitorable", false)
 		if detection_area:
 			detection_area.set_deferred("monitoring", true)
 

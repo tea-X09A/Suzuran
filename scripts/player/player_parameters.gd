@@ -21,8 +21,8 @@ extends RefCounted
 static var PARAMETERS: Dictionary = {
 	Player.PLAYER_CONDITION.NORMAL: {
 		# ======================== 基本移動パラメータ ========================
-		"move_walk_speed": 150.0,           # 歩行速度（ピクセル/秒）
-		"move_run_speed": 350.0,            # 走行速度（ピクセル/秒）
+		"move_walk_speed": 165.0,           # 歩行速度（ピクセル/秒）
+		"move_run_speed": 300.0,            # 走行速度（ピクセル/秒）
 
 		# ======================== ジャンプパラメータ ========================
 		"jump_initial_velocity": -350.0,    # ジャンプ初速（ピクセル/秒）
@@ -31,13 +31,14 @@ static var PARAMETERS: Dictionary = {
 		"jump_hold_acceleration": -800.0,  # 長押し時の加速度（ピクセル/秒²）
 		"jump_gravity_scale": 1.2,          # ジャンプ時の重力スケール
 		"jump_max_fall_speed": 800.0,       # 最大落下速度（ピクセル/秒）
-		"landing_speed_retention": 0.3,     # 着地時の速度保持率（0.3 = 30%保持、70%減衰）
+		"landing_speed_retention": 0.5,     # 着地時の速度保持率（0.5 = 50%保持、50%減衰）
 		"landing_speed_threshold": 200.0,   # 着地時の速度減衰を適用する最小速度（ピクセル/秒）
 
 		# ======================== 投擲パラメータ ========================
 		"throwing_projectile_speed": 500.0, # プロジェクタイルの飛行速度（ピクセル/秒）
 		"throwing_animation_duration": 0.5, # 投擲アニメーションの持続時間（秒）
 		"throwing_offset_x": 40.0,          # 投擲位置のX方向オフセット（ピクセル）
+		"throwing_cooldown": 1.0,           # プライマリ投擲のクールタイム（秒）
 
 		# ======================== 格闘パラメータ ========================
 		"move_fighting_initial_speed": 250.0,  # 格闘の初期移動速度（ピクセル/秒）
@@ -48,7 +49,7 @@ static var PARAMETERS: Dictionary = {
 
 		# ======================== 回避パラメータ ========================
 		"move_dodging_speed_multiplier": 1.5,  # DODGING時の速度倍率（run_speedに対する倍率）
-		"move_dodging_distance": 250.0,        # DODGING時の移動距離（ピクセル）
+		"move_dodging_distance": 200.0,        # DODGING時の移動距離（ピクセル）
 		"dodging_double_tap_window": 0.3,      # ダブルタップの許容時間（秒）
 		"dodging_recovery_duration": 0.2,      # 回避後の硬直時間（秒）
 
@@ -68,13 +69,14 @@ static var PARAMETERS: Dictionary = {
 
 	Player.PLAYER_CONDITION.EXPANSION: {
 		# ======================== 基本移動パラメータ（デバフ版） ========================
-		"move_run_speed": 280.0,            # 走行速度（350.0 * 0.8）（ピクセル/秒）
+		"move_run_speed": 240.0,            # 走行速度（300.0 * 0.8）（ピクセル/秒）
 
 		# ======================== ジャンプパラメータ（デバフ版） ========================
 		"jump_initial_velocity": -280.0,    # ジャンプ初速（-350.0 * 0.8）（ピクセル/秒）
 
 		# ======================== 投擲パラメータ ========================
 		"throwing_projectile_speed": 500.0, # プロジェクタイルの飛行速度（ピクセル/秒）
+		"throwing_cooldown": 3.0,           # セカンダリ投擲のクールタイム（秒）
 
 		# ======================== その他設定 ========================
 		"log_prefix": "Expansion",          # ログ出力のプレフィックス文字列

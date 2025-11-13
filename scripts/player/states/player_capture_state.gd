@@ -42,8 +42,9 @@ func initialize_state() -> void:
 		player.animation_tree.active = false
 	# CAPTURE状態用のアニメーションを再生
 	_play_capture_animation()
-	# 全てのenemyの移動をキャンセルし、その場で立ち止まらせる
-	EnemyManager.disable_all_enemies(player.get_tree())
+	# 接触したエネミーのみを非表示にする
+	if player.captured_enemy and is_instance_valid(player.captured_enemy):
+		player.captured_enemy.disable()
 	# 全てのhitboxとhurtboxを無効化
 	if player.collision_component:
 		player.collision_component.disable_all_collision_boxes()
@@ -60,8 +61,11 @@ func cleanup_state() -> void:
 	# AnimationTreeを再度有効化
 	if player.animation_tree:
 		player.animation_tree.active = true
-	# 全てのenemyを表示し、通常のパトロールを再開させる
-	EnemyManager.enable_all_enemies(player.get_tree())
+	# 接触したエネミーのみを再表示する
+	if player.captured_enemy and is_instance_valid(player.captured_enemy):
+		player.captured_enemy.enable()
+	# 接触したエネミーへの参照をクリア
+	player.captured_enemy = null
 	# 全てのhitboxとhurtboxを再度有効化
 	if player.collision_component:
 		player.collision_component.enable_all_collision_boxes()

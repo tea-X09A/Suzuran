@@ -5,6 +5,35 @@ extends EnemyBaseState
 
 ## プレイヤーとのX座標の差がこの値以下の場合は移動しない（振動防止）
 const MIN_MOVE_THRESHOLD: float = 10.0
+## プレイヤーとの距離がこの値以下の場合、FIGHTING状態に遷移
+const FIGHTING_DISTANCE: float = 300.0
+
+# ======================== ステート初期化 ========================
+
+## ステート初期化処理
+func initialize_state() -> void:
+	super.initialize_state()
+	if OS.is_debug_build():
+		print("[EnemyChaseState] チェイス状態に入りました")
+
+	# チェイス開始時に見失い状態をリセット
+	enemy.reset_lost_player_state()
+
+	# 前の状態がPATROLまたはIDLE（かつプレイヤーを見失っていた状態）の場合、検知アイコンを表示
+	# これは、should_chase_player()から直接遷移した場合にも!マークを表示するため
+	if enemy.previous_state and enemy.detection_icon_component:
+		var prev_state_name: String = ""
+		for state_name in enemy.state_instances:
+			if enemy.state_instances[state_name] == enemy.previous_state:
+				prev_state_name = state_name
+				break
+
+		# PATROLまたはIDLE状態からの遷移の場合、!マークを表示
+		# ただし、既に_on_player_chase_startedで表示されている場合は重複しない
+		if prev_state_name == "PATROL" or prev_state_name == "IDLE":
+			# 検知アイコンが表示されていない場合のみ表示
+			if enemy.detection_icon_component.icon_control and not enemy.detection_icon_component.icon_control.visible:
+				enemy.detection_icon_component.show_detected()
 
 # ======================== 物理演算処理 ========================
 
@@ -13,12 +42,35 @@ func physics_update(delta: float) -> void:
 	# 重力を適用
 	apply_gravity(delta)
 
+	# プレイヤー検知状態を更新
+	var player_detected: bool = false
+	if enemy.detection_component:
+		player_detected = enemy.detection_component.is_player_tracked()
+		enemy.update_player_detection(player_detected)
+
+	# プレイヤーを見失った場合の処理
+	if enemy.has_lost_player:
+		# IDLE状態へ遷移（待機してからパトロールに移行）
+		# ?アイコンは _on_player_lost() シグナルハンドラで既に表示されている
+		enemy.change_state("IDLE")
+		return
+
 	# プレイヤー参照を取得
 	var player: Node2D = get_player()
 
-	# プレイヤーが存在しない場合はIDLE状態へ
+	# プレイヤー参照が無効な場合はパトロール状態へ（安全策）
+	# 通常は has_lost_player チェックで処理されるが、
+	# detection_componentの状態とのズレが生じた場合のフォールバック
 	if not player:
-		enemy.change_state("IDLE")
+		enemy.change_state("PATROL")
+		return
+
+	# プレイヤーとの距離をチェック
+	var distance_to_player: float = enemy.global_position.distance_to(player.global_position)
+
+	# 距離が300px以下の場合、FIGHTING状態に遷移
+	if distance_to_player <= FIGHTING_DISTANCE:
+		enemy.change_state("FIGHTING")
 		return
 
 	# プレイヤーとのX座標の差を計算
@@ -41,11 +93,11 @@ func physics_update(delta: float) -> void:
 				# プレイヤーを見失う処理
 				var detection_comp = enemy.detection_component
 				if detection_comp:
-					var lost_player: Node2D = detection_comp.get_player()
-					if lost_player:
+					# 既に取得済みのplayer参照を使用
+					if player:
 						# 検知状態をリセットしてから見失いシグナルを発火
 						detection_comp.clear_player()
-						detection_comp.player_lost.emit(lost_player)
+						detection_comp.player_lost.emit(player)
 				else:
 					# detection_componentがない場合は直接IDLE状態へ
 					enemy.change_state("IDLE")

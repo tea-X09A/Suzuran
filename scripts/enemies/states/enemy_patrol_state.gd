@@ -5,6 +5,10 @@ extends EnemyBaseState
 
 ## ステート開始時の処理
 func initialize_state() -> void:
+	# 見失い状態をリセット（PATROL状態に入った時点で見失い処理は完了）
+	if enemy.has_lost_player:
+		enemy.reset_lost_player_state()
+
 	# パトロール目標位置を生成（常にランダム生成）
 	_generate_random_patrol_target()
 

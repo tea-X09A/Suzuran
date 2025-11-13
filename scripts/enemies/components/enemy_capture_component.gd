@@ -7,10 +7,6 @@ extends RefCounted
 
 ## キャプチャを試行した時に発信
 signal capture_attempted(player: Node2D)
-## キャプチャ状態に入った時に発信
-signal capture_state_entered()
-## キャプチャ状態から出た時に発信
-signal capture_state_exited()
 
 # ======================== パラメータ ========================
 
@@ -81,7 +77,12 @@ func apply_capture_to_player(body: Node2D) -> bool:
 	if not enemy:
 		return false
 
-	# 敵からプレイヤーへの方向を計算
+	# 敵がFIGHTING状態（ジャンプ攻撃）の場合、ノックバックをスキップして直接CAPTURE状態に遷移
+	if enemy.current_state == enemy.state_instances.get("FIGHTING"):
+		_transition_to_capture(body, enemy)
+		return true
+
+	# 通常の処理：敵からプレイヤーへの方向を計算
 	var direction_to_player: Vector2 = (body.global_position - enemy.global_position).normalized()
 
 	# プレイヤーの敵ヒット処理を呼び出す（hpによるknockback判定）
@@ -94,20 +95,18 @@ func apply_capture_to_player(body: Node2D) -> bool:
 		return true
 
 	# knockbackが発生しない場合（プレイヤーのhpが0の場合）、CAPTURE状態へ遷移
-	_transition_to_capture(body)
+	_transition_to_capture(body, enemy)
 	return true
 
 ## CAPTURE状態開始時の処理
 func enter_capture_state() -> void:
 	# CAPTURE状態フラグを立てる
 	is_in_capture_mode = true
-	capture_state_entered.emit()
 
 ## CAPTURE状態終了時の処理
 func exit_capture_state() -> void:
 	# CAPTURE状態フラグを解除
 	is_in_capture_mode = false
-	capture_state_exited.emit()
 
 ## キャプチャアニメーション（通常時）を取得
 func get_capture_animation_normal() -> String:
@@ -120,7 +119,7 @@ func get_capture_animation_down() -> String:
 # ======================== 内部メソッド ========================
 
 ## プレイヤーをCAPTURE状態に遷移させる
-func _transition_to_capture(body: Node2D) -> void:
+func _transition_to_capture(body: Node2D, enemy: Enemy) -> void:
 	# プレイヤーの速度を完全に停止
 	if body is CharacterBody2D:
 		body.velocity = Vector2.ZERO
@@ -131,11 +130,21 @@ func _transition_to_capture(body: Node2D) -> void:
 	# プレイヤーに使用するアニメーションを設定
 	body.capture_animation_name = capture_animation
 
+	# プレイヤーに接触したエネミーを設定
+	body.captured_enemy = enemy
+
 	# プレイヤーをCAPTURE状態に遷移
 	if body.has_method("change_state"):
 		body.change_state("CAPTURE")
 
-	print("敵がプレイヤーをキャプチャ: アニメーション=", capture_animation)
+	# エネミーもCAPTURE状態に遷移
+	enemy.change_state("CAPTURE")
+	# キャプチャ状態に入ったことを通知
+	enter_capture_state()
+
+	# デバッグビルドでのみログ出力
+	if OS.is_debug_build():
+		print("敵がプレイヤーをキャプチャ: アニメーション=", capture_animation)
 
 ## キャプチャアニメーションを選択
 func _select_capture_animation(body: Node2D) -> String:

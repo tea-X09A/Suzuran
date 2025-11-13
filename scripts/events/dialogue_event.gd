@@ -63,10 +63,10 @@ func execute() -> void:
 	# プレイヤーを取得
 	_find_player()
 
-	# プレイヤーの現在の状態を取得
+	# プレイヤーの現在の変身状態を取得
 	var player: Node = player_ref.get_ref() if player_ref else null
-	if player and player.has_method("get_current_state"):
-		player_state = player.get_current_state()
+	if player and player.has_method("get_current_condition"):
+		player_state = player.get_current_condition()
 	else:
 		player_state = "normal"
 

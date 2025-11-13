@@ -72,10 +72,10 @@ func handle_movement_input(delta: float) -> void:
 		var speed: float
 
 		if is_running:
-			speed = get_parameter("move_run_speed")
+			speed = get_speed_parameter("move_run_speed")
 			player.change_state("RUN")
 		else:
-			speed = get_parameter("move_walk_speed")
+			speed = get_speed_parameter("move_walk_speed")
 			player.change_state("WALK")
 
 		apply_movement(movement_input, speed)

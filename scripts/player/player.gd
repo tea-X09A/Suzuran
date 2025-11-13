@@ -52,6 +52,8 @@ var ignore_jump_horizontal_velocity: bool = false
 var squat_was_cancelled: bool = false
 ## CAPTURE状態時に使用するアニメーション名（enemy.gdが動的に設定）
 var capture_animation_name: String = ""
+## CAPTURE状態時に接触したエネミーへの参照（player_capture_state.gdで使用）
+var captured_enemy: Enemy = null
 ## 自動移動モード（遷移時の自動歩行用）
 var auto_move_mode: bool = false
 ## イベント中の入力無効化フラグ
@@ -60,6 +62,18 @@ var disable_input: bool = false
 var dodge_recovery_time: float = 0.0
 ## 格闘後の硬直時間（秒）
 var fighting_recovery_time: float = 0.0
+## 速度倍率（バフによって変動）
+var speed_multiplier: float = 1.0
+## アクティブなバフのリスト
+var active_buffs: Array[PlayerBuff] = []
+## 投擲のクールタイム残り時間（秒）
+var throwing_cooldown_remaining: float = 0.0
+## 投擲のクールタイム最大時間（秒）- パフォーマンス最適化のためキャッシュ
+var throwing_cooldown_max: float = 0.0
+## 投擲のクールタイムゲージ
+var throwing_cooldown_gauge: Control = null
+## ステータスゲージコンテナ（バフやクールタイムなどのゲージを管理）
+var status_gauge_container: Control = null
 
 # ======================== ステート管理システム ========================
 
@@ -141,6 +155,11 @@ func _exit_tree() -> void:
 	if DebugManager and DebugManager.debug_value_changed.is_connected(_on_debug_value_changed):
 		DebugManager.debug_value_changed.disconnect(_on_debug_value_changed)
 
+	# StatusGaugeContainerのクリーンアップ
+	if status_gauge_container and is_instance_valid(status_gauge_container):
+		status_gauge_container.queue_free()
+	status_gauge_container = null
+
 	# 全コンポーネントのクリーンアップを配列で一括処理
 	var components: Array = [
 		examine_component,
@@ -173,6 +192,8 @@ func _initialize_systems() -> void:
 	_initialize_state_system()
 	# Collision管理コンポーネントの初期化
 	_initialize_collision_component()
+	# StatusGaugeContainerの初期化
+	_initialize_status_gauge_container()
 
 ## アニメーションシステムの初期化
 func _initialize_animation_system() -> void:
@@ -253,6 +274,19 @@ func _initialize_condition_component() -> void:
 	condition_component = PlayerConditionComponent.new()
 	condition_component.initialize(self)
 
+## StatusGaugeContainerの初期化
+func _initialize_status_gauge_container() -> void:
+	# StatusGaugeContainerのスクリプトを読み込み
+	var StatusGaugeContainerScript: Script = preload("res://scripts/ui/status_gauge_container.gd")
+	status_gauge_container = StatusGaugeContainerScript.new()
+	status_gauge_container.name = "StatusGaugeContainer"
+
+	# プレイヤーの頭上に配置（x座標はコンテナが自動調整）
+	status_gauge_container.position = Vector2(0, -120)
+
+	# プレイヤーに追加
+	add_child(status_gauge_container)
+
 # ======================== メイン処理ループ ========================
 
 ## 物理演算ステップごとの更新処理（移動・物理系）
@@ -270,6 +304,12 @@ func _physics_process(delta: float) -> void:
 
 	# 無敵エフェクトを更新
 	invincibility_effect.update_invincibility_effect(delta)
+
+	# バフシステムを更新
+	_update_buffs(delta)
+
+	# 投擲のクールタイムを更新
+	_update_throwing_cooldown(delta)
 
 	# 硬直時間を減少（共通処理）
 	_update_recovery_times(delta)
@@ -293,8 +333,135 @@ func _physics_process(delta: float) -> void:
 
 ## 硬直時間タイマーを更新（回避・格闘の硬直時間を減少）
 func _update_recovery_times(delta: float) -> void:
-	dodge_recovery_time = max(0.0, dodge_recovery_time - delta)
-	fighting_recovery_time = max(0.0, fighting_recovery_time - delta)
+	if dodge_recovery_time > 0.0:
+		dodge_recovery_time = max(0.0, dodge_recovery_time - delta)
+	if fighting_recovery_time > 0.0:
+		fighting_recovery_time = max(0.0, fighting_recovery_time - delta)
+
+# ======================== バフ管理システム ========================
+
+## バフシステムを更新（期限切れバフの削除と更新処理）
+func _update_buffs(delta: float) -> void:
+	# 期限切れバフを削除（逆順でループして安全に削除）
+	for i in range(active_buffs.size() - 1, -1, -1):
+		var buff: PlayerBuff = active_buffs[i]
+		buff.update(delta)
+
+		if buff.is_expired():
+			buff.remove()
+			active_buffs.remove_at(i)
+
+## バフを適用
+## @param buff PlayerBuff 適用するバフ
+func apply_buff(buff: PlayerBuff) -> void:
+	# 同じIDのバフが既に存在するか確認
+	for i in range(active_buffs.size() - 1, -1, -1):
+		if active_buffs[i].buff_id == buff.buff_id:
+			var existing_buff: PlayerBuff = active_buffs[i]
+
+			# 上書き条件チェック:
+			# 1. 既存のバフが無制限時間（INF）の場合は上書きしない
+			# 2. 新しいバフの残り時間が既存のバフより短い場合は上書きしない
+			if is_inf(existing_buff.remaining_duration):
+				# デバッグビルドでログ出力
+				if OS.is_debug_build():
+					print("バフ適用拒否: 無制限バフが既に適用中 (%s)" % buff.buff_id)
+				return
+
+			if buff.remaining_duration <= existing_buff.remaining_duration:
+				# デバッグビルドでログ出力
+				if OS.is_debug_build():
+					print("バフ適用拒否: 既存のバフの方が残り時間が長い (%s: %.1fs vs %.1fs)" % [
+						buff.buff_id,
+						buff.remaining_duration,
+						existing_buff.remaining_duration
+					])
+				return
+
+			# 条件を満たす場合のみ上書き
+			existing_buff.remove()
+			active_buffs.remove_at(i)
+			break
+
+	# 新しいバフを適用
+	buff.apply()
+	active_buffs.append(buff)
+
+## 指定されたIDのバフを削除
+## @param buff_id String バフのID
+func remove_buff(buff_id: String) -> void:
+	for i in range(active_buffs.size() - 1, -1, -1):
+		if active_buffs[i].buff_id == buff_id:
+			active_buffs[i].remove()
+			active_buffs.remove_at(i)
+			return
+
+## 全てのバフを削除
+func clear_all_buffs() -> void:
+	for buff in active_buffs:
+		buff.remove()
+	active_buffs.clear()
+
+# ======================== 投擲クールタイム管理システム ========================
+
+## 投擲クールタイムを更新
+func _update_throwing_cooldown(delta: float) -> void:
+	if throwing_cooldown_remaining > 0.0:
+		throwing_cooldown_remaining -= delta
+
+		# クールタイムゲージが表示されている場合、進行度を更新
+		if throwing_cooldown_gauge:
+			var progress: float = throwing_cooldown_remaining / throwing_cooldown_max if throwing_cooldown_max > 0.0 else 0.0
+			throwing_cooldown_gauge.progress = progress
+
+		# クールタイムが終了したらゲージを削除
+		if throwing_cooldown_remaining <= 0.0:
+			throwing_cooldown_remaining = 0.0
+			_remove_throwing_cooldown_gauge()
+
+## 投擲クールタイムを開始
+func start_throwing_cooldown() -> void:
+	# 現在のconditionに応じたクールタイム時間を取得してキャッシュ
+	var cooldown_duration: float = PlayerParameters.get_parameter(condition, "throwing_cooldown")
+	throwing_cooldown_remaining = cooldown_duration
+	throwing_cooldown_max = cooldown_duration
+
+	# クールタイムゲージを表示
+	_show_throwing_cooldown_gauge()
+
+## 投擲が使用可能かどうかをチェック
+func can_throw() -> bool:
+	return throwing_cooldown_remaining <= 0.0
+
+## 投擲クールタイムゲージを表示
+func _show_throwing_cooldown_gauge() -> void:
+	# 既にゲージが存在する場合は削除
+	_remove_throwing_cooldown_gauge()
+
+	if not status_gauge_container:
+		return
+
+	# status_gauge.gdのインスタンスを作成
+	var StatusGaugeScript: Script = preload("res://scripts/ui/status_gauge.gd")
+	throwing_cooldown_gauge = StatusGaugeScript.new()
+	throwing_cooldown_gauge.name = "ThrowingCooldownGauge"
+
+	# クールタイム用のプリセット設定を適用（位置はコンテナが管理）
+	# GaugeType.COOLDOWNは1
+	throwing_cooldown_gauge.setup_for_type(1, Vector2.ZERO)
+
+	# 初期進行度を設定（100%から開始）
+	throwing_cooldown_gauge.progress = 1.0
+
+	# StatusGaugeContainerに追加
+	status_gauge_container.add_gauge(throwing_cooldown_gauge)
+
+## 投擲クールタイムゲージを削除
+func _remove_throwing_cooldown_gauge() -> void:
+	if throwing_cooldown_gauge and is_instance_valid(throwing_cooldown_gauge):
+		if status_gauge_container:
+			status_gauge_container.remove_gauge(throwing_cooldown_gauge)
+	throwing_cooldown_gauge = null
 
 ## 状態遷移（CLAUDE.md推奨形式）
 func change_state(new_state_name: String) -> void:
@@ -437,10 +604,10 @@ func prepare_for_event() -> void:
 func end_event() -> void:
 	disable_input = false
 
-## プレイヤーの現在の状態を取得（イベントシステムで使用）
+## プレイヤーの現在の変身状態を取得（イベントシステムで使用）
 ##
-## @return String プレイヤー状態（"normal" または "expansion"）
-func get_current_state() -> String:
+## @return String プレイヤーの変身状態（"normal" または "expansion"）
+func get_current_condition() -> String:
 	match condition:
 		PLAYER_CONDITION.NORMAL:
 			return "normal"
@@ -484,3 +651,14 @@ func _on_debug_value_changed(key: String, value: Variant) -> void:
 			else:
 				# 無敵状態を解除
 				invincibility_effect.clear_invincible()
+
+		"dodge_buff":
+			# ジャスト回避バフの切り替え
+			var enable_buff: bool = value as bool
+			if enable_buff:
+				# バフを無制限時間で適用（INF）
+				var buff: SpeedBoostBuff = SpeedBoostBuff.new(self, INF)
+				apply_buff(buff)
+			else:
+				# バフを削除
+				remove_buff("speed_boost")

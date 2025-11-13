@@ -139,8 +139,10 @@ func _process_menu_input() -> void:
 
 	## 上下キーで行を移動
 	if Input.is_action_just_pressed("ui_menu_up"):
+		AudioManager.play_ui_move()
 		_move_row(-1)
 	elif Input.is_action_just_pressed("ui_menu_down"):
+		AudioManager.play_ui_move()
 		_move_row(1)
 	## 左右キーで値を変更
 	elif Input.is_action_just_pressed("ui_menu_left"):
@@ -167,6 +169,7 @@ func _handle_left_input() -> void:
 	## 現在の行のデバッグ項目を取得
 	var item: Dictionary = debug_items[current_row]
 	if item["type"] == DebugItemType.SELECTOR:
+		AudioManager.play_ui_move()
 		_change_selector_value(current_row, -1)
 
 ## 右入力を処理
@@ -178,6 +181,7 @@ func _handle_right_input() -> void:
 	## 現在の行のデバッグ項目を取得
 	var item: Dictionary = debug_items[current_row]
 	if item["type"] == DebugItemType.SELECTOR:
+		AudioManager.play_ui_move()
 		_change_selector_value(current_row, 1)
 
 ## 決定入力を処理
@@ -191,6 +195,7 @@ func _handle_accept_input() -> void:
 	var item: Dictionary = debug_items[current_row]
 	if item["type"] == DebugItemType.ACTION:
 		## ACTION項目の場合はコールバックを実行
+		AudioManager.play_ui_select()
 		if item["callback"]:
 			item["callback"].call()
 
@@ -290,6 +295,17 @@ func _setup_default_debug_items() -> void:
 			var is_invincible: bool = (value == 1)
 			debug_values["invincible"] = is_invincible
 			debug_value_changed.emit("invincible", is_invincible)
+	)
+
+	## ジャスト回避バフを切り替える
+	add_debug_item_selector(
+		"Dodge Buff",
+		["disabled", "enabled"],
+		0,  ## デフォルト値: disabled
+		func(value: int):
+			var is_enabled: bool = (value == 1)
+			debug_values["dodge_buff"] = is_enabled
+			debug_value_changed.emit("dodge_buff", is_enabled)
 	)
 
 	## シグナル状態を表示する
@@ -491,6 +507,7 @@ func toggle_debug_menu() -> void:
 		_update_2d_selection()
 	else:
 		## メニューを閉じたら保存していたポーズ状態を復元
+		AudioManager.play_ui_back()
 		get_tree().paused = previous_pause_state
 
 	debug_menu.visible = is_open

@@ -44,8 +44,10 @@ func handle_input(delta: float) -> void:
 
 	# 投擲入力チェック（しゃがみキャンセル）
 	if is_throwing_input():
-		player.squat_was_cancelled = true  # キャンセルフラグを設定
-		player.change_state("THROWING")
+		# クールタイム中は投擲不可
+		if player.can_throw():
+			player.squat_was_cancelled = true  # キャンセルフラグを設定
+			player.change_state("THROWING")
 		return
 
 	# しゃがみ入力チェック - 離されたらIDLE状態に遷移

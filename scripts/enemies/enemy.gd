@@ -41,6 +41,14 @@ var animation_state_machine: AnimationNodeStateMachinePlayback = null
 ## 敵同士のノックバック伝播時の力（ノックバック状態の敵が他の敵に衝突した際に適用）
 @export var knockback_transfer_force: float = 300.0
 
+# ======================== 定数定義 ========================
+
+## ステート名からアニメーション名へのマッピング
+const ANIMATION_MAPPING: Dictionary = {
+	"FIGHTING": "CHASE",  # FIGHTING用のアニメーションがまだ存在しない場合、CHASEを使用
+	"CAPTURE": "IDLE"     # CAPTURE状態の場合はIDLEアニメーションを使用
+}
+
 # ======================== 状態管理変数 ========================
 
 ## パトロール時の移動速度
@@ -69,6 +77,14 @@ var wait_timer: float = 0.0
 var arrival_threshold: float = 5.0
 # 直前に進もうとした方向（-1: 左, 1: 右）
 var last_movement_direction: float = 0.0
+# FIGHTING状態から遷移したIDLE状態かどうか
+var is_after_fighting: bool = false
+# プレイヤーを見失ったかどうか（is_on_floorのような状態変数）
+var has_lost_player: bool = false
+# 最後にプレイヤーを検知した時刻（秒）
+var last_player_detected_time: float = 0.0
+# プレイヤー検知タイムアウト時間（秒）
+var player_detection_timeout: float = 2.0
 
 # ======================== コンポーネント ========================
 
@@ -93,6 +109,8 @@ var stun_effect_component = null
 var state_instances: Dictionary = {}
 ## 現在のアクティブステート
 var current_state: EnemyBaseState
+## 前回のステート（検知アイコン表示判定用）
+var previous_state: EnemyBaseState = null
 
 # ======================== 初期化処理 ========================
 
@@ -127,6 +145,11 @@ func _ready() -> void:
 	# detection_areaを初期状態では無効化（画面内に入ったら有効化）
 	if detection_area:
 		detection_area.monitoring = false
+	# hitboxを初期状態では非表示・無効化（FIGHTING状態で有効化）
+	if hitbox:
+		hitbox.visible = false
+		hitbox.monitoring = false
+		hitbox.monitorable = false
 	# AnimationTreeの初期化
 	_initialize_animation_tree()
 	# ステート管理システムの初期化
@@ -203,8 +226,6 @@ func _initialize_components() -> void:
 	health_component.health_changed.connect(_on_health_changed)
 	health_component.died.connect(_on_died)
 	health_component.knockback_applied.connect(_on_knockback_applied)
-	capture_component.capture_state_entered.connect(_on_capture_state_entered)
-	capture_component.capture_state_exited.connect(_on_capture_state_exited)
 
 # ======================== ステート管理システム初期化 ========================
 
@@ -214,8 +235,10 @@ func _initialize_state_system() -> void:
 	state_instances["IDLE"] = EnemyIdleState.new(self)
 	state_instances["PATROL"] = EnemyPatrolState.new(self)
 	state_instances["CHASE"] = EnemyChaseState.new(self)
+	state_instances["FIGHTING"] = EnemyFightingState.new(self)
 	state_instances["KNOCKBACK"] = EnemyKnockbackState.new(self)
 	state_instances["STUNNED"] = EnemyStunnedState.new(self)
+	state_instances["CAPTURE"] = EnemyCaptureState.new(self)
 
 	# 初期状態をIDLEに設定
 	current_state = state_instances["IDLE"]
@@ -229,6 +252,64 @@ func get_player() -> Node2D:
 		return detection_component.get_player()
 	return null
 
+# ======================== プレイヤー検知状態管理 ========================
+
+## プレイヤー検知状態を更新（チェイス状態から呼び出される）
+func update_player_detection(detected: bool) -> void:
+	# 現在時刻を一度だけ取得してキャッシュ
+	var current_time: float = Time.get_ticks_msec() / 1000.0
+
+	if detected:
+		# プレイヤーを検知している場合、時刻を更新
+		last_player_detected_time = current_time
+		# 見失い状態から復帰
+		if has_lost_player:
+			reset_lost_player_state(current_time)
+	else:
+		# プレイヤーを検知していない場合、タイムアウトをチェック
+		# 既に見失い状態の場合はチェック不要
+		if not has_lost_player:
+			var time_since_detection: float = current_time - last_player_detected_time
+
+			# タイムアウト時間を超えた場合、見失い状態に設定
+			if time_since_detection > player_detection_timeout:
+				mark_player_lost()
+
+## プレイヤーを見失った状態に設定
+func mark_player_lost() -> void:
+	has_lost_player = true
+	if OS.is_debug_build():
+		print("[Enemy] プレイヤーを見失いました")
+
+## 見失い状態をリセット
+## @param cached_time オプション：既にキャッシュされた現在時刻（パフォーマンス最適化用）
+func reset_lost_player_state(cached_time: float = -1.0) -> void:
+	has_lost_player = false
+	# キャッシュされた時刻が渡された場合はそれを使用、なければ新規取得
+	last_player_detected_time = cached_time if cached_time >= 0.0 else Time.get_ticks_msec() / 1000.0
+	if OS.is_debug_build():
+		print("[Enemy] プレイヤー検知状態をリセットしました")
+
+## ジャスト回避によるプレイヤー喪失処理
+func on_player_just_dodged() -> void:
+	# プレイヤー参照を保持してからクリア
+	var lost_player: Node2D = null
+	if detection_component:
+		lost_player = detection_component.get_player()
+		# detection_componentの状態をクリア（見失いタイマーを停止）
+		detection_component.clear_player()
+
+	# 見失い状態を設定
+	mark_player_lost()
+
+	# player_lostシグナルを手動で発火して統一的な見失い処理を実行
+	# これにより、?アイコン表示などの処理が一箇所で行われる
+	if detection_component and lost_player:
+		detection_component.player_lost.emit(lost_player)
+
+	if OS.is_debug_build():
+		print("[Enemy] プレイヤーのジャスト回避により見失いました")
+
 ## 状態遷移
 func change_state(new_state_name: String) -> void:
 	if not state_instances.has(new_state_name):
@@ -239,11 +320,14 @@ func change_state(new_state_name: String) -> void:
 	# 前のステートのクリーンアップ
 	if current_state:
 		current_state.cleanup_state()
+		# 前の状態を保存
+		previous_state = current_state
 	# 新しいステートに変更
 	current_state = new_state
 	current_state.initialize_state()
-	# アニメーションステートを更新
-	current_state.set_animation_state(new_state_name)
+	# アニメーションステートを更新（クラスレベルのマッピングを使用）
+	var animation_state_name: String = ANIMATION_MAPPING.get(new_state_name, new_state_name)
+	current_state.set_animation_state(animation_state_name)
 
 # ======================== 物理更新処理 ========================
 
@@ -252,33 +336,27 @@ func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
 
-	# CAPTURE状態中は処理をスキップ
-	if capture_component and capture_component.is_capturing():
-		return
+	# CAPTURE状態でない場合のみ、視界更新とプレイヤー検知を実行
+	if current_state != state_instances.get("CAPTURE"):
+		# 視界の更新（間引き処理、画面外でも実行して形状を更新）
+		if vision_component:
+			var is_detecting: bool = detection_component.is_player_tracked()
+			vision_component.update_vision(is_detecting)
 
-	# 視界の更新（間引き処理、画面外でも実行して形状を更新）
-	if vision_component:
-		var is_detecting: bool = detection_component.is_player_tracked()
-		vision_component.update_vision(is_detecting)
+		# 画面内の場合のみプレイヤー検知処理を実行
+		if on_screen and detection_component:
+			# プレイヤーが範囲外にいる時間のカウント（見失い処理）
+			detection_component.handle_lose_sight_timer(delta)
 
-	# 画面内の場合のみプレイヤー検知処理を実行
-	var current_overlapping_player: Node2D = null
-	if on_screen and detection_component:
-		# hitboxと重なっているプレイヤーをチェック（1フレームに1回のみ）
-		current_overlapping_player = detection_component.check_overlapping_player()
-
-		# プレイヤーが範囲外にいる時間のカウント（見失い処理）
-		detection_component.handle_lose_sight_timer(delta)
-
-	# 画面内の場合のみキャプチャ処理を実行
-	# チェイス状態の時のみダメージ/キャプチャ判定を行う
-	if on_screen and current_overlapping_player and capture_component and current_state == state_instances["CHASE"]:
-		# hitboxがplayerを検知した場合、動きを止める
-		velocity.x = 0.0
-		capture_component.try_capture_player(current_overlapping_player, detection_component)
-	elif current_state:
-		# プレイヤーと重なっていない場合、またはチェイス状態でない場合はステート処理を実行
+	# 現在のステートの処理を実行
+	if current_state:
 		current_state.physics_update(delta)
+
+	# FIGHTING状態（攻撃中）の場合のみ、hitboxとの重なりをチェックしてキャプチャ処理を実行
+	if on_screen and capture_component and detection_component and current_state == state_instances["FIGHTING"]:
+		var current_overlapping_player: Node2D = detection_component.check_overlapping_player()
+		if current_overlapping_player:
+			capture_component.try_capture_player(current_overlapping_player, detection_component)
 
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
@@ -327,10 +405,15 @@ func _handle_knockback_enemy_collision() -> void:
 
 ## プレイヤーの追跡を開始（EnemyDetectionComponentのシグナルから呼び出される）
 func _on_player_chase_started(player_node: Node2D) -> void:
-	change_state("CHASE")
-	# 検知アイコンを表示（!マーク）
-	if detection_icon_component:
+	# パトロール状態、IDLE状態、またはプレイヤーを見失っていた状態からの遷移時に検知アイコンを表示（!マーク）
+	var should_show_detected: bool = (
+		current_state == state_instances["PATROL"] or
+		current_state == state_instances["IDLE"] or
+		has_lost_player
+	)
+	if should_show_detected and detection_icon_component:
 		detection_icon_component.show_detected()
+	change_state("CHASE")
 	# 継承先で追加処理を行うための仮想関数
 	_on_player_detected(player_node)
 
@@ -356,7 +439,7 @@ func _on_died() -> void:
 	if collision_component:
 		collision_component.disable_collision_areas()
 	if detection_area:
-		detection_area.monitoring = false
+		detection_area.set_deferred("monitoring", false)
 	# エネミーを削除
 	queue_free()
 
@@ -364,16 +447,6 @@ func _on_died() -> void:
 func _on_knockback_applied(_knockback_vel: Vector2, _direction_to_face: float) -> void:
 	# ノックバック状態に遷移
 	change_state("KNOCKBACK")
-
-## キャプチャ状態開始時の処理（EnemyCaptureComponentのシグナルから呼び出される）
-func _on_capture_state_entered() -> void:
-	# 共通の無効化処理を呼び出す
-	disable()
-
-## キャプチャ状態終了時の処理（EnemyCaptureComponentのシグナルから呼び出される）
-func _on_capture_state_exited() -> void:
-	# 共通の有効化処理を呼び出す
-	enable()
 
 # ======================== コリジョン管理（互換性のため維持） ========================
 
@@ -395,7 +468,7 @@ func _on_screen_entered() -> void:
 	_enable_collision_areas()
 	# detection_areaのmonitoringを有効化
 	if detection_area:
-		detection_area.monitoring = true
+		detection_area.set_deferred("monitoring", true)
 
 ## 画面外に出た時の処理
 func _on_screen_exited() -> void:
@@ -404,12 +477,13 @@ func _on_screen_exited() -> void:
 	_disable_collision_areas()
 	# detection_areaのmonitoringを無効化（視覚的には表示されたまま）
 	if detection_area:
-		detection_area.monitoring = false
+		detection_area.set_deferred("monitoring", false)
 	# プレイヤー追跡を解除
 	if detection_component and detection_component.is_player_tracked():
 		detection_component.clear_player()
-		# 追跡中だった場合はパトロール状態に遷移
-		change_state("PATROL")
+		# 追跡中だった場合はパトロール状態に遷移（CAPTURE状態を除く）
+		if current_state != state_instances.get("CAPTURE"):
+			change_state("PATROL")
 
 # ======================== 検知エリアシグナルハンドラ ========================
 
@@ -439,22 +513,20 @@ func _on_player_lost_override(_body: Node2D) -> void:
 # ======================== エネミーの有効化/無効化 ========================
 
 ## エネミーを無効化（非表示・動作停止）
-## 汎用的な無効化処理。CAPTURE状態やその他のゲームイベントで使用可能
+## ステートは変更せず、移動のみ停止する
 func disable() -> void:
 	# 移動を停止
 	velocity = Vector2.ZERO
-	# 現在の状態を待機に変更
-	change_state("IDLE")
 	# hitboxとhurtboxを無効化
 	_disable_collision_areas()
 	# detection_areaも無効化
 	if detection_area:
-		detection_area.monitoring = false
+		detection_area.set_deferred("monitoring", false)
 	# 非表示にする
 	visible = false
 
 ## エネミーを有効化（表示・動作再開）
-## 汎用的な有効化処理。無効化状態から復帰する際に使用
+## ステートは変更せず、現在の状態を維持する
 func enable() -> void:
 	# 表示する
 	visible = true
@@ -462,9 +534,7 @@ func enable() -> void:
 	if on_screen:
 		_enable_collision_areas()
 		if detection_area:
-			detection_area.monitoring = true
-	# パトロールを再開
-	change_state("IDLE")
+			detection_area.set_deferred("monitoring", true)
 
 # ======================== ダメージ処理（互換性のため維持） ========================
 
@@ -531,10 +601,6 @@ func _exit_tree() -> void:
 		health_component.cleanup()
 
 	if capture_component:
-		if capture_component.capture_state_entered.is_connected(_on_capture_state_entered):
-			capture_component.capture_state_entered.disconnect(_on_capture_state_entered)
-		if capture_component.capture_state_exited.is_connected(_on_capture_state_exited):
-			capture_component.capture_state_exited.disconnect(_on_capture_state_exited)
 		capture_component.cleanup()
 
 	if collision_component:
