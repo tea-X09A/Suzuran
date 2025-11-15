@@ -24,12 +24,17 @@ func initialize_state() -> void:
 	start_position = player.global_position
 	max_dodging_distance = get_parameter("move_dodging_distance")
 
+	# 空中での回避の場合、使用済みフラグを設定
+	if not player.is_grounded:
+		player.has_used_air_dodge = true
+
 	# ジャスト回避判定
 	if check_just_dodge():
 		if OS.is_debug_build():
 			print("ジャスト回避成功")
-		# 速度上昇バフを適用（5秒間）
-		var speed_buff: SpeedBoostBuff = SpeedBoostBuff.new(player, 5.0)
+		# 速度上昇バフを適用（パラメータから取得）
+		var buff_duration: float = get_parameter("just_dodge_buff_duration")
+		var speed_buff: SpeedBoostBuff = SpeedBoostBuff.new(player, buff_duration)
 		player.apply_buff(speed_buff)
 
 	# 前進速度の設定（run状態の倍率適用で素早く回避）
@@ -39,6 +44,8 @@ func initialize_state() -> void:
 	# Sprite2Dの向きに応じて前進
 	var direction: float = 1.0 if sprite_2d.flip_h else -1.0
 	player.velocity.x = direction * forward_speed
+	# 空中での回避時に高度を維持するため、垂直速度を0にする
+	player.velocity.y = 0.0
 
 # ======================== 状態クリーンアップ ========================
 
@@ -52,24 +59,29 @@ func cleanup_state() -> void:
 # ======================== 物理演算処理 ========================
 
 ## 物理演算処理
-func physics_update(delta: float) -> void:
-	# 地面にいない場合は重力を適用してFALL状態に遷移
-	if not player.is_grounded:
-		apply_gravity(delta)
-		player.change_state("FALL")
-		return
+func physics_update(_delta: float) -> void:
+	# 空中での回避時は重力を適用せず高度を維持
+	# 地上での回避時も重力は不要（地面を滑るように移動）
 
-	# 壁に衝突した場合、回避を中止してidle状態へ遷移
+	# 壁に衝突した場合、回避を中止して適切な状態へ遷移
 	if player.is_on_wall():
-		player.change_state("IDLE")
+		# 地上ならIDLE、空中ならFALLに遷移
+		if player.is_grounded:
+			player.change_state("IDLE")
+		else:
+			player.change_state("FALL")
 		return
 
 	# 移動距離を計算
 	distance_traveled = abs(player.global_position.x - start_position.x)
 
-	# 最大回避距離に達した場合、idle状態へ遷移
+	# 最大回避距離に達した場合、適切な状態へ遷移
 	if distance_traveled >= max_dodging_distance:
-		player.change_state("IDLE")
+		# 地上ならIDLE、空中ならFALLに遷移
+		if player.is_grounded:
+			player.change_state("IDLE")
+		else:
+			player.change_state("FALL")
 		return
 
 # ======================== ジャスト回避判定 ========================

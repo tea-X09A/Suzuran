@@ -7,7 +7,7 @@ extends PlayerBuff
 
 # ======================== 定数定義 ========================
 
-## 速度増加倍率（1.5 = 150%、つまり50%の速度上昇）
+## 速度増加倍率
 const SPEED_MULTIPLIER: float = 1.5
 
 # ======================== 変数定義 ========================
@@ -17,6 +17,9 @@ var original_speed_multiplier: float = 1.0
 
 ## ステータスゲージへの参照
 var status_gauge: Control = null
+
+## 無制限時間かどうかのフラグ（パフォーマンス最適化用）
+var is_infinite_duration: bool = false
 
 # ======================== 初期化処理 ========================
 
@@ -37,6 +40,9 @@ func apply() -> void:
 	# 新しい倍率を適用（既存の倍率に乗算）
 	player.speed_multiplier *= SPEED_MULTIPLIER
 
+	# 無制限時間フラグを設定（初期化時に一度だけ判定）
+	is_infinite_duration = is_inf(total_duration)
+
 	# ステータスゲージを作成
 	_create_status_gauge()
 
@@ -51,7 +57,7 @@ func update(delta: float) -> void:
 	# ステータスゲージの進行度を更新
 	if status_gauge:
 		# 無制限時間（INF）の場合は常に100%
-		if is_inf(remaining_duration):
+		if is_infinite_duration:
 			status_gauge.progress = 1.0
 		else:
 			var progress: float = remaining_duration / total_duration if total_duration > 0.0 else 0.0

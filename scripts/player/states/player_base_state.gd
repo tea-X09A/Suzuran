@@ -32,12 +32,6 @@ var state_machine: AnimationNodeStateMachinePlayback
 ## 空中での慣性保持用の水平速度（jump/fall状態で使用）
 var initial_horizontal_speed: float = 0.0
 
-# ======================== ダブルタップ検出用変数 ========================
-## 前回の左キー入力時刻
-var last_left_tap_time: float = -999.0
-## 前回の右キー入力時刻
-var last_right_tap_time: float = -999.0
-
 # ======================== キー入力状態管理 ========================
 ## 前フレームのキー状態を記録（just_pressed検出用）
 var previous_key_states: Dictionary = {}
@@ -282,19 +276,12 @@ func is_dodge_modifier_just_pressed() -> bool:
 	# ゲームパッドボタンをチェック（カスタム設定のみ）
 	return _check_gamepad_button_just_pressed("dodge")
 
-## ダブルタップ検出（左右入力）+ dodge修飾キー＋方向入力
-## @return float - 1.0: 右ダブルタップまたは右dodge、-1.0: 左ダブルタップまたは左dodge、0.0: なし
-func check_dodge_double_tap() -> float:
-	var current_time: float = Time.get_ticks_msec() / 1000.0
-	var double_tap_window: float = get_parameter("dodging_double_tap_window")
-
+## dodge修飾キー＋方向入力での回避検出
+## @return float - 1.0: 右dodge、-1.0: 左dodge、0.0: なし
+func check_dodge_input() -> float:
 	var left_key: int = GameSettings.get_key_binding("left")
 	var right_key: int = GameSettings.get_key_binding("right")
 
-	# 左キーのjust_pressed検出
-	var left_just_pressed: bool = _check_physical_key_just_pressed(left_key, ALWAYS_ALLOWED_LEFT_KEYS, "left")
-	# 右キーのjust_pressed検出
-	var right_just_pressed: bool = _check_physical_key_just_pressed(right_key, ALWAYS_ALLOWED_RIGHT_KEYS, "right")
 	# 左キーのheld検出
 	var left_held: bool = _check_physical_key_pressed(left_key, ALWAYS_ALLOWED_LEFT_KEYS, "left")
 	# 右キーのheld検出
@@ -314,21 +301,23 @@ func check_dodge_double_tap() -> float:
 		# sprite_2d.flip_h = true: 右向き, false: 左向き
 		return 1.0 if sprite_2d.flip_h else -1.0
 
-	# 左ダブルタップチェック
-	if left_just_pressed:
-		var time_since_last_tap: float = current_time - last_left_tap_time
-		last_left_tap_time = current_time
-		if time_since_last_tap <= double_tap_window and time_since_last_tap > 0.0:
-			return -1.0  # 左ダブルタップ
+	return 0.0  # 回避なし
 
-	# 右ダブルタップチェック
-	if right_just_pressed:
-		var time_since_last_tap: float = current_time - last_right_tap_time
-		last_right_tap_time = current_time
-		if time_since_last_tap <= double_tap_window and time_since_last_tap > 0.0:
-			return 1.0  # 右ダブルタップ
+## 回避入力処理（共通メソッド）
+## @return bool 回避入力が検出された場合true
+func handle_dodge_input() -> bool:
+	# 空中にいて既に空中回避を使用済みの場合は回避不可
+	if not player.is_grounded and player.has_used_air_dodge:
+		return false
 
-	return 0.0  # ダブルタップなし
+	var dodge_direction: float = check_dodge_input()
+	if dodge_direction != 0.0:
+		# dodge方向にspriteを向けてから回避状態へ遷移
+		sprite_2d.flip_h = dodge_direction > 0.0
+		player.direction_x = dodge_direction
+		player.change_state("DODGING")
+		return true
+	return false
 
 # ======================== 共通ユーティリティメソッド ========================
 
@@ -527,6 +516,9 @@ func handle_action_end_transition() -> void:
 
 ## 着地時の状態遷移処理（共通ヘルパー）
 func handle_landing_transition() -> void:
+	# 着地時に空中回避フラグをリセット
+	player.has_used_air_dodge = false
+
 	# 移動入力チェック
 	var movement_input: float = get_movement_input()
 

@@ -82,13 +82,8 @@ func handle_input(_delta: float) -> void:
 	if player.disable_input:
 		return
 
-	# ダブルタップ検出（回避）
-	var dodge_direction: float = check_dodge_double_tap()
-	if dodge_direction != 0.0:
-		# ダブルタップされた方向にspriteを向けてから回避状態へ遷移
-		sprite_2d.flip_h = dodge_direction > 0.0
-		player.direction_x = dodge_direction
-		player.change_state("DODGING")
+	# dodge入力検出（共通メソッド使用）
+	if handle_dodge_input():
 		return
 
 ## 物理演算処理

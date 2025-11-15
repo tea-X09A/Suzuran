@@ -40,16 +40,12 @@ const GAUGE_COLORS: Dictionary = {
 @export var progress_color: Color = Color(0.6, 1.0, 0.2, 1.0)
 ## 枠線の色
 @export var border_color: Color = Color.WHITE
-## 影の色
-@export var shadow_color: Color = Color(0.0, 0.0, 0.0, 0.5)
-## 影のオフセット
-@export var shadow_offset: Vector2 = Vector2(2.0, 2.0)
 
 # ======================== 初期化処理 ========================
 
 func _ready() -> void:
-	# サイズを設定（円の直径 + 枠線 + 影）
-	var control_size: float = (outer_radius + border_width) * 2.0 + shadow_offset.length()
+	# サイズを設定（円の直径 + 枠線）
+	var control_size: float = (outer_radius + border_width) * 2.0
 	custom_minimum_size = Vector2(control_size, control_size)
 	queue_redraw()
 
@@ -63,14 +59,8 @@ func _draw() -> void:
 	# 描画の中心位置（枠線とマージンを考慮）
 	var center: Vector2 = Vector2(outer_radius + border_width, outer_radius + border_width)
 
-	# 影を描画（ドーナツ形状）
-	_draw_ring_shadow(center + shadow_offset, outer_radius + border_width, inner_radius)
-
-	# 外側の枠線を描画
-	_draw_circle_outline(center, outer_radius + border_width, border_color)
-
-	# 内側の枠線を描画
-	_draw_circle_outline(center, inner_radius, border_color)
+	# 背景を描画（ゲージの未進行部分）
+	_draw_ring_background(center, outer_radius, inner_radius)
 
 	# プログレスリング円弧を描画
 	if progress > 0.0:
@@ -78,8 +68,8 @@ func _draw() -> void:
 
 # ======================== ヘルパーメソッド ========================
 
-## 影付きリング（ドーナツ）を描画
-func _draw_ring_shadow(center: Vector2, outer_rad: float, inner_rad: float) -> void:
+## 背景リング（ドーナツ）を描画
+func _draw_ring_background(center: Vector2, outer_rad: float, inner_rad: float) -> void:
 	var outer_points: PackedVector2Array = []
 	var inner_points: PackedVector2Array = []
 
@@ -97,7 +87,7 @@ func _draw_ring_shadow(center: Vector2, outer_rad: float, inner_rad: float) -> v
 
 	# 外側と内側を結合してリング形状を作成
 	var ring_points: PackedVector2Array = outer_points + inner_points
-	draw_colored_polygon(ring_points, shadow_color)
+	draw_colored_polygon(ring_points, background_color)
 
 ## 円の輪郭を描画
 func _draw_circle_outline(center: Vector2, rad: float, color: Color) -> void:
@@ -152,9 +142,6 @@ func setup_for_type(gauge_type: GaugeType, position_offset: Vector2 = Vector2(0,
 	ring_width = 4.0
 	border_width = 1.5
 
-	# 影のオフセットを小さく
-	shadow_offset = Vector2(1.0, 1.0)
-
 	# タイプに応じた色を設定
 	progress_color = GAUGE_COLORS[gauge_type]
 
@@ -162,5 +149,5 @@ func setup_for_type(gauge_type: GaugeType, position_offset: Vector2 = Vector2(0,
 	position = position_offset
 
 	# サイズを再設定
-	var control_size: float = (outer_radius + border_width) * 2.0 + shadow_offset.length()
+	var control_size: float = (outer_radius + border_width) * 2.0
 	custom_minimum_size = Vector2(control_size, control_size)

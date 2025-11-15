@@ -62,6 +62,8 @@ var disable_input: bool = false
 var dodge_recovery_time: float = 0.0
 ## 格闘後の硬直時間（秒）
 var fighting_recovery_time: float = 0.0
+## 空中回避を使用済みフラグ（着地でリセット）
+var has_used_air_dodge: bool = false
 ## 速度倍率（バフによって変動）
 var speed_multiplier: float = 1.0
 ## アクティブなバフのリスト

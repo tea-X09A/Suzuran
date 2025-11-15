@@ -64,7 +64,7 @@ const DEFAULT_KEY_BINDINGS: Dictionary = {
 	"right": KEY_D,
 	"squat": KEY_S,
 	"run": KEY_SHIFT,
-	"dodge": KEY_CTRL
+	"dodge": KEY_R
 }
 
 ## デフォルトゲームパッドバインド設定
@@ -140,50 +140,41 @@ func is_action_menu_accept_pressed() -> bool:
 	## キーボード: Zキー/Enterが決定（言語に関わらず）
 	## ゲームパッド日本語: Circle(○)が決定
 	## ゲームパッド英語: Cross(×)が決定
-	if last_used_device == InputDevice.KEYBOARD:
-		# キーボードの場合は従来通り
-		return Input.is_action_just_pressed("ui_menu_accept")
-	else:  # GAMEPAD
-		if current_language == Language.JAPANESE:
-			# 日本語: Circle(○) = ui_menu_accept
-			return Input.is_action_just_pressed("ui_menu_accept")
-		else:  # ENGLISH
-			# 英語: Cross(×) = ui_menu_cancel を決定として扱う
-			return Input.is_action_just_pressed("ui_menu_cancel")
+	var action: String = _get_menu_action_name(true)
+	return Input.is_action_just_pressed(action)
 
 func is_action_menu_cancel_pressed() -> bool:
 	## 言語とデバイスを考慮して「キャンセル」が押されたかをチェック
 	## キーボード: Xキーがキャンセル（言語に関わらず）
 	## ゲームパッド日本語: Cross(×)がキャンセル
 	## ゲームパッド英語: Circle(○)がキャンセル
-	if last_used_device == InputDevice.KEYBOARD:
-		# キーボードの場合は従来通り
-		return Input.is_action_just_pressed("ui_menu_cancel")
-	else:  # GAMEPAD
-		if current_language == Language.JAPANESE:
-			# 日本語: Cross(×) = ui_menu_cancel
-			return Input.is_action_just_pressed("ui_menu_cancel")
-		else:  # ENGLISH
-			# 英語: Circle(○) = ui_menu_accept をキャンセルとして扱う
-			return Input.is_action_just_pressed("ui_menu_accept")
+	var action: String = _get_menu_action_name(false)
+	return Input.is_action_just_pressed(action)
 
 func is_action_menu_accept_hold() -> bool:
 	## 言語とデバイスを考慮して「決定」が押されているかをチェック（長押し検出用）
 	## キーボード: Zキー/Enterが押されている（言語に関わらず）
 	## ゲームパッド日本語: Circle(○)が押されている
 	## ゲームパッド英語: Cross(×)が押されている
-	if last_used_device == InputDevice.KEYBOARD:
-		# キーボードの場合は従来通り
-		return Input.is_action_pressed("ui_menu_accept")
-	else:  # GAMEPAD
-		if current_language == Language.JAPANESE:
-			# 日本語: Circle(○) = ui_menu_accept
-			return Input.is_action_pressed("ui_menu_accept")
-		else:  # ENGLISH
-			# 英語: Cross(×) = ui_menu_cancel を決定として扱う
-			return Input.is_action_pressed("ui_menu_cancel")
+	var action: String = _get_menu_action_name(true)
+	return Input.is_action_pressed(action)
 
 # ======================== 内部ヘルパー ========================
+func _get_menu_action_name(is_accept: bool) -> String:
+	## デバイスと言語に応じて適切なメニューアクション名を返す
+	## @param is_accept trueの場合は「決定」、falseの場合は「キャンセル」のアクション名を返す
+	## @return String 入力チェックに使用するアクション名
+	if last_used_device == InputDevice.KEYBOARD:
+		# キーボードの場合は言語に関わらず標準のアクション名を使用
+		return "ui_menu_accept" if is_accept else "ui_menu_cancel"
+	else:  # GAMEPAD
+		if current_language == Language.JAPANESE:
+			# 日本語: 標準のマッピング（Circle=決定、Cross=キャンセル）
+			return "ui_menu_accept" if is_accept else "ui_menu_cancel"
+		else:  # ENGLISH
+			# 英語: ボタンを入れ替え（Cross=決定、Circle=キャンセル）
+			return "ui_menu_cancel" if is_accept else "ui_menu_accept"
+
 func _change_setting(current_value: Variant, new_value: Variant, setter: Callable, signal_emitter: Callable) -> bool:
 	## 統一された設定変更メソッド（値が変更された場合のみシグナル発行と保存を実行）
 	if current_value != new_value:

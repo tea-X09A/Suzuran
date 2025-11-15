@@ -14,8 +14,6 @@ signal player_lost(player: Node2D)
 
 ## プレイヤーを見失うまでの遅延時間（秒）
 var lose_sight_delay: float = 2.0
-## キャプチャのクールダウン時間（秒）
-var capture_cooldown: float = 0.5
 
 # ======================== 内部状態 ========================
 
@@ -25,8 +23,6 @@ var player_ref: WeakRef = null
 var player_out_of_range: bool = false
 ## プレイヤーが範囲外にいる時間
 var time_out_of_range: float = 0.0
-## 最後にキャプチャした時間
-var last_capture_time: float = 0.0
 ## hitboxと重なっているプレイヤー（キャッシュ用）
 var overlapping_player: Node2D = null
 
@@ -102,15 +98,6 @@ func mark_player_out_of_range() -> void:
 ## プレイヤー参照をクリア（画面外に出た時などに使用）
 func clear_player() -> void:
 	_clear_player_reference()
-
-## キャプチャクールダウン中かどうかを確認
-func is_capture_on_cooldown() -> bool:
-	var current_time: float = Time.get_unix_time_from_system()
-	return current_time - last_capture_time < capture_cooldown
-
-## キャプチャが成功したことを記録
-func record_capture() -> void:
-	last_capture_time = Time.get_unix_time_from_system()
 
 ## 範囲外フラグをリセット（STUNNED状態など、見失いタイマーをリセットする必要がある場合に使用）
 func reset_out_of_range_flags() -> void:

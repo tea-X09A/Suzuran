@@ -27,6 +27,10 @@ func handle_input(_delta: float) -> void:
 	if player.disable_input:
 		return
 
+	# 空中での回避入力
+	if handle_dodge_input():
+		return
+
 	# 空中でのアクション入力（攻撃・射撃）
 	if handle_action_input():
 		return

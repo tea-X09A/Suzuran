@@ -19,22 +19,6 @@ func initialize_state() -> void:
 	# チェイス開始時に見失い状態をリセット
 	enemy.reset_lost_player_state()
 
-	# 前の状態がPATROLまたはIDLE（かつプレイヤーを見失っていた状態）の場合、検知アイコンを表示
-	# これは、should_chase_player()から直接遷移した場合にも!マークを表示するため
-	if enemy.previous_state and enemy.detection_icon_component:
-		var prev_state_name: String = ""
-		for state_name in enemy.state_instances:
-			if enemy.state_instances[state_name] == enemy.previous_state:
-				prev_state_name = state_name
-				break
-
-		# PATROLまたはIDLE状態からの遷移の場合、!マークを表示
-		# ただし、既に_on_player_chase_startedで表示されている場合は重複しない
-		if prev_state_name == "PATROL" or prev_state_name == "IDLE":
-			# 検知アイコンが表示されていない場合のみ表示
-			if enemy.detection_icon_component.icon_control and not enemy.detection_icon_component.icon_control.visible:
-				enemy.detection_icon_component.show_detected()
-
 # ======================== 物理演算処理 ========================
 
 ## 物理演算処理

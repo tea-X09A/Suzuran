@@ -109,8 +109,6 @@ var stun_effect_component = null
 var state_instances: Dictionary = {}
 ## 現在のアクティブステート
 var current_state: EnemyBaseState
-## 前回のステート（検知アイコン表示判定用）
-var previous_state: EnemyBaseState = null
 
 # ======================== 初期化処理 ========================
 
@@ -198,7 +196,6 @@ func _initialize_components() -> void:
 	# EnemyDetectionComponentの初期化
 	detection_component = EnemyDetectionComponent.new(self, hitbox)
 	detection_component.lose_sight_delay = 2.0
-	detection_component.capture_cooldown = 0.5
 
 	# EnemyHealthComponentの初期化
 	health_component = EnemyHealthComponent.new(self)
@@ -320,8 +317,6 @@ func change_state(new_state_name: String) -> void:
 	# 前のステートのクリーンアップ
 	if current_state:
 		current_state.cleanup_state()
-		# 前の状態を保存
-		previous_state = current_state
 	# 新しいステートに変更
 	current_state = new_state
 	current_state.initialize_state()

@@ -52,13 +52,8 @@ func try_capture_player(player_node: Node2D, detection_component: EnemyDetection
 	if not detection_component.is_player_tracked():
 		detection_component.start_chasing_player(player_node)
 
-	# クールダウン中は処理しない
-	if detection_component.is_capture_on_cooldown():
-		return false
-
-	# 実際にキャプチャを適用した場合のみタイマーを更新
+	# キャプチャを適用
 	if apply_capture_to_player(player_node):
-		detection_component.record_capture()
 		capture_attempted.emit(player_node)
 		return true
 

@@ -130,8 +130,8 @@ func _draw() -> void:
 	var inner_width: float = bar_width - border_width * 2.0
 	var inner_height: float = bar_height - border_width * 2.0
 
-	# ゲージ全体の影を描画
-	var shadow_pos: Vector2 = Vector2(0, bar_y_offset) + gauge_shadow_offset
+	# ゲージ全体の背景を描画
+	var shadow_pos: Vector2 = Vector2(0, bar_y_offset)
 	_draw_rounded_rect(shadow_pos, Vector2(bar_width, bar_height), corner_radius, gauge_shadow_color)
 
 	# 背景（枠線を含む）を角丸で描画
