@@ -25,6 +25,10 @@ signal knockback_wall_collision
 @onready var vision_shape: Polygon2D = $DetectionArea/VisionShape
 # DetectionCollision（検知範囲のコリジョン）
 @onready var detection_collision: CollisionPolygon2D = $DetectionArea/DetectionCollision
+# 段差検出用RayCast（左側）
+@onready var left_edge_detector: RayCast2D = $LeftEdgeDetector
+# 段差検出用RayCast（右側）
+@onready var right_edge_detector: RayCast2D = $RightEdgeDetector
 # 画面内外の検知
 @onready var visibility_notifier: VisibleOnScreenNotifier2D = $VisibleOnScreenNotifier2D
 # AnimationTree（アニメーション制御）

@@ -19,10 +19,12 @@ func physics_update(delta: float) -> void:
 	# 重力を適用
 	apply_gravity(delta)
 
+	# 現在の移動方向を計算（壁衝突と段差検出で共用）
+	var direction_to_target: float = sign(enemy.target_position.x - enemy.global_position.x)
+
 	# 壁衝突判定
 	if enemy.is_on_wall():
 		var wall_normal: Vector2 = enemy.get_wall_normal()
-		var direction_to_target: float = sign(enemy.target_position.x - enemy.global_position.x)
 		# wall_normalは壁から離れる方向を指す
 		# 移動方向と壁法線の符号が異なる場合、壁に向かって移動している
 		var moving_into_wall: bool = sign(wall_normal.x) != sign(direction_to_target)
@@ -33,6 +35,17 @@ func physics_update(delta: float) -> void:
 			enemy.last_movement_direction = direction_to_target
 			_generate_reverse_patrol_target()
 			return
+
+	# 段差検出判定
+	if _is_cliff_ahead(direction_to_target):
+		# デバッグ出力
+		if OS.is_debug_build():
+			print("[Enemy] 段差を検出しました。逆方向へ移動します。")
+		# 現在の移動方向を記録
+		enemy.last_movement_direction = direction_to_target
+		# 壁衝突時と同じ処理で逆方向へ
+		_generate_reverse_patrol_target()
+		return
 
 	# パトロール移動
 	_patrol_movement()
@@ -73,3 +86,26 @@ func _generate_reverse_patrol_target() -> void:
 	# 現在位置から逆方向に目標位置を設定
 	var target_x: float = enemy.global_position.x + (reverse_direction * move_distance)
 	enemy.target_position = Vector2(target_x, enemy.global_position.y)
+
+## 進行方向に段差があるかチェック
+## @param direction_to_target 目標位置への方向（-1: 左, 1: 右, 0: 静止）
+## @return bool - 段差がある場合true
+func _is_cliff_ahead(direction_to_target: float) -> bool:
+	# 進行方向が0の場合は段差チェック不要
+	if direction_to_target == 0.0:
+		return false
+
+	# 進行方向に応じて適切なRayCastを選択
+	var edge_detector: RayCast2D = null
+	if direction_to_target < 0:
+		# 左方向へ移動中
+		edge_detector = enemy.left_edge_detector
+	elif direction_to_target > 0:
+		# 右方向へ移動中
+		edge_detector = enemy.right_edge_detector
+
+	# RayCastが存在し、床を検出していない場合は段差あり
+	if edge_detector and not edge_detector.is_colliding():
+		return true
+
+	return false
