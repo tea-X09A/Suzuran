@@ -16,17 +16,24 @@ func get_state_name() -> String:
 var distance_traveled: float = 0.0  # 移動距離
 var max_dodging_distance: float = 0.0  # 最大回避距離（ピクセル）（パラメータから設定）
 var start_position: Vector2 = Vector2.ZERO  # 開始位置
+var elapsed_time: float = 0.0  # 回避開始からの経過時間
+var is_cancelled: bool = false  # 他のアクションでキャンセルされたかどうか
 
 ## AnimationTree状態開始時の処理
 func initialize_state() -> void:
 	# 回避状態初期化
 	distance_traveled = 0.0
+	elapsed_time = 0.0
+	is_cancelled = false
 	start_position = player.global_position
 	max_dodging_distance = get_parameter("move_dodging_distance")
 
-	# 空中での回避の場合、使用済みフラグを設定
-	if not player.is_grounded:
-		player.has_used_air_dodge = true
+	# 回避使用済みフラグを設定（地上・空中共通）
+	player.has_used_ground_dodge = true
+
+	# 回避中は無敵：全hurtboxを無効化
+	if player.collision_component:
+		player.collision_component.disable_all_collision_boxes()
 
 	# ジャスト回避判定
 	if check_just_dodge():
@@ -54,15 +61,51 @@ func cleanup_state() -> void:
 	# 回避終了後の硬直時間を設定
 	player.dodge_recovery_time = get_parameter("dodging_recovery_duration")
 
-	# 地上での回避時のみ速度をゼロにする
-	# 空中での回避時は慣性を維持
-	if player.is_grounded:
+	# 回避終了：全hurtboxを有効化
+	if player.collision_component:
+		player.collision_component.enable_all_collision_boxes()
+
+	# 回避終了時に速度をゼロにする
+	# ただし、キャンセルされた場合（地上・空中問わず）は慣性を維持
+	if not is_cancelled:
 		player.velocity.x = 0.0
+
+# ======================== 入力処理 ========================
+
+## 入力処理（DODGING状態固有）
+func handle_input(_delta: float) -> void:
+	# 基底クラスのdisable_inputチェックを実行（イベント中の入力無効化）
+	super.handle_input(_delta)
+	if player.disable_input:
+		return
+
+	# 回避開始から一定時間経過後のみ攻撃入力を受け付ける
+	var input_delay: float = get_parameter("dodging_input_delay")
+	if elapsed_time < input_delay:
+		return
+
+	# 攻撃入力チェック
+	if is_fight_input():
+		is_cancelled = true
+		player.change_state("FIGHTING")
+		return
+
+	# 投擲入力チェック
+	if is_throwing_input():
+		# クールタイム中は投擲不可
+		if not player.can_throw():
+			return
+		is_cancelled = true
+		player.change_state("THROWING")
+		return
 
 # ======================== 物理演算処理 ========================
 
 ## 物理演算処理
 func physics_update(_delta: float) -> void:
+	# 経過時間をカウント
+	elapsed_time += _delta
+
 	# 空中での回避時は重力を適用せず高度を維持
 	# 地上での回避時も重力は不要（地面を滑るように移動）
 

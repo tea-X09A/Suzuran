@@ -1,4 +1,4 @@
-[gd_scene load_steps=138 format=3 uid="uid://daofj62a4corn"]
+[gd_scene load_steps=137 format=3 uid="uid://daofj62a4corn"]
 
 [ext_resource type="Script" uid="uid://cyb2ijm5xuo6s" path="res://scripts/player/player.gd" id="1_lvxji"]
 [ext_resource type="Texture2D" uid="uid://ba2j33331esgm" path="res://assets/images/player/normal_idle/名称未設定のアートワーク (4).png" id="2_gmlin"]
@@ -295,30 +295,6 @@ tracks/22/keys = {
 "update": 1,
 "values": [false]
 }
-tracks/23/type = "value"
-tracks/23/imported = false
-tracks/23/enabled = true
-tracks/23/path = NodePath("DodgingHurtbox/DodgingHurtboxCollision:disabled")
-tracks/23/interp = 1
-tracks/23/loop_wrap = true
-tracks/23/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 1,
-"values": [true]
-}
-tracks/24/type = "value"
-tracks/24/imported = false
-tracks/24/enabled = true
-tracks/24/path = NodePath("DodgingHurtbox/DodgingHurtboxCollision:visible")
-tracks/24/interp = 1
-tracks/24/loop_wrap = true
-tracks/24/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 1,
-"values": [false]
-}
 
 [sub_resource type="Animation" id="Animation_kvlxm"]
 resource_name = "enemy_01_normal_down"
@@ -357,34 +333,10 @@ step = 0.1
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("DodgingHurtbox/DodgingHurtboxCollision:disabled")
+tracks/0/path = NodePath("Sprite2D:texture")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 1,
-"values": [true]
-}
-tracks/1/type = "value"
-tracks/1/imported = false
-tracks/1/enabled = true
-tracks/1/path = NodePath("DodgingHurtbox/DodgingHurtboxCollision:visible")
-tracks/1/interp = 1
-tracks/1/loop_wrap = true
-tracks/1/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 1,
-"values": [false]
-}
-tracks/2/type = "value"
-tracks/2/imported = false
-tracks/2/enabled = true
-tracks/2/path = NodePath("Sprite2D:texture")
-tracks/2/interp = 1
-tracks/2/loop_wrap = true
-tracks/2/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
@@ -1259,10 +1211,6 @@ height = 168.0
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_fm80t"]
 size = Vector2(60, 30)
 
-[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_dodging"]
-radius = 33.0
-height = 168.0
-
 [node name="Player" type="CharacterBody2D" groups=["player"]]
 z_index = 1
 collision_layer = 4
@@ -1387,12 +1335,3 @@ position = Vector2(-50, 21)
 shape = SubResource("RectangleShape2D_fm80t")
 disabled = true
 debug_color = Color(0.860735, 0.306094, 0.501864, 0.42)
-
-[node name="DodgingHurtbox" type="Area2D" parent="."]
-collision_layer = 4
-
-[node name="DodgingHurtboxCollision" type="CollisionShape2D" parent="DodgingHurtbox"]
-visible = false
-position = Vector2(-1, 12)
-shape = SubResource("CapsuleShape2D_dodging")
-disabled = true

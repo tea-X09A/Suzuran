@@ -53,6 +53,10 @@ const ANIMATION_MAPPING: Dictionary = {
 	"CAPTURE": "IDLE"     # CAPTURE状態の場合はIDLEアニメーションを使用
 }
 
+## 死亡演出の設定
+const DEATH_ANIMATION_DURATION: float = 0.5  # 死亡演出の時間（フェードアウトと移動）
+const DEATH_KNOCKBACK_SCALE: float = 0.1     # ノックバック速度を演出用にスケールダウン
+
 # ======================== 状態管理変数 ========================
 
 ## パトロール時の移動速度
@@ -240,6 +244,7 @@ func _initialize_state_system() -> void:
 	state_instances["KNOCKBACK"] = EnemyKnockbackState.new(self)
 	state_instances["STUNNED"] = EnemyStunnedState.new(self)
 	state_instances["CAPTURE"] = EnemyCaptureState.new(self)
+	state_instances["DEAD"] = EnemyDeadState.new(self)
 
 	# 初期状態をIDLEに設定
 	current_state = state_instances["IDLE"]
@@ -324,9 +329,10 @@ func change_state(new_state_name: String) -> void:
 	# 新しいステートに変更
 	current_state = new_state
 	current_state.initialize_state()
-	# アニメーションステートを更新（クラスレベルのマッピングを使用）
-	var animation_state_name: String = ANIMATION_MAPPING.get(new_state_name, new_state_name)
-	current_state.set_animation_state(animation_state_name)
+	# アニメーションステートを更新（DEADステートを除く）
+	if new_state_name != "DEAD":
+		var animation_state_name: String = ANIMATION_MAPPING.get(new_state_name, new_state_name)
+		current_state.set_animation_state(animation_state_name)
 
 # ======================== 物理更新処理 ========================
 
@@ -433,19 +439,53 @@ func _on_health_changed(_current_hp: int, _max_hp: int) -> void:
 	pass
 
 ## 死亡時の処理（EnemyHealthComponentのシグナルから呼び出される）
-func _on_died() -> void:
-	# コリジョンを無効化
+func _on_died(death_knockback_velocity: Vector2, is_instant_kill: bool) -> void:
+	# 死亡ステートに遷移（方向転換などの挙動を停止）
+	change_state("DEAD")
+
+	# コリジョンを無効化（他のオブジェクトとの干渉防止）
 	if collision_component:
 		collision_component.disable_collision_areas()
 	if detection_area:
 		detection_area.set_deferred("monitoring", false)
-	# エネミーを削除
-	queue_free()
+		detection_area.visible = false
+
+	# 死亡演出を開始（ノックバック速度と即死フラグを渡す）
+	_play_death_animation(death_knockback_velocity, is_instant_kill)
 
 ## ノックバック適用時の処理（EnemyHealthComponentのシグナルから呼び出される）
 func _on_knockback_applied(_knockback_vel: Vector2, _direction_to_face: float) -> void:
 	# ノックバック状態に遷移
 	change_state("KNOCKBACK")
+
+# ======================== 死亡演出 ========================
+
+## 死亡演出を再生
+## @param death_knockback_velocity: ノックバック速度のベクトル
+## @param is_instant_kill: 即死フラグ
+func _play_death_animation(death_knockback_velocity: Vector2, is_instant_kill: bool) -> void:
+	# 即死の場合はクリティカル表示を作成
+	if is_instant_kill:
+		CriticalText.show_critical(self)
+
+	# 演出用のTweenを作成
+	var tween: Tween = create_tween()
+	tween.set_parallel(true)  # 複数のアニメーションを並列実行
+
+	# フェードアウトアニメーション
+	if sprite:
+		tween.tween_property(sprite, "modulate:a", 0.0, DEATH_ANIMATION_DURATION)
+
+	# ノックバック速度に基づいて移動距離を決定
+	var float_distance_x: float = death_knockback_velocity.x * DEATH_KNOCKBACK_SCALE
+	var float_distance_y: float = death_knockback_velocity.y * DEATH_KNOCKBACK_SCALE
+
+	# 斜め上に移動
+	tween.tween_property(self, "position:x", position.x + float_distance_x, DEATH_ANIMATION_DURATION).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "position:y", position.y + float_distance_y, DEATH_ANIMATION_DURATION).set_ease(Tween.EASE_OUT)
+
+	# 演出完了後にエネミーを削除
+	tween.chain().tween_callback(queue_free)
 
 # ======================== コリジョン管理（互換性のため維持） ========================
 

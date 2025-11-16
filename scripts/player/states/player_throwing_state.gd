@@ -57,7 +57,8 @@ func physics_update(delta: float) -> void:
 	if is_throwing_02 and player.is_grounded:
 		throwing_timer = 0.0
 		is_throwing_02 = false
-		_transition_after_throwing()
+		# 着地時の共通処理を呼び出し
+		handle_landing_transition()
 		return
 
 	# throwing_02の場合は、着地するまでアニメーションを維持（タイマー無視）
@@ -108,8 +109,9 @@ func spawn_projectile() -> void:
 	# オブジェクトプールからプロジェクタイルを取得
 	var projectile_instance: Projectile = ProjectilePoolManager.get_projectile()
 
+	# プレイヤーの中心位置を基準に発射位置を計算（移動中のずれを軽減）
 	var spawn_offset: Vector2 = Vector2(throwing_direction * get_parameter("throwing_offset_x"), 0.0)
-	projectile_instance.global_position = sprite_2d.global_position + spawn_offset
+	projectile_instance.global_position = player.global_position + spawn_offset
 
 	# プレイヤーのconditionに応じて投射物の設定を変更
 	var damage_value: int = 0

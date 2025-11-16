@@ -1,11 +1,13 @@
 class_name PlayerRunState
 extends PlayerBaseState
 
-# ======================== 入力処理 ========================
+# ======================== 状態初期化・クリーンアップ ========================
 
 ## 状態名を取得
 func get_state_name() -> String:
 	return "RUN"
+
+# ======================== 入力処理 ========================
 
 ## 入力処理（RUN状態固有）
 func handle_input(delta: float) -> void:

@@ -62,8 +62,8 @@ var disable_input: bool = false
 var dodge_recovery_time: float = 0.0
 ## 格闘後の硬直時間（秒）
 var fighting_recovery_time: float = 0.0
-## 空中回避を使用済みフラグ（着地でリセット）
-var has_used_air_dodge: bool = false
+## 回避を使用済みフラグ（idle/walk/run状態でリセット）
+var has_used_ground_dodge: bool = false
 ## 速度倍率（バフによって変動）
 var speed_multiplier: float = 1.0
 ## アクティブなバフのリスト
@@ -233,6 +233,9 @@ func _initialize_collision_component() -> void:
 	# CollisionComponent初期化（initialize内で自動的にCollisionBoxを取得・登録）
 	collision_component = PlayerCollisionComponent.new()
 	collision_component.initialize(self)
+
+	# 初期のdirection_xに基づいてスプライトの向きを設定
+	sprite_2d.flip_h = direction_x > 0.0
 
 	# 初期のsprite向きに基づいて位置を更新
 	_update_box_positions(direction_x > 0.0)
@@ -478,6 +481,11 @@ func change_state(new_state_name: String) -> void:
 		current_state.cleanup_state()
 	# 新しいステートに変更
 	current_state = new_state
+
+	# 地上状態（IDLE/WALK/RUN）に遷移する場合、回避フラグをリセット
+	if new_state_name in ["IDLE", "WALK", "RUN"]:
+		has_used_ground_dodge = false
+
 	current_state.initialize_state()
 
 	# デバッグ環境でのみステート遷移をログ出力

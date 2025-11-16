@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+WindowFocusManager="*res://scripts/autoload/window_focus_manager.gd"
 GameSettings="*res://scripts/autoload/game_settings_manager.gd"
 AudioManager="*res://scripts/autoload/audio_manager.gd"
 FPSDisplay="*res://scripts/autoload/fps_display.gd"

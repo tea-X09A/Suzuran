@@ -36,18 +36,28 @@ func _ready() -> void:
 	add_child(fps_shadow_label)
 	add_child(fps_text_label)
 
-# ======================== 入力処理 ========================
-## 毎フレームの更新処理（入力とFPS表示の更新）
-func _process(_delta: float) -> void:
-	# F2キーで表示切り替え
-	if Input.is_action_just_pressed("toggle_fps"):
-		fps_visible = !fps_visible
-		fps_shadow_label.visible = fps_visible
-		fps_text_label.visible = fps_visible
+	# 初期状態に応じて_processの有効/無効を設定（パフォーマンス最適化）
+	set_process(fps_visible)
 
-	# 表示中のみFPSを更新
-	if fps_visible:
-		var fps: int = int(Engine.get_frames_per_second())
-		var fps_text: String = "FPS: %d" % fps
-		fps_shadow_label.text = fps_text
-		fps_text_label.text = fps_text
+# ======================== 入力処理 ========================
+## F2キーでの表示切り替え処理
+func _unhandled_input(event: InputEvent) -> void:
+	# F2キーで表示切り替え
+	if event.is_action_pressed("toggle_fps"):
+		_toggle_fps_display()
+
+## FPS表示の切り替え処理
+func _toggle_fps_display() -> void:
+	fps_visible = !fps_visible
+	fps_shadow_label.visible = fps_visible
+	fps_text_label.visible = fps_visible
+	# 表示状態に応じて_processの有効/無効を切り替え（パフォーマンス最適化）
+	set_process(fps_visible)
+
+# ======================== 更新処理 ========================
+## FPS値の更新処理（表示中のみ実行される）
+func _process(_delta: float) -> void:
+	var fps: int = int(Engine.get_frames_per_second())
+	var fps_text: String = "FPS: %d" % fps
+	fps_shadow_label.text = fps_text
+	fps_text_label.text = fps_text

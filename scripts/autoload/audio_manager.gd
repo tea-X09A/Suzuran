@@ -55,6 +55,10 @@ func _ready() -> void:
 	GameSettings.bgm_volume_changed.connect(_on_bgm_volume_changed)
 	GameSettings.se_volume_changed.connect(_on_se_volume_changed)
 
+	# WindowFocusManagerのシグナルに接続
+	if WindowFocusManager:
+		WindowFocusManager.focus_changed.connect(_on_focus_changed)
+
 # ======================== BGM再生メソッド ========================
 
 ## BGMを再生（ループあり）
@@ -157,3 +161,22 @@ func _on_bgm_volume_changed(_volume: int) -> void:
 ## SE音量が変更されたときの処理
 func _on_se_volume_changed(_volume: int) -> void:
 	_apply_se_volume()
+
+## ウィンドウのフォーカス状態が変化した時に呼ばれる
+func _on_focus_changed(has_focus: bool) -> void:
+	if has_focus:
+		# フォーカスを取り戻したらオーディオを再開
+		bgm_player.stream_paused = false
+		for se_player in se_players:
+			se_player.stream_paused = false
+	else:
+		# フォーカスを失ったらオーディオを一時停止
+		bgm_player.stream_paused = true
+		for se_player in se_players:
+			se_player.stream_paused = true
+
+# ======================== クリーンアップ ========================
+func _exit_tree() -> void:
+	# シグナル接続を明示的に切断してメモリリークを防止
+	if WindowFocusManager and WindowFocusManager.focus_changed.is_connected(_on_focus_changed):
+		WindowFocusManager.focus_changed.disconnect(_on_focus_changed)

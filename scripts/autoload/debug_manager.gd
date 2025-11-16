@@ -106,6 +106,9 @@ func _init_styles() -> void:
 
 # ======================== 入力処理 ========================
 func _process(_delta: float) -> void:
+	if not WindowFocusManager.has_focus:
+		return
+
 	## シグナルパネルが開いている時の処理を最優先
 	if is_signal_panel_open:
 		_process_signal_panel_input()

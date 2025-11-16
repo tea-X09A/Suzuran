@@ -17,8 +17,7 @@ const COLLISION_BOX_PATHS: Array[String] = [
 	"DownHurtbox/DownHurtboxCollision",
 	"FallHurtbox/FallHurtboxCollision",
 	"WalkHurtbox/WalkHurtboxCollision",
-	"FightingHitbox/FightingHitboxCollision",
-	"DodgingHurtbox/DodgingHurtboxCollision"
+	"FightingHitbox/FightingHitboxCollision"
 ]
 
 # ======================== 内部クラス ========================

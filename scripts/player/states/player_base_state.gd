@@ -306,15 +306,18 @@ func check_dodge_input() -> float:
 ## 回避入力処理（共通メソッド）
 ## @return bool 回避入力が検出された場合true
 func handle_dodge_input() -> bool:
-	# 空中にいて既に空中回避を使用済みの場合は回避不可
-	if not player.is_grounded and player.has_used_air_dodge:
+	# 既に回避を使用済みの場合は回避不可
+	if player.has_used_ground_dodge:
 		return false
 
 	var dodge_direction: float = check_dodge_input()
 	if dodge_direction != 0.0:
 		# dodge方向にspriteを向けてから回避状態へ遷移
-		sprite_2d.flip_h = dodge_direction > 0.0
+		var is_facing_right: bool = dodge_direction > 0.0
+		sprite_2d.flip_h = is_facing_right
 		player.direction_x = dodge_direction
+		# コリジョンボックスの位置を同期（hitbox/hurtboxの向きを更新）
+		player._update_box_positions(is_facing_right)
 		player.change_state("DODGING")
 		return true
 	return false
@@ -516,10 +519,7 @@ func handle_action_end_transition() -> void:
 
 ## 着地時の状態遷移処理（共通ヘルパー）
 func handle_landing_transition() -> void:
-	# 着地時に空中回避フラグをリセット
-	player.has_used_air_dodge = false
-
-	# 移動入力チェック
+	# 移動入力チェック（回避フラグは遷移先のIDLE/WALK/RUNでリセットされる）
 	var movement_input: float = get_movement_input()
 
 	if movement_input != 0.0:

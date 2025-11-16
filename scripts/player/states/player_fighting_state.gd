@@ -45,10 +45,16 @@ func initialize_state() -> void:
 
 	# 前進速度の設定
 	if not started_airborne:  # 地上でのfighting時のみ前進
-		var forward_speed: float = get_parameter("move_fighting_initial_speed")
-		# Sprite2Dの向きに応じて前進（throwingと同じ方法で統一）
-		var direction: float = 1.0 if sprite_2d.flip_h else -1.0
-		player.velocity.x = direction * forward_speed
+		# 前の状態がDODGINGで、地上にいる場合は慣性を維持
+		if player.previous_state and player.previous_state.get_state_name() == "DODGING" and player.is_grounded:
+			# 現在のvelocity.xを維持（慣性を乗せる）
+			pass
+		else:
+			# 通常時：固定速度を設定
+			var forward_speed: float = get_parameter("move_fighting_initial_speed")
+			# Sprite2Dの向きに応じて前進（throwingと同じ方法で統一）
+			var direction: float = 1.0 if sprite_2d.flip_h else -1.0
+			player.velocity.x = direction * forward_speed
 
 	# アニメーション完了シグナルの接続（重複接続を防止）
 	if animation_player and not animation_player.animation_finished.is_connected(_on_fighting_animation_finished):
@@ -95,7 +101,8 @@ func physics_update(delta: float) -> void:
 	# 空中攻撃中に着地した場合、キャンセルして遷移
 	if started_airborne and player.is_grounded:
 		end_fighting()
-		_transition_after_fighting()
+		# 着地時の共通処理を呼び出し
+		handle_landing_transition()
 		return
 
 	# 地上fighting時に壁に衝突した場合、アニメーションをキャンセル
@@ -198,20 +205,18 @@ func _transition_after_fighting() -> void:
 		player.change_state("FALL")
 		return
 
-	# 地上でfightingを開始していた場合、硬直時間を設定し、速度を0にする
-	if not started_airborne:
+	# 空中攻撃開始の場合は硬直なしで移動入力に応じて遷移
+	if started_airborne:
+		var movement_input: float = get_movement_input()
+		if movement_input != 0.0:
+			if is_dash_input():
+				player.change_state("RUN")
+			else:
+				player.change_state("WALK")
+		else:
+			player.change_state("IDLE")
+	else:
+		# 地上攻撃の場合のみ硬直時間を設定
 		player.fighting_recovery_time = get_parameter("fighting_recovery_duration")
 		player.velocity.x = 0.0
-		# 硬直時間中は入力を無視してIDLE状態に遷移
-		player.change_state("IDLE")
-		return
-
-	# 地上での状態判定（移動入力に応じて遷移）
-	var movement_input: float = get_movement_input()
-	if movement_input != 0.0:
-		if is_dash_input():
-			player.change_state("RUN")
-		else:
-			player.change_state("WALK")
-	else:
 		player.change_state("IDLE")

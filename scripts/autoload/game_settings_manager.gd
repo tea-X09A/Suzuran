@@ -116,6 +116,9 @@ func _ready() -> void:
 	load_settings()
 
 func _input(event: InputEvent) -> void:
+	if not WindowFocusManager.has_focus:
+		return
+
 	## 入力イベントを監視して、使用中の入力デバイスを検知する
 	var new_device: InputDevice = last_used_device
 

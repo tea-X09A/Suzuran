@@ -88,6 +88,9 @@ func _ready() -> void:
 
 # ======================== 入力処理 ========================
 func _process(_delta: float) -> void:
+	if not WindowFocusManager.has_focus:
+		return
+
 	## トランジション中は入力を無効化
 	if TransitionManager and TransitionManager.is_transitioning:
 		return

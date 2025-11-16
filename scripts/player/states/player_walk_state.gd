@@ -1,11 +1,13 @@
 class_name PlayerWalkState
 extends PlayerBaseState
 
-# ======================== 入力処理 ========================
+# ======================== 状態初期化・クリーンアップ ========================
 
 ## 状態名を取得
 func get_state_name() -> String:
 	return "WALK"
+
+# ======================== 入力処理 ========================
 
 ## 入力処理（WALK状態固有）
 func handle_input(delta: float) -> void:

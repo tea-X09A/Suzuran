@@ -7,8 +7,8 @@ extends RefCounted
 
 ## HP変更時に発信
 signal health_changed(current_hp: int, max_hp: int)
-## 死亡時に発信
-signal died()
+## 死亡時に発信（ノックバック速度と即死フラグを含む）
+signal died(death_knockback_velocity: Vector2, is_instant_kill: bool)
 ## ノックバック適用時に発信
 signal knockback_applied(velocity: Vector2, direction_to_face: float)
 
@@ -74,11 +74,13 @@ func take_damage(damage: int, direction: Vector2, attacker: Node, state_instance
 		return
 
 	# パトロール状態または待機状態の場合の特別処理
-	if current_state == state_instances["PATROL"] or current_state == state_instances["IDLE"]:
-		# FightingHitboxからの攻撃の場合は即死
+	# ただし、FIGHTING後のIDLE状態は除外（交戦済みなので即死対象外）
+	if (current_state == state_instances["PATROL"] or
+		(current_state == state_instances["IDLE"] and not enemy.is_after_fighting)):
+		# FightingHitboxからの攻撃の場合は即死（クリティカル）
 		if attacker and attacker.name == "FightingHitbox":
 			current_hp = 0
-			_die()
+			_die(direction, attacker, true)  # 即死フラグをtrueに
 			return
 		# Projectile（throwing）からの攻撃の場合はプレイヤーの方向へ向く
 		elif attacker and attacker is Projectile:
@@ -113,18 +115,6 @@ func take_damage(damage: int, direction: Vector2, attacker: Node, state_instance
 	# 共通処理：ダメージを適用（スタンエフェクト以外）
 	current_hp -= actual_damage
 
-	# ダメージログ出力（ダメージ適用後）
-	if attacker and attacker is Projectile:
-		var projectile: Projectile = attacker as Projectile
-		if projectile.applies_stun_effect:
-			print("[%s] Projectile攻撃（スタンエフェクト）: ダメージなし、スタンのみ適用" % enemy.name)
-		else:
-			print("[%s] Projectile攻撃（通常）: ダメージ %d, 残りHP: %d/%d" % [enemy.name, actual_damage, current_hp, max_hp])
-	elif attacker and attacker.name == "FightingHitbox":
-		print("[%s] Fighting攻撃: ダメージ %d, 残りHP: %d/%d（スタンなし）" % [enemy.name, actual_damage, current_hp, max_hp])
-	elif actual_damage > 0:
-		print("[%s] 通常攻撃: ダメージ %d, 残りHP: %d/%d" % [enemy.name, actual_damage, current_hp, max_hp])
-
 	# 敵のスタンフラグを設定
 	enemy.should_stun_after_knockback = should_apply_stun
 
@@ -134,7 +124,7 @@ func take_damage(damage: int, direction: Vector2, attacker: Node, state_instance
 
 	# HPが0以下になったら死亡処理
 	if current_hp <= 0:
-		_die()
+		_die(direction, attacker, false)  # 通常の死亡
 	else:
 		# ノックバックを適用
 		_apply_knockback(direction, attacker)
@@ -156,8 +146,8 @@ func reset_direction_to_face() -> void:
 
 # ======================== 内部メソッド ========================
 
-## ノックバックを適用
-func _apply_knockback(direction: Vector2, attacker: Node) -> void:
+## ノックバック速度を計算（共通処理）
+func _calculate_knockback_velocity(direction: Vector2, attacker: Node) -> Vector2:
 	var vertical_force: float = -100.0
 	var force_multiplier: float = 1.0
 
@@ -167,31 +157,37 @@ func _apply_knockback(direction: Vector2, attacker: Node) -> void:
 		vertical_force = -150.0
 
 	# KnockbackComponentを使用してノックバック速度を計算
-	knockback_velocity = KnockbackComponent.calculate_knockback_velocity(
+	return KnockbackComponent.calculate_knockback_velocity(
 		direction,
 		knockback_force,
 		vertical_force,
 		force_multiplier
 	)
 
+## ノックバックを適用
+func _apply_knockback(direction: Vector2, attacker: Node) -> void:
+	# ノックバック速度を計算
+	knockback_velocity = _calculate_knockback_velocity(direction, attacker)
+
 	# シグナルを発信
 	knockback_applied.emit(knockback_velocity, direction_to_face_after_knockback)
 
 ## 死亡処理
-func _die() -> void:
+func _die(direction: Vector2, attacker: Node, is_instant_kill: bool) -> void:
 	# 敵への参照を取得
 	var enemy: Enemy = enemy_ref.get_ref() as Enemy
 	if not enemy:
 		return
 
-	print("[%s] 死亡" % enemy.name)
-
 	# HPゲージを非表示
 	if hp_gauge:
 		hp_gauge.hide_gauge()
 
-	# シグナルを発信
-	died.emit()
+	# ノックバック速度を計算（死亡演出で使用）
+	var death_knockback_velocity: Vector2 = _calculate_knockback_velocity(direction, attacker)
+
+	# シグナルを発信（ノックバック速度と即死フラグを含む）
+	died.emit(death_knockback_velocity, is_instant_kill)
 
 ## HPゲージを作成
 func _create_hp_gauge() -> void:
