@@ -62,8 +62,7 @@ func _on_health_changed(hp: int, max_hp: int) -> void:
 ## @param max_hp 最大HP
 func update_hp_display(hp: int, max_hp: int) -> void:
 	if hp_gauge:
-		var progress: float = float(hp) / float(max_hp) if max_hp > 0 else 0.0
-		hp_gauge.hp_progress = progress
+		hp_gauge.hp_progress = _calculate_hp_progress(hp, max_hp)
 
 # ======================== 初期値設定 ========================
 
@@ -71,7 +70,18 @@ func update_hp_display(hp: int, max_hp: int) -> void:
 ## @param hp 初期HP
 ## @param max_hp 最大HP
 func set_initial_values(hp: int, max_hp: int) -> void:
-	update_hp_display(hp, max_hp)
+	if hp_gauge:
+		# ダメージ演出をスキップして初期値を設定
+		hp_gauge.initialize_hp(_calculate_hp_progress(hp, max_hp))
+
+# ======================== 内部ヘルパー ========================
+
+## HP進行度を計算（0.0～1.0）
+## @param hp 現在のHP
+## @param max_hp 最大HP
+## @return float HP進行度
+func _calculate_hp_progress(hp: int, max_hp: int) -> float:
+	return float(hp) / float(max_hp) if max_hp > 0 else 0.0
 
 # ======================== クリーンアップ ========================
 

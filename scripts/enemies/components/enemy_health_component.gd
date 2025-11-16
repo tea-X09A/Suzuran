@@ -158,16 +158,21 @@ func reset_direction_to_face() -> void:
 
 ## ノックバックを適用
 func _apply_knockback(direction: Vector2, attacker: Node) -> void:
-	# ノックバック速度を設定
-	var current_knockback_force: float = knockback_force
 	var vertical_force: float = -100.0
+	var force_multiplier: float = 1.0
 
-	# FightingHitboxからの攻撃の場合、2倍の力
+	# FightingHitboxからの攻撃の場合、2倍の力と強い垂直力
 	if attacker and attacker.name == "FightingHitbox":
-		current_knockback_force *= 2.0
+		force_multiplier = 2.0
 		vertical_force = -150.0
 
-	knockback_velocity = Vector2(direction.x * current_knockback_force, vertical_force)
+	# KnockbackComponentを使用してノックバック速度を計算
+	knockback_velocity = KnockbackComponent.calculate_knockback_velocity(
+		direction,
+		knockback_force,
+		vertical_force,
+		force_multiplier
+	)
 
 	# シグナルを発信
 	knockback_applied.emit(knockback_velocity, direction_to_face_after_knockback)

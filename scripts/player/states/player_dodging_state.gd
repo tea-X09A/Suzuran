@@ -53,8 +53,11 @@ func initialize_state() -> void:
 func cleanup_state() -> void:
 	# 回避終了後の硬直時間を設定
 	player.dodge_recovery_time = get_parameter("dodging_recovery_duration")
-	# 速度をゼロにして慣性を消す
-	player.velocity.x = 0.0
+
+	# 地上での回避時のみ速度をゼロにする
+	# 空中での回避時は慣性を維持
+	if player.is_grounded:
+		player.velocity.x = 0.0
 
 # ======================== 物理演算処理 ========================
 

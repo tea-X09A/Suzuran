@@ -225,6 +225,15 @@ func _draw_rounded_rect(pos: Vector2, rect_size: Vector2, radius: float, color: 
 
 # ======================== 公開メソッド ========================
 
+## HP進行度を初期化（ダメージ演出なし）
+## シーン遷移時やゲーム開始時の初期値設定に使用
+## @param progress HP進行度（0.0～1.0）
+func initialize_hp(progress: float) -> void:
+	var new_value: float = clamp(progress, 0.0, 1.0)
+	hp_progress = new_value
+	previous_hp_progress = new_value
+	queue_redraw()
+
 ## HPゲージを表示してフェードタイマーを開始
 func show_gauge() -> void:
 	if enable_auto_fade:

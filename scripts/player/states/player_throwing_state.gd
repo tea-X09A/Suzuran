@@ -39,10 +39,6 @@ func handle_input(_delta: float) -> void:
 	if player.disable_input:
 		return
 
-	# throwing_02のアニメーション中は、入力でキャンセル不可
-	if is_throwing_02:
-		return
-
 	# dodge入力検出（共通メソッド使用）
 	if handle_dodge_input():
 		return

@@ -90,10 +90,11 @@ func apply_effect_to_player(player: Node2D) -> bool:
 
 	# プレイヤーにトラップ効果を適用
 	if player.has_method("handle_trap_damage"):
-		# トラップの向きからノックバック方向を計算（プレイヤーがトラップより右にいれば右へ押す）
-		var direction: Vector2 = Vector2(sign(player.global_position.x - global_position.x), 0.0)
-		if direction.x == 0.0:
-			direction.x = 1.0  # デフォルトは右向き
+		# KnockbackComponentを使用してノックバック方向を計算
+		var direction: Vector2 = KnockbackComponent.calculate_knockback_direction(
+			player.global_position,
+			global_position
+		)
 		player.handle_trap_damage(effect_type, direction, knockback_force)
 		return true
 
