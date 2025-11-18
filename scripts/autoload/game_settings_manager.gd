@@ -261,9 +261,6 @@ func apply_window_mode() -> void:
 	else:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 
-	## ウィンドウモード変更後、入力バッファをクリアして古い入力イベントを削除
-	Input.flush_buffered_events()
-
 func apply_resolution() -> void:
 	## 解像度を適用する
 	DisplayServer.window_set_size(current_resolution)
@@ -273,13 +270,12 @@ func apply_resolution() -> void:
 	var window_position: Vector2i = (screen_size - current_resolution) / 2
 	DisplayServer.window_set_position(window_position)
 
-	## 解像度変更後、入力バッファをクリアして古い入力イベントを削除
-	Input.flush_buffered_events()
-
 func apply_all_display_settings() -> void:
 	## すべてのディスプレイ設定を適用する
 	apply_window_mode()
 	apply_resolution()
+	## ディスプレイ設定変更後、入力バッファをクリアして古い入力イベントを削除
+	Input.flush_buffered_events()
 
 # ======================== ゲーム設定 ========================
 func set_always_dash(enabled: bool) -> void:

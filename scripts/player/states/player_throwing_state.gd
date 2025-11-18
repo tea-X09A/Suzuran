@@ -28,6 +28,9 @@ func initialize_state() -> void:
 
 ## AnimationTree状態終了時の処理
 func cleanup_state() -> void:
+	# 残像表示を停止
+	player.stop_afterimage_display()
+
 	# アニメーション完了シグナルの切断（メモリリーク防止）
 	if animation_player and animation_player.animation_finished.is_connected(_on_throwing_animation_finished):
 		animation_player.animation_finished.disconnect(_on_throwing_animation_finished)

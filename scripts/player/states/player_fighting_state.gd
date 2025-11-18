@@ -79,6 +79,9 @@ func cleanup_state() -> void:
 				enemy.tree_exiting.disconnect(_on_enemy_tree_exiting)
 	hit_enemies.clear()
 
+	# 残像表示を停止
+	player.stop_afterimage_display()
+
 	end_fighting()
 
 ## 入力処理

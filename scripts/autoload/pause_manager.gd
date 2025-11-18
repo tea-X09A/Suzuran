@@ -25,27 +25,17 @@ func _ready() -> void:
 	if WindowFocusManager:
 		WindowFocusManager.focus_changed.connect(_on_focus_changed)
 
-# ======================== 内部ヘルパーメソッド ========================
-
-## デバッグメニューが開いているかチェック
-func _is_debug_menu_open() -> bool:
-	return DebugManager and DebugManager.is_open
-
-## ポーズメニューが開いているかチェック
-func _is_pause_menu_open() -> bool:
-	return MenuManager and MenuManager.pause_menu and MenuManager.pause_menu.visible
-
 # ======================== フォーカス変更処理 ========================
 
 ## ウィンドウのフォーカス状態が変化した時に呼ばれる
 func _on_focus_changed(has_focus: bool) -> void:
 	# デバッグメニューが開いている場合は自動一時停止/再開を行わない
-	if _is_debug_menu_open():
+	if DebugManager and DebugManager.is_open:
 		return
 
 	if has_focus:
 		# ポーズメニューが開いている場合は自動再開しない
-		if _is_pause_menu_open():
+		if MenuManager and MenuManager.pause_menu and MenuManager.pause_menu.visible:
 			return
 		# フォーカス喪失により自動一時停止した場合のみ、自動的に再開
 		if auto_pause_on_focus_loss and is_paused and auto_paused_by_focus_loss:

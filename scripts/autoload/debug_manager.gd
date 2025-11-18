@@ -45,6 +45,9 @@ var current_column: int = 0
 ## ボタンリスト（選択状態管理用）
 var all_buttons: Array[Button] = []
 
+## 前回選択されていたボタンのインデックス（パフォーマンス最適化）
+var _previous_selection: int = -1
+
 ## StyleBoxFlatのキャッシュ
 var _selected_style: StyleBoxFlat = null
 var _normal_style: StyleBoxFlat = null
@@ -432,11 +435,11 @@ func _create_continue_button() -> void:
 	all_buttons.append(continue_button)
 
 # ======================== 内部処理 ========================
-## 2D選択状態を更新
+## 2D選択状態を更新（パフォーマンス最適化版）
 func _update_2d_selection() -> void:
-	## 全てのボタンを通常スタイルに戻す
-	for button in all_buttons:
-		_apply_button_style(button, _normal_style)
+	## 前回選択されていたボタンのみクリア
+	if _previous_selection >= 0 and _previous_selection < all_buttons.size():
+		_apply_button_style(all_buttons[_previous_selection], _normal_style)
 
 	## 現在選択中のボタンを強調表示
 	if current_row < navigation_rows.size():
@@ -445,6 +448,7 @@ func _update_2d_selection() -> void:
 			var button_index: int = button_indices[current_column]
 			if button_index < all_buttons.size():
 				_apply_button_style(all_buttons[button_index], _selected_style)
+				_previous_selection = button_index
 
 	## 矢印の表示状態を更新（デバッグ項目のみ）
 	if current_row < debug_items.size():

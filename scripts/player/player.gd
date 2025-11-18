@@ -13,6 +13,9 @@ signal event_preparation_complete
 ## プレイヤーの変身状態
 enum PLAYER_CONDITION { NORMAL, EXPANSION }
 
+## 残像生成間隔（秒）
+const AFTERIMAGE_SPAWN_INTERVAL: float = 0.1
+
 # ======================== ノード参照キャッシュ ========================
 
 ## 新アニメーションシステム用スプライト
@@ -76,6 +79,10 @@ var throwing_cooldown_max: float = 0.0
 var throwing_cooldown_gauge: Control = null
 ## ステータスゲージコンテナ（バフやクールタイムなどのゲージを管理）
 var status_gauge_container: Control = null
+## 残像表示フラグ（回避からキャンセルした際の残像継続表示用）
+var is_displaying_afterimage: bool = false
+## 残像生成タイマー
+var afterimage_timer: float = 0.0
 
 # ======================== ステート管理システム ========================
 
@@ -310,11 +317,11 @@ func _physics_process(delta: float) -> void:
 	# 無敵エフェクトを更新
 	invincibility_effect.update_invincibility_effect(delta)
 
-	# バフシステムを更新
-	_update_buffs(delta)
-
 	# 投擲のクールタイムを更新
 	_update_throwing_cooldown(delta)
+
+	# 残像エフェクトを更新
+	_update_afterimage(delta)
 
 	# 硬直時間を減少（共通処理）
 	_update_recovery_times(delta)
@@ -323,11 +330,9 @@ func _physics_process(delta: float) -> void:
 	if not auto_move_mode:
 		# 現在のステートに入力処理を移譲
 		current_state.handle_input(delta)
-		current_state.physics_update(delta)
-	else:
-		# 自動移動モード時は重力のみ適用
-		if not is_grounded:
-			velocity.y += GRAVITY * delta
+
+	# physics_updateは常に実行（状態遷移や重力処理のため）
+	current_state.physics_update(delta)
 
 	# Godot物理エンジンによる移動実行
 	move_and_slide()
@@ -345,46 +350,13 @@ func _update_recovery_times(delta: float) -> void:
 
 # ======================== バフ管理システム ========================
 
-## バフシステムを更新（期限切れバフの削除と更新処理）
-func _update_buffs(delta: float) -> void:
-	# 期限切れバフを削除（逆順でループして安全に削除）
-	for i in range(active_buffs.size() - 1, -1, -1):
-		var buff: PlayerBuff = active_buffs[i]
-		buff.update(delta)
-
-		if buff.is_expired():
-			buff.remove()
-			active_buffs.remove_at(i)
-
 ## バフを適用
 ## @param buff PlayerBuff 適用するバフ
 func apply_buff(buff: PlayerBuff) -> void:
-	# 同じIDのバフが既に存在するか確認
+	# 同じIDのバフが既に存在する場合は削除（上書き）
 	for i in range(active_buffs.size() - 1, -1, -1):
 		if active_buffs[i].buff_id == buff.buff_id:
-			var existing_buff: PlayerBuff = active_buffs[i]
-
-			# 上書き条件チェック:
-			# 1. 既存のバフが無制限時間（INF）の場合は上書きしない
-			# 2. 新しいバフの残り時間が既存のバフより短い場合は上書きしない
-			if is_inf(existing_buff.remaining_duration):
-				# デバッグビルドでログ出力
-				if OS.is_debug_build():
-					print("バフ適用拒否: 無制限バフが既に適用中 (%s)" % buff.buff_id)
-				return
-
-			if buff.remaining_duration <= existing_buff.remaining_duration:
-				# デバッグビルドでログ出力
-				if OS.is_debug_build():
-					print("バフ適用拒否: 既存のバフの方が残り時間が長い (%s: %.1fs vs %.1fs)" % [
-						buff.buff_id,
-						buff.remaining_duration,
-						existing_buff.remaining_duration
-					])
-				return
-
-			# 条件を満たす場合のみ上書き
-			existing_buff.remove()
+			active_buffs[i].remove()
 			active_buffs.remove_at(i)
 			break
 
@@ -406,6 +378,15 @@ func clear_all_buffs() -> void:
 	for buff in active_buffs:
 		buff.remove()
 	active_buffs.clear()
+
+## 指定されたIDのバフが有効かどうかをチェック
+## @param buff_id String バフのID
+## @return bool バフが有効な場合はtrue
+func has_buff(buff_id: String) -> bool:
+	for buff in active_buffs:
+		if buff.buff_id == buff_id:
+			return true
+	return false
 
 # ======================== 投擲クールタイム管理システム ========================
 
@@ -467,6 +448,45 @@ func _remove_throwing_cooldown_gauge() -> void:
 		if status_gauge_container:
 			status_gauge_container.remove_gauge(throwing_cooldown_gauge)
 	throwing_cooldown_gauge = null
+
+# ======================== 残像エフェクト管理システム ========================
+
+## 残像エフェクトを更新
+func _update_afterimage(delta: float) -> void:
+	if not is_displaying_afterimage:
+		return
+
+	afterimage_timer += delta
+	if afterimage_timer >= AFTERIMAGE_SPAWN_INTERVAL:
+		afterimage_timer = 0.0
+		_spawn_afterimage()
+
+## 残像表示を開始
+func start_afterimage_display() -> void:
+	is_displaying_afterimage = true
+	afterimage_timer = 0.0
+
+## 残像表示を停止
+func stop_afterimage_display() -> void:
+	is_displaying_afterimage = false
+	afterimage_timer = 0.0
+
+## 残像エフェクトを生成
+func _spawn_afterimage() -> void:
+	# スプライトが存在しない場合は生成しない
+	if not sprite_2d:
+		return
+
+	# 残像インスタンスを作成
+	var afterimage: Afterimage = Afterimage.new()
+
+	# 残像を初期化（現在のスプライトの状態をコピー）
+	afterimage.initialize(sprite_2d, global_position)
+
+	# 残像をプレイヤーの親ノード（レベル）に追加
+	var parent: Node = get_parent()
+	if parent:
+		parent.add_child(afterimage)
 
 ## 状態遷移（CLAUDE.md推奨形式）
 func change_state(new_state_name: String) -> void:
@@ -666,8 +686,8 @@ func _on_debug_value_changed(key: String, value: Variant) -> void:
 			# ジャスト回避バフの切り替え
 			var enable_buff: bool = value as bool
 			if enable_buff:
-				# バフを無制限時間で適用（INF）
-				var buff: SpeedBoostBuff = SpeedBoostBuff.new(self, INF)
+				# バフを適用
+				var buff: SpeedBoostBuff = SpeedBoostBuff.new(self)
 				apply_buff(buff)
 			else:
 				# バフを削除

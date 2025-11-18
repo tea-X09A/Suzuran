@@ -276,6 +276,19 @@ func is_dodge_modifier_just_pressed() -> bool:
 	# ゲームパッドボタンをチェック（カスタム設定のみ）
 	return _check_gamepad_button_just_pressed("dodge")
 
+## dodge修飾キーが押されているかチェック（継続用：長押し検出）
+## @return bool - dodge修飾キーが押されている場合true
+func is_dodge_pressed() -> bool:
+	var dodge_key: int = GameSettings.get_key_binding("dodge")
+
+	# カスタムキーチェック
+	if dodge_key != KEY_NONE:
+		if Input.is_physical_key_pressed(dodge_key):
+			return true
+
+	# ゲームパッドボタンをチェック（カスタム設定のみ）
+	return _check_gamepad_button_pressed("dodge")
+
 ## dodge修飾キー＋方向入力での回避検出
 ## @return float - 1.0: 右dodge、-1.0: 左dodge、0.0: なし
 func check_dodge_input() -> float:
@@ -368,8 +381,8 @@ func get_parameter(key: String) -> Variant:
 ## 速度系パラメータの場合は自動的に speed_multiplier を適用
 func get_speed_parameter(key: String) -> float:
 	var base_speed: float = get_parameter(key)
-	# 速度系パラメータの場合のみ speed_multiplier を適用
-	if key in ["move_walk_speed", "move_run_speed"]:
+	# 走行速度のみ speed_multiplier を適用（歩行速度は対象外）
+	if key == "move_run_speed":
 		return base_speed * player.speed_multiplier
 	return base_speed
 
@@ -519,6 +532,9 @@ func handle_action_end_transition() -> void:
 
 ## 着地時の状態遷移処理（共通ヘルパー）
 func handle_landing_transition() -> void:
+	# 着地時に残像表示を停止（dodgingからジャンプキャンセルした場合や空中回避の場合）
+	player.stop_afterimage_display()
+
 	# 移動入力チェック（回避フラグは遷移先のIDLE/WALK/RUNでリセットされる）
 	var movement_input: float = get_movement_input()
 

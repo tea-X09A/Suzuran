@@ -48,11 +48,13 @@ static var PARAMETERS: Dictionary = {
 		"fighting_recovery_duration": 0.2,     # 地上格闘後の硬直時間（秒）
 
 		# ======================== 回避パラメータ ========================
-		"move_dodging_speed_multiplier": 1.5,  # 回避時の速度倍率（run_speedに対する倍率）
-		"move_dodging_distance": 200.0,        # 回避時の移動距離（ピクセル）
-		"dodging_recovery_duration": 0.2,      # 回避後の硬直時間（秒）
-		"dodging_input_delay": 0.15,           # 回避開始から攻撃入力受付までの遅延時間（秒）
-		"just_dodge_buff_duration": 10.0,      # ジャスト回避成功時のバフ有効時間（秒）
+		"move_dodging_initial_speed_multiplier": 2.5,  # 回避の初速倍率（run_speedに対する倍率）
+		"move_dodging_min_distance": 100.0,            # 回避の最小移動距離（ピクセル）
+		"move_dodging_max_distance": 300.0,            # 回避の最大移動距離（ピクセル）
+		"dodging_hold_duration": 0.3,                  # 長押し受付時間（秒）
+		"dodging_deceleration": 1000.0,                # 減速率（ピクセル/秒²）
+		"dodging_recovery_duration": 0.2,              # 回避後の硬直時間（秒）
+		"dodging_input_delay": 0.15,                   # 回避開始から攻撃入力受付までの遅延時間（秒）
 
 		# ======================== ダメージパラメータ ========================
 		"damage_duration": 0.6,                    # ダメージアニメーションの継続時間（秒）

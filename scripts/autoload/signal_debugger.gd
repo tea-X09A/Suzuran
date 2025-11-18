@@ -20,6 +20,11 @@ class ConnectionInfo:
 
 # ======================== 初期化処理 ========================
 func _ready() -> void:
+	# リリースビルドでは無効化してメモリを削減
+	if not OS.is_debug_build():
+		queue_free()
+		return
+
 	## ポーズ中でも動作するように設定
 	process_mode = Node.PROCESS_MODE_ALWAYS
 

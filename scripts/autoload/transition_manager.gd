@@ -18,7 +18,7 @@ func _ready() -> void:
 	color_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 # ======================== シーン遷移処理 ========================
-func change_scene(target_scene_path: String, direction: String = "") -> void:
+func change_scene(target_scene_path: String, direction: String = "", target_area_id: int = 0) -> void:
 	if is_transitioning:
 		return
 
@@ -68,20 +68,12 @@ func change_scene(target_scene_path: String, direction: String = "") -> void:
 		# 状態データをクリア（メモリ解放と意図の明示化）
 		saved_player_state.clear()
 
-	# transition_areaを見つけてプレイヤーを配置
+	# transition_areaを見つけてプレイヤーを配置（direction指定時のみ）
 	if player and direction in ["prev", "next"]:
 		var transition_area: Area2D = _find_target_transition_area(direction)
 		if transition_area:
-			# transition_areaの最下部を取得
-			var area_bottom_y: float = _get_area_bottom_position(transition_area)
-
-			# プレイヤーのスプライトの高さを取得
-			var sprite_height: float = 0.0
-			if player.sprite_2d and player.sprite_2d.texture:
-				sprite_height = player.sprite_2d.texture.get_height()
-
-			# プレイヤーの位置を計算（最下部を合わせる）
-			var player_y: float = area_bottom_y - sprite_height / 2.0
+			# プレイヤーのY座標を計算
+			var player_y: float = _calculate_player_position_y(transition_area, player)
 
 			var offset_x: float = 100.0  # transition_areaからの距離
 			if direction == "prev":
@@ -98,10 +90,32 @@ func change_scene(target_scene_path: String, direction: String = "") -> void:
 			player.call("_update_box_positions", player.sprite_2d.flip_h)
 
 			# 自動移動モードを有効化してWALKアニメーション開始
-			player.auto_move_mode = true
-			player.change_state("WALK")
-			var walk_speed: float = PlayerParameters.get_parameter(player.condition, "move_walk_speed")
-			player.velocity.x = player.direction_x * walk_speed
+			_setup_player_auto_walk(player, player.direction_x)
+	elif player and direction == "":
+		# directionが空の場合、保存された向きを維持してtransition_areaに配置
+		var transition_area: Area2D = null
+
+		# target_area_idが指定されている場合はIDで検索、そうでなければ最初のエリアを使用
+		if target_area_id > 0:
+			transition_area = _find_transition_area_by_id(target_area_id)
+		else:
+			transition_area = _find_any_transition_area()
+
+		if transition_area:
+			# プレイヤーのY座標を計算
+			var player_y: float = _calculate_player_position_y(transition_area, player)
+
+			# 保存された向きに基づいてX座標を調整
+			var offset_x: float = 100.0
+			if player.direction_x < 0.0:
+				# 左向きの場合：transition_areaの右側に配置
+				player.global_position = Vector2(transition_area.global_position.x + offset_x, player_y)
+			else:
+				# 右向きの場合：transition_areaの左側に配置
+				player.global_position = Vector2(transition_area.global_position.x - offset_x, player_y)
+
+			# 自動移動モードを有効化してWALKアニメーション開始
+			_setup_player_auto_walk(player, player.direction_x)
 
 	# カメラ位置をプレイヤーに即座に合わせる
 	if camera and camera.has_method("reset_to_target"):
@@ -114,6 +128,8 @@ func change_scene(target_scene_path: String, direction: String = "") -> void:
 	if player:
 		player.auto_move_mode = false
 
+## フェードアウトアニメーション実行
+## @param direction 遷移方向（"prev" = 左、"next" = 右、"" = 方向なし）
 func fade_out(direction: String = "") -> void:
 	# トランジション開始（入力を無効化）
 	is_transitioning = true
@@ -130,10 +146,16 @@ func fade_out(direction: String = "") -> void:
 		# 次のレベル: 左から右へフェードアウト
 		animation_name = "fade_out_right"
 		_set_player_walk_animation_if_grounded(1.0)
+	elif direction == "":
+		# 方向指定なし: 保存された向きで入力無効化とWALK開始
+		var player: Player = _get_player()
+		if player:
+			_set_player_walk_animation_if_grounded(player.direction_x)
 
 	animation_player.play(animation_name)
 	await animation_player.animation_finished
 
+## フェードインアニメーション実行
 func fade_in() -> void:
 	# アニメーション前にpositionを初期位置に戻す
 	color_rect.position = Vector2.ZERO
@@ -197,16 +219,20 @@ func _collect_nodes_recursive(node: Node, node_type: Variant, results: Array[Nod
 
 	return false
 
+## フェードアウト時にプレイヤーの入力を無効化し、地上の場合はWALK状態にする
+## @param move_direction 移動方向（-1.0 = 左、1.0 = 右）
 func _set_player_walk_animation_if_grounded(move_direction: float) -> void:
-	# グループからPlayerを取得（再帰探索より高速）
 	var player: Player = _get_player()
 
 	if not player:
 		return
 
+	# 入力を無効化（空中・地上問わず、transition_area検知時も入力を受け付けない）
+	player.auto_move_mode = true
+
 	# 地上にいる場合のみWALKアニメーションに変更し、自動移動させる
+	# 空中の場合は入力無効化のみ行い、状態遷移は各ステートに委譲
 	if player.is_on_floor():
-		player.auto_move_mode = true
 		player.update_sprite_direction(move_direction)
 		player.change_state("WALK")
 
@@ -215,21 +241,40 @@ func _set_player_walk_animation_if_grounded(move_direction: float) -> void:
 
 ## 方向に応じた対応するtransition_areaを見つける
 func _find_target_transition_area(direction: String) -> Area2D:
-	var scene_root: Node = _get_scene_root()
-	var areas: Array[Node] = _find_nodes_by_type(scene_root, Area2D, true) as Array[Node]
+	# グループを使った高速検索
+	var areas: Array[Node] = get_tree().get_nodes_in_group("transition_area")
 
-	# transition_areaスクリプトを持つArea2Dを検索
+	# directionに応じて適切なエリアを返す
 	for area in areas:
 		if area is Area2D:
-			var script_path: String = area.get_script().resource_path if area.get_script() else ""
-			if "transition_area" in script_path:
-				# directionに応じて適切なエリアを返す
-				if direction == "prev" and area.get("next_level") != "":
-					# prevの場合：next_levelが設定されているエリア（右側）
-					return area
-				elif direction == "next" and area.get("prev_level") != "":
-					# nextの場合：prev_levelが設定されているエリア（左側）
-					return area
+			if direction == "prev" and area.get("next_level") != "":
+				# prevの場合：next_levelが設定されているエリア（右側）
+				return area
+			elif direction == "next" and area.get("prev_level") != "":
+				# nextの場合：prev_levelが設定されているエリア（左側）
+				return area
+	return null
+
+## シーン内の任意のtransition_areaを見つける
+func _find_any_transition_area() -> Area2D:
+	# グループを使った高速検索
+	var areas: Array[Node] = get_tree().get_nodes_in_group("transition_area")
+
+	# 最初に見つかったtransition_areaを返す
+	for area in areas:
+		if area is Area2D:
+			return area
+	return null
+
+## area_idを指定してtransition_areaを見つける
+func _find_transition_area_by_id(area_id: int) -> Area2D:
+	# グループを使った高速検索
+	var areas: Array[Node] = get_tree().get_nodes_in_group("transition_area")
+
+	# 指定されたarea_idを持つtransition_areaを返す
+	for area in areas:
+		if area is Area2D and area.get("area_id") == area_id:
+			return area
 	return null
 
 ## Area2Dの最下部のY座標を取得
@@ -254,3 +299,28 @@ func _get_area_bottom_position(area: Area2D) -> float:
 
 	# CollisionShape2Dが見つからない場合はArea2Dの位置を返す
 	return area.global_position.y
+
+## transition_area上でのプレイヤーのY座標を計算
+## @param transition_area 配置先のtransition_area
+## @param player プレイヤーオブジェクト
+## @return 計算されたY座標
+func _calculate_player_position_y(transition_area: Area2D, player: Player) -> float:
+	# transition_areaの最下部を取得
+	var area_bottom_y: float = _get_area_bottom_position(transition_area)
+
+	# プレイヤーのスプライトの高さを取得
+	var sprite_height: float = 0.0
+	if player.sprite_2d and player.sprite_2d.texture:
+		sprite_height = player.sprite_2d.texture.get_height()
+
+	# プレイヤーの位置を計算（最下部を合わせる）
+	return area_bottom_y - sprite_height / 2.0
+
+## プレイヤーの自動移動モードを有効化してWALKアニメーションを開始
+## @param player プレイヤーオブジェクト
+## @param direction_x 移動方向（-1.0 = 左、1.0 = 右）
+func _setup_player_auto_walk(player: Player, direction_x: float) -> void:
+	player.auto_move_mode = true
+	player.change_state("WALK")
+	var walk_speed: float = PlayerParameters.get_parameter(player.condition, "move_walk_speed")
+	player.velocity.x = direction_x * walk_speed

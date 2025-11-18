@@ -34,6 +34,10 @@ var debug_menu_just_closed: bool = false
 var window_mode_just_changed: bool = false  ## ウィンドウモードが変更された直後かどうか
 var window_mode_skip_frames: int = 0  ## ウィンドウモード変更後にスキップするフレーム数
 
+## スタイルのキャッシュ（パフォーマンス最適化）
+var _selected_style: StyleBoxFlat = null
+var _normal_style: StyleBoxFlat = null
+
 # ======================== 定数 ========================
 ## メニューボタンのテキスト（多言語対応）
 const MENU_TEXTS: Dictionary = {
@@ -57,6 +61,9 @@ const MENU_TEXTS: Dictionary = {
 
 # ======================== 初期化処理 ========================
 func _ready() -> void:
+	## スタイルの初期化（パフォーマンス最適化のため最初に実行）
+	_init_styles()
+
 	## メニューUIを構築
 	_build_menu_ui()
 	_build_main_menu()
@@ -85,6 +92,34 @@ func _ready() -> void:
 	## DebugManagerのシグナルに接続
 	if DebugManager:
 		DebugManager.debug_state_changed.connect(_on_debug_state_changed)
+
+## スタイルを初期化してキャッシュする（パフォーマンス最適化）
+func _init_styles() -> void:
+	## 選択中のボタンのスタイル（白背景、白枠）
+	_selected_style = StyleBoxFlat.new()
+	_selected_style.bg_color = Color(1.0, 1.0, 1.0, 0.3)
+	_selected_style.border_width_left = 3
+	_selected_style.border_width_top = 3
+	_selected_style.border_width_right = 3
+	_selected_style.border_width_bottom = 3
+	_selected_style.border_color = Color(1.0, 1.0, 1.0, 1.0)
+	_selected_style.corner_radius_top_left = 8
+	_selected_style.corner_radius_top_right = 8
+	_selected_style.corner_radius_bottom_left = 8
+	_selected_style.corner_radius_bottom_right = 8
+
+	## 非選択ボタンのスタイル（透明背景、透明枠線でレイアウトずれ防止）
+	_normal_style = StyleBoxFlat.new()
+	_normal_style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
+	_normal_style.border_width_left = 3
+	_normal_style.border_width_top = 3
+	_normal_style.border_width_right = 3
+	_normal_style.border_width_bottom = 3
+	_normal_style.border_color = Color(1.0, 1.0, 1.0, 0.0)  ## 透明の枠線
+	_normal_style.corner_radius_top_left = 8
+	_normal_style.corner_radius_top_right = 8
+	_normal_style.corner_radius_bottom_left = 8
+	_normal_style.corner_radius_bottom_right = 8
 
 # ======================== 入力処理 ========================
 func _process(_delta: float) -> void:
@@ -410,40 +445,18 @@ func _create_menu_button(text_key: String, callback: Callable) -> Button:
 	return button
 
 func _update_button_selection() -> void:
-	## ボタンの選択状態を更新
+	## ボタンの選択状態を更新（キャッシュされたスタイルを使用）
 	for i in range(buttons.size()):
 		if i == current_selection:
-			## 選択中のボタンのスタイルを設定（白背景、白枠）
-			var selected_style: StyleBoxFlat = StyleBoxFlat.new()
-			selected_style.bg_color = Color(1.0, 1.0, 1.0, 0.3)
-			selected_style.border_width_left = 3
-			selected_style.border_width_top = 3
-			selected_style.border_width_right = 3
-			selected_style.border_width_bottom = 3
-			selected_style.border_color = Color(1.0, 1.0, 1.0, 1.0)
-			selected_style.corner_radius_top_left = 8
-			selected_style.corner_radius_top_right = 8
-			selected_style.corner_radius_bottom_left = 8
-			selected_style.corner_radius_bottom_right = 8
-			buttons[i].add_theme_stylebox_override("normal", selected_style)
-			buttons[i].add_theme_stylebox_override("hover", selected_style)
-			buttons[i].add_theme_stylebox_override("pressed", selected_style)
+			## 選択中のボタンにキャッシュされたスタイルを適用
+			buttons[i].add_theme_stylebox_override("normal", _selected_style)
+			buttons[i].add_theme_stylebox_override("hover", _selected_style)
+			buttons[i].add_theme_stylebox_override("pressed", _selected_style)
 		else:
-			## 非選択ボタンは通常スタイル（透明背景、透明枠線でレイアウトずれ防止）
-			var normal_style: StyleBoxFlat = StyleBoxFlat.new()
-			normal_style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
-			normal_style.border_width_left = 3
-			normal_style.border_width_top = 3
-			normal_style.border_width_right = 3
-			normal_style.border_width_bottom = 3
-			normal_style.border_color = Color(1.0, 1.0, 1.0, 0.0)  ## 透明の枠線
-			normal_style.corner_radius_top_left = 8
-			normal_style.corner_radius_top_right = 8
-			normal_style.corner_radius_bottom_left = 8
-			normal_style.corner_radius_bottom_right = 8
-			buttons[i].add_theme_stylebox_override("normal", normal_style)
-			buttons[i].add_theme_stylebox_override("hover", normal_style)
-			buttons[i].add_theme_stylebox_override("pressed", normal_style)
+			## 非選択ボタンにキャッシュされたスタイルを適用
+			buttons[i].add_theme_stylebox_override("normal", _normal_style)
+			buttons[i].add_theme_stylebox_override("hover", _normal_style)
+			buttons[i].add_theme_stylebox_override("pressed", _normal_style)
 
 # ======================== コールバック関数 ========================
 func _on_save_pressed() -> void:

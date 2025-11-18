@@ -14,15 +14,21 @@ const FONT_SIZE_LARGE: int = 32
 const FONT_SIZE_XL: int = 36
 const FONT_SIZE_XXL: int = 42
 
+# ======================== 変数 ========================
+## キャッシュされた太字フォント（パフォーマンス最適化）
+var _cached_bold_font: FontVariation = null
+
 # ======================== フォント読み込み ========================
-## 太字フォントバリエーションを生成する
-## @param base_font ベースとなるフォント（デフォルトは NOTO_SANS_JP）
+## 太字フォントバリエーションを返す（キャッシュ済み、遅延初期化）
+## @param _base_font ベースとなるフォント（現在は未使用、将来の拡張用）
 ## @return 太字化された FontVariation
-func create_bold_font(base_font: FontFile = NOTO_SANS_JP) -> FontVariation:
-	var bold_font: FontVariation = FontVariation.new()
-	bold_font.base_font = base_font
-	bold_font.variation_embolden = 0.8
-	return bold_font
+func create_bold_font(_base_font: FontFile = NOTO_SANS_JP) -> FontVariation:
+	## 遅延初期化: 初回呼び出し時にキャッシュを生成
+	if _cached_bold_font == null:
+		_cached_bold_font = FontVariation.new()
+		_cached_bold_font.base_font = NOTO_SANS_JP
+		_cached_bold_font.variation_embolden = 0.8
+	return _cached_bold_font
 
 # ======================== テーマ生成 ========================
 ## Label にフォントとサイズを適用する

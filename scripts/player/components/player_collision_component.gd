@@ -73,7 +73,8 @@ func register_collision_box(collision_shape: CollisionShape2D) -> void:
 func set_all_collision_boxes_enabled(enabled: bool) -> void:
 	for box_info: CollisionBoxInfo in _collision_boxes:
 		if box_info.collision_shape:
-			box_info.collision_shape.disabled = not enabled
+			# 物理クエリのフラッシュ中に変更される可能性があるため、set_deferred()を使用
+			box_info.collision_shape.set_deferred("disabled", not enabled)
 
 ## 全CollisionBoxを有効化
 func enable_all_collision_boxes() -> void:

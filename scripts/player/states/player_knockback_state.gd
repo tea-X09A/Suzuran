@@ -12,6 +12,12 @@ func initialize_state() -> void:
 	if player.down_state:
 		player.down_state.was_in_air = false
 
+	# ノックバック時に残像表示を停止
+	player.stop_afterimage_display()
+
+	# 全てのバフを解除
+	player.clear_all_buffs()
+
 # ======================== 物理演算処理 ========================
 
 ## 物理演算処理

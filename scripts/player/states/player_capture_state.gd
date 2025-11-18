@@ -34,6 +34,9 @@ func initialize_state() -> void:
 		# DownStateの状態をリセット（無敵付与なし）
 		player.down_state.finish_down(false)
 
+	# 全てのバフを解除
+	player.clear_all_buffs()
+
 	# プレイヤーを地面に着地させる
 	_land_on_ground()
 
