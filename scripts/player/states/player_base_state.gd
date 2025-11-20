@@ -330,7 +330,7 @@ func handle_dodge_input() -> bool:
 		sprite_2d.flip_h = is_facing_right
 		player.direction_x = dodge_direction
 		# コリジョンボックスの位置を同期（hitbox/hurtboxの向きを更新）
-		player._update_box_positions(is_facing_right)
+		player.update_box_positions(is_facing_right)
 		player.change_state("DODGING")
 		return true
 	return false
@@ -532,9 +532,6 @@ func handle_action_end_transition() -> void:
 
 ## 着地時の状態遷移処理（共通ヘルパー）
 func handle_landing_transition() -> void:
-	# 着地時に残像表示を停止（dodgingからジャンプキャンセルした場合や空中回避の場合）
-	player.stop_afterimage_display()
-
 	# 移動入力チェック（回避フラグは遷移先のIDLE/WALK/RUNでリセットされる）
 	var movement_input: float = get_movement_input()
 

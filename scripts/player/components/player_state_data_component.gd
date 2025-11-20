@@ -24,12 +24,18 @@ func get_player_state() -> Dictionary:
 	if not player:
 		return {}
 
+	# アクティブなバフのIDリストを取得
+	var buff_ids: Array[String] = []
+	for buff in player.active_buffs:
+		buff_ids.append(buff.buff_id)
+
 	return {
 		"hp_count": player.health_component.current_hp if player.health_component else PlayerHealthComponent.DEFAULT_MAX_HP,
 		"condition": player.condition,
 		"position_x": player.position.x,
 		"position_y": player.position.y,
-		"direction_x": player.direction_x
+		"direction_x": player.direction_x,
+		"active_buff_ids": buff_ids
 	}
 
 ## プレイヤーの状態を復元（シーン遷移後に使用）
@@ -41,6 +47,10 @@ func restore_player_state(state: Dictionary) -> void:
 
 	if state.is_empty():
 		return
+
+	# UILayerが準備完了するまで1フレーム待機
+	# （レベル遷移時・セーブデータロード時の両方で確実にUI更新を行うため）
+	await player.get_tree().process_frame
 
 	# HPを復元（setterメソッドを使用）
 	if player.health_component and state.has("hp_count"):
@@ -67,6 +77,16 @@ func restore_player_state(state: Dictionary) -> void:
 			player.health_component.current_hp if player.health_component else PlayerHealthComponent.DEFAULT_MAX_HP,
 			player.health_component.max_hp if player.health_component else PlayerHealthComponent.DEFAULT_MAX_HP
 		)
+
+	# バフを復元（UI初期化後に実行）
+	if state.has("active_buff_ids"):
+		var buff_ids: Array = state["active_buff_ids"]
+		for buff_id in buff_ids:
+			# バフIDに応じてバフを再適用
+			match buff_id:
+				"speed_boost":
+					var speed_buff: SpeedBoostBuff = SpeedBoostBuff.new(player)
+					player.apply_buff(speed_buff)
 
 # ======================== クリーンアップ ========================
 

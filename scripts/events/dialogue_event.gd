@@ -63,10 +63,18 @@ func execute() -> void:
 	# プレイヤーを取得
 	_find_player()
 
-	# プレイヤーの現在の変身状態を取得
+	# プレイヤーの現在の変身状態を取得（enum型で取得してStringに変換）
 	var player: Node = player_ref.get_ref() if player_ref else null
-	if player and player.has_method("get_current_condition"):
-		player_state = player.get_current_condition()
+	if player and player.has_method("get_condition"):
+		var player_condition: int = player.get_condition()
+		# Player.PLAYER_CONDITIONのenum値をStringに変換
+		match player_condition:
+			0:  # Player.PLAYER_CONDITION.NORMAL
+				player_state = "normal"
+			1:  # Player.PLAYER_CONDITION.EXPANSION
+				player_state = "expansion"
+			_:
+				player_state = "normal"
 	else:
 		player_state = "normal"
 
@@ -161,20 +169,23 @@ func _on_message_completed() -> void:
 		# 選択肢を表示
 		var message: DialogueMessage = dialogue_data.get_message(current_message_index)
 		if message:
-			_show_choices(message.choices)
+			# 現在の言語設定を取得して選択肢表示に渡す
+			var language: String = _get_current_language()
+			_show_choices(message.choices, language)
 	else:
 		# 入力待ち状態に移行
 		waiting_for_input = true
 		_start_next_input_monitoring()
 
 ## 選択肢を表示
-func _show_choices(choices: Array[DialogueChoiceData]) -> void:
+## @param choices Array[DialogueChoiceData] 表示する選択肢の配列
+## @param language String 使用する言語コード
+func _show_choices(choices: Array[DialogueChoiceData], language: String) -> void:
 	# 既存の選択肢をクリア
 	_clear_choices()
 
 	# 選択肢ボタンを作成（最大2つ）
 	var choice_scene: PackedScene = preload("res://scenes/dialogue/dialogue_choice.tscn")
-	var language: String = _get_current_language()
 
 	for i in range(min(choices.size(), 2)):
 		var choice: DialogueChoiceData = choices[i]

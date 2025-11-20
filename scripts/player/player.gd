@@ -14,7 +14,7 @@ signal event_preparation_complete
 enum PLAYER_CONDITION { NORMAL, EXPANSION }
 
 ## 残像生成間隔（秒）
-const AFTERIMAGE_SPAWN_INTERVAL: float = 0.1
+const AFTERIMAGE_SPAWN_INTERVAL: float = 0.15
 
 # ======================== ノード参照キャッシュ ========================
 
@@ -40,6 +40,8 @@ var animation_tree_playback: AnimationNodeStateMachinePlayback = null
 var condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
 ## 無敵エフェクト処理システム
 var invincibility_effect: InvincibilityEffect
+## バフ点滅エフェクト処理システム
+var buff_blink_effect: BuffBlinkEffect
 ## 重力加速度（プロジェクト設定から取得）
 var GRAVITY: float
 
@@ -79,8 +81,6 @@ var throwing_cooldown_max: float = 0.0
 var throwing_cooldown_gauge: Control = null
 ## ステータスゲージコンテナ（バフやクールタイムなどのゲージを管理）
 var status_gauge_container: Control = null
-## 残像表示フラグ（回避からキャンセルした際の残像継続表示用）
-var is_displaying_afterimage: bool = false
 ## 残像生成タイマー
 var afterimage_timer: float = 0.0
 
@@ -119,24 +119,8 @@ func _ready() -> void:
 	# セーブデータからのロード時かどうかをチェック
 	var is_loading_from_save: bool = SaveLoadManager and not SaveLoadManager.pending_player_data.is_empty()
 
-	if is_loading_from_save:
-		# セーブデータから復元（各コンポーネントはinitialize時に復元）
-		var state: Dictionary = SaveLoadManager.pending_player_data
-
-		# 変身状態を復元
-		if state.has("condition"):
-			condition = state["condition"]
-
-		# 座標を復元
-		if state.has("position_x") and state.has("position_y"):
-			position = Vector2(state["position_x"], state["position_y"])
-
-		# 向きを復元
-		if state.has("direction_x"):
-			direction_x = state["direction_x"]
-	else:
-		# 通常の初期化
-		condition = initial_condition
+	# 初期状態を設定（ロード時は後で上書きされる）
+	condition = initial_condition
 
 	GRAVITY = ProjectSettings.get_setting("physics/2d/default_gravity")
 	_initialize_systems()
@@ -147,13 +131,11 @@ func _ready() -> void:
 	_initialize_condition_component()
 	_connect_debug_signals()
 
-	# ロード時の後処理
+	# セーブデータからのロード時の後処理
 	if is_loading_from_save:
-		# スプライトの向きを復元（システム初期化後に適用）
-		sprite_2d.flip_h = direction_x > 0.0
-		_update_box_positions(direction_x > 0.0)
-
-		# pending_player_dataをクリア
+		# 全コンポーネント初期化後に状態を復元（レベル遷移時と同じ処理）
+		await restore_player_state(SaveLoadManager.pending_player_data)
+		# pending_player_dataをクリア（メモリ解放）
 		SaveLoadManager.pending_player_data.clear()
 		# フェードインを開始（完了を待つ）
 		await TransitionManager.fade_in()
@@ -164,9 +146,12 @@ func _exit_tree() -> void:
 	if DebugManager and DebugManager.debug_value_changed.is_connected(_on_debug_value_changed):
 		DebugManager.debug_value_changed.disconnect(_on_debug_value_changed)
 
-	# StatusGaugeContainerのクリーンアップ
-	if status_gauge_container and is_instance_valid(status_gauge_container):
-		status_gauge_container.queue_free()
+	# バフ点滅エフェクトのクリーンアップ
+	if buff_blink_effect:
+		buff_blink_effect.stop()
+	buff_blink_effect = null
+
+	# StatusGaugeContainerのクリーンアップ（親ノード解放時に自動的に解放される）
 	status_gauge_container = null
 
 	# 全コンポーネントのクリーンアップを配列で一括処理
@@ -195,6 +180,8 @@ func _exit_tree() -> void:
 func _initialize_systems() -> void:
 	# 無敵エフェクトシステムを生成
 	invincibility_effect = InvincibilityEffect.new(self)
+	# バフ点滅エフェクトシステムを生成
+	buff_blink_effect = BuffBlinkEffect.new(sprite_2d)
 	# アニメーションツリーの初期化
 	_initialize_animation_system()
 	# ステート管理システムの初期化
@@ -245,15 +232,13 @@ func _initialize_collision_component() -> void:
 	sprite_2d.flip_h = direction_x > 0.0
 
 	# 初期のsprite向きに基づいて位置を更新
-	_update_box_positions(direction_x > 0.0)
+	update_box_positions(direction_x > 0.0)
 
 ## HealthComponentの初期化
 func _initialize_health_component() -> void:
-	var save_data: Dictionary = SaveLoadManager.pending_player_data if SaveLoadManager else {}
-	var initial_hp: int = save_data.get("hp_count", PlayerHealthComponent.DEFAULT_MAX_HP)
-
+	# 常にデフォルト値で初期化（セーブデータロード時はrestore_player_state()で復元）
 	health_component = PlayerHealthComponent.new()
-	health_component.initialize(self, initial_hp, PlayerHealthComponent.DEFAULT_MAX_HP)
+	health_component.initialize(self, PlayerHealthComponent.DEFAULT_MAX_HP, PlayerHealthComponent.DEFAULT_MAX_HP)
 
 ## ExamineComponentの初期化
 func _initialize_examine_component() -> void:
@@ -300,6 +285,12 @@ func _initialize_status_gauge_container() -> void:
 	add_child(status_gauge_container)
 
 # ======================== メイン処理ループ ========================
+
+## 毎フレームの更新処理（見た目・エフェクト系）
+func _process(delta: float) -> void:
+	# バフ点滅エフェクトを更新
+	if buff_blink_effect:
+		buff_blink_effect.update(delta)
 
 ## 物理演算ステップごとの更新処理（移動・物理系）
 func _physics_process(delta: float) -> void:
@@ -364,6 +355,10 @@ func apply_buff(buff: PlayerBuff) -> void:
 	buff.apply()
 	active_buffs.append(buff)
 
+	# バフ点滅エフェクトを開始（まだアクティブでない場合のみ）
+	if buff_blink_effect and not buff_blink_effect.is_active:
+		buff_blink_effect.start()
+
 ## 指定されたIDのバフを削除
 ## @param buff_id String バフのID
 func remove_buff(buff_id: String) -> void:
@@ -371,13 +366,21 @@ func remove_buff(buff_id: String) -> void:
 		if active_buffs[i].buff_id == buff_id:
 			active_buffs[i].remove()
 			active_buffs.remove_at(i)
-			return
+			break
+
+	# 全てのバフが削除された場合、点滅エフェクトを停止
+	if buff_blink_effect and active_buffs.size() == 0:
+		buff_blink_effect.stop()
 
 ## 全てのバフを削除
 func clear_all_buffs() -> void:
 	for buff in active_buffs:
 		buff.remove()
 	active_buffs.clear()
+
+	# バフ点滅エフェクトを停止
+	if buff_blink_effect:
+		buff_blink_effect.stop()
 
 ## 指定されたIDのバフが有効かどうかをチェック
 ## @param buff_id String バフのID
@@ -451,9 +454,11 @@ func _remove_throwing_cooldown_gauge() -> void:
 
 # ======================== 残像エフェクト管理システム ========================
 
-## 残像エフェクトを更新
+## 残像エフェクトを更新（回避バフが有効な場合のみ表示）
 func _update_afterimage(delta: float) -> void:
-	if not is_displaying_afterimage:
+	# 回避バフが無い場合は残像を表示しない
+	if not has_buff("speed_boost"):
+		afterimage_timer = 0.0
 		return
 
 	afterimage_timer += delta
@@ -461,15 +466,6 @@ func _update_afterimage(delta: float) -> void:
 		afterimage_timer = 0.0
 		_spawn_afterimage()
 
-## 残像表示を開始
-func start_afterimage_display() -> void:
-	is_displaying_afterimage = true
-	afterimage_timer = 0.0
-
-## 残像表示を停止
-func stop_afterimage_display() -> void:
-	is_displaying_afterimage = false
-	afterimage_timer = 0.0
 
 ## 残像エフェクトを生成
 func _spawn_afterimage() -> void:
@@ -534,10 +530,10 @@ func update_sprite_direction(input_direction_x: float) -> void:
 		direction_x = input_direction_x
 
 		# コリジョンボックスの位置を更新
-		_update_box_positions(is_facing_right)
+		update_box_positions(is_facing_right)
 
 ## スプライトの向きに応じてコリジョンボックスの位置を更新（遷移時に外部から呼び出される）
-func _update_box_positions(is_facing_right: bool) -> void:
+func update_box_positions(is_facing_right: bool) -> void:
 	if collision_component:
 		collision_component.update_box_positions(is_facing_right)
 
@@ -547,17 +543,9 @@ func _update_box_positions(is_facing_right: bool) -> void:
 func get_condition() -> PLAYER_CONDITION:
 	return condition
 
-## 状態の変更
-func set_condition(new_condition: PLAYER_CONDITION) -> void:
-	condition = new_condition
-
 ## 新アニメーションシステム用のスプライトを取得
 func get_sprite_2d() -> Sprite2D:
 	return sprite_2d
-
-## アニメーションプレイヤーを取得
-func get_animation_player() -> AnimationPlayer:
-	return animation_player
 
 ## アニメーションツリーを取得
 func get_animation_tree() -> AnimationTree:
@@ -578,15 +566,9 @@ func handle_trap_damage(effect_type: String, direction: Vector2, force: float) -
 
 ## 敵のhitboxとの衝突処理
 func handle_enemy_hit(enemy_direction: Vector2) -> bool:
-	# HPが残っている場合はダメージ処理
-	if health_component and health_component.current_hp > 0:
+	if health_component:
 		return health_component.handle_enemy_hit(enemy_direction)
-
-	# HPが0の場合はCAPTURE状態へ
-	else:
-		# 速度を完全に停止
-		velocity = Vector2.ZERO
-		return false  # CAPTUREは敵側で処理する
+	return false
 
 # ======================== 回復処理 ========================
 
@@ -634,18 +616,6 @@ func prepare_for_event() -> void:
 func end_event() -> void:
 	disable_input = false
 
-## プレイヤーの現在の変身状態を取得（イベントシステムで使用）
-##
-## @return String プレイヤーの変身状態（"normal" または "expansion"）
-func get_current_condition() -> String:
-	match condition:
-		PLAYER_CONDITION.NORMAL:
-			return "normal"
-		PLAYER_CONDITION.EXPANSION:
-			return "expansion"
-		_:
-			return "normal"
-
 # ======================== 状態の保存・復元 ========================
 
 ## プレイヤーの現在の状態を取得（シーン遷移時に使用）
@@ -659,7 +629,7 @@ func get_player_state() -> Dictionary:
 ## @param state Dictionary 復元する状態の辞書
 func restore_player_state(state: Dictionary) -> void:
 	if state_data_component:
-		state_data_component.restore_player_state(state)
+		await state_data_component.restore_player_state(state)
 
 # ======================== デバッグ機能 ========================
 

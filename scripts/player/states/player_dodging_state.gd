@@ -29,16 +29,13 @@ func initialize_state() -> void:
 	is_cancelled = false
 	start_position = player.global_position
 	min_dodging_distance = get_parameter("move_dodging_min_distance")
-	# 最大距離に速度倍率を適用（バフ時は自動的に距離が延長される）
-	max_dodging_distance = get_parameter("move_dodging_max_distance") * player.speed_multiplier
+	# 最大距離を取得（バフの影響を受けない）
+	max_dodging_distance = get_parameter("move_dodging_max_distance")
 	# 初期目標距離は最小距離から開始
 	current_target_distance = min_dodging_distance
 
 	# 回避使用済みフラグを設定（地上・空中共通）
 	player.has_used_ground_dodge = true
-
-	# 残像表示を開始（他のステートでも継続表示）
-	player.start_afterimage_display()
 
 	# 回避中は無敵：全hurtboxを無効化
 	if player.collision_component:
@@ -78,14 +75,6 @@ func cleanup_state() -> void:
 	# ただし、キャンセルされた場合（地上・空中問わず）または速度倍率が適用されている場合は慣性を維持
 	if not is_cancelled and player.speed_multiplier <= 1.0:
 		player.velocity.x = 0.0
-
-	# キャンセルされずに回避が終了した場合は残像表示を停止
-	# ただし、速度倍率が適用されていて空中の場合は着地まで残像を継続表示する
-	# キャンセルされた場合は遷移先のステート（Fighting/Throwing）で停止される
-	if not is_cancelled:
-		# 速度倍率が1.0以下の場合、または地上で終了した場合は残像を停止
-		if player.speed_multiplier <= 1.0 or player.is_grounded:
-			player.stop_afterimage_display()
 
 # ======================== 入力処理 ========================
 

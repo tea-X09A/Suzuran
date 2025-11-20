@@ -58,12 +58,8 @@ func change_scene(target_scene_path: String, direction: String = "", target_area
 		# 状態データをクリア（メモリ解放）
 		saved_player_state.clear()
 	else:
-		# UIの初期化を待つために1フレーム待機
-		# （Player._ready()内の_initialize_ui()が完了していることを保証）
-		await get_tree().process_frame
-
-		# 新しいシーンのプレイヤーに状態を復元
-		player.restore_player_state(saved_player_state)
+		# 新しいシーンのプレイヤーに状態を復元（内部で1フレーム待機）
+		await player.restore_player_state(saved_player_state)
 
 		# 状態データをクリア（メモリ解放と意図の明示化）
 		saved_player_state.clear()
@@ -87,7 +83,7 @@ func change_scene(target_scene_path: String, direction: String = "", target_area
 				player.sprite_2d.flip_h = true
 				player.direction_x = 1.0
 
-			player.call("_update_box_positions", player.sprite_2d.flip_h)
+			player.update_box_positions(player.sprite_2d.flip_h)
 
 			# 自動移動モードを有効化してWALKアニメーション開始
 			_setup_player_auto_walk(player, player.direction_x)

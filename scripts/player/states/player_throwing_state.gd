@@ -24,13 +24,14 @@ func initialize_state() -> void:
 		if state_machine_node:
 			throwing_animation_node = state_machine_node.get_node("THROWING") as AnimationNodeAnimation
 
+	# 地上での投擲時は慣性を消す（その場で足を止めて攻撃）
+	if player.is_grounded:
+		player.velocity.x = 0.0
+
 	handle_throwing()
 
 ## AnimationTree状態終了時の処理
 func cleanup_state() -> void:
-	# 残像表示を停止
-	player.stop_afterimage_display()
-
 	# アニメーション完了シグナルの切断（メモリリーク防止）
 	if animation_player and animation_player.animation_finished.is_connected(_on_throwing_animation_finished):
 		animation_player.animation_finished.disconnect(_on_throwing_animation_finished)

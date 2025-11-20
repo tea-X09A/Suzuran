@@ -45,16 +45,11 @@ func initialize_state() -> void:
 
 	# 前進速度の設定
 	if not started_airborne:  # 地上でのfighting時のみ前進
-		# 前の状態がDODGINGで、地上にいる場合は慣性を維持
-		if player.previous_state and player.previous_state.get_state_name() == "DODGING" and player.is_grounded:
-			# 現在のvelocity.xを維持（慣性を乗せる）
-			pass
-		else:
-			# 通常時：固定速度を設定
-			var forward_speed: float = get_parameter("move_fighting_initial_speed")
-			# Sprite2Dの向きに応じて前進（throwingと同じ方法で統一）
-			var direction: float = 1.0 if sprite_2d.flip_h else -1.0
-			player.velocity.x = direction * forward_speed
+		# 地上でのfighting時は常に固定速度を設定（慣性を乗せない）
+		var forward_speed: float = get_parameter("move_fighting_initial_speed")
+		# Sprite2Dの向きに応じて前進（throwingと同じ方法で統一）
+		var direction: float = 1.0 if sprite_2d.flip_h else -1.0
+		player.velocity.x = direction * forward_speed
 
 	# アニメーション完了シグナルの接続（重複接続を防止）
 	if animation_player and not animation_player.animation_finished.is_connected(_on_fighting_animation_finished):
@@ -78,9 +73,6 @@ func cleanup_state() -> void:
 			if enemy.tree_exiting.is_connected(_on_enemy_tree_exiting):
 				enemy.tree_exiting.disconnect(_on_enemy_tree_exiting)
 	hit_enemies.clear()
-
-	# 残像表示を停止
-	player.stop_afterimage_display()
 
 	end_fighting()
 
