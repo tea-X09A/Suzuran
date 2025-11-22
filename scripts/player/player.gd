@@ -6,15 +6,13 @@ extends CharacterBody2D
 # ======================== シグナル定義 ========================
 
 ## イベント準備完了時に発信（idle状態への遷移完了を通知）
+@warning_ignore("unused_signal")
 signal event_preparation_complete
 
 # ======================== 定数・Enum定義 ========================
 
 ## プレイヤーの変身状態
 enum PLAYER_CONDITION { NORMAL, EXPANSION }
-
-## 残像生成間隔（秒）
-const AFTERIMAGE_SPAWN_INTERVAL: float = 0.15
 
 # ======================== ノード参照キャッシュ ========================
 
@@ -40,8 +38,6 @@ var animation_tree_playback: AnimationNodeStateMachinePlayback = null
 var condition: PLAYER_CONDITION = PLAYER_CONDITION.NORMAL
 ## 無敵エフェクト処理システム
 var invincibility_effect: InvincibilityEffect
-## バフ点滅エフェクト処理システム
-var buff_blink_effect: BuffBlinkEffect
 ## 重力加速度（プロジェクト設定から取得）
 var GRAVITY: float
 
@@ -51,8 +47,6 @@ var GRAVITY: float
 var direction_x: float = 1.0
 ## 接地状態のキャッシュ（毎フレーム更新、パフォーマンス最適化）
 var is_grounded: bool = false
-## ジャンプ時の水平速度を無視するフラグ
-var ignore_jump_horizontal_velocity: bool = false
 ## squat状態からキャンセルされたフラグ（squat遷移制限用）
 var squat_was_cancelled: bool = false
 ## CAPTURE状態時に使用するアニメーション名（enemy.gdが動的に設定）
@@ -61,8 +55,6 @@ var capture_animation_name: String = ""
 var captured_enemy: Enemy = null
 ## 自動移動モード（遷移時の自動歩行用）
 var auto_move_mode: bool = false
-## イベント中の入力無効化フラグ
-var disable_input: bool = false
 ## 回避後の硬直時間（秒）
 var dodge_recovery_time: float = 0.0
 ## 格闘後の硬直時間（秒）
@@ -71,18 +63,6 @@ var fighting_recovery_time: float = 0.0
 var has_used_ground_dodge: bool = false
 ## 速度倍率（バフによって変動）
 var speed_multiplier: float = 1.0
-## アクティブなバフのリスト
-var active_buffs: Array[PlayerBuff] = []
-## 投擲のクールタイム残り時間（秒）
-var throwing_cooldown_remaining: float = 0.0
-## 投擲のクールタイム最大時間（秒）- パフォーマンス最適化のためキャッシュ
-var throwing_cooldown_max: float = 0.0
-## 投擲のクールタイムゲージ
-var throwing_cooldown_gauge: Control = null
-## ステータスゲージコンテナ（バフやクールタイムなどのゲージを管理）
-var status_gauge_container: Control = null
-## 残像生成タイマー
-var afterimage_timer: float = 0.0
 
 # ======================== ステート管理システム ========================
 
@@ -109,6 +89,14 @@ var state_data_component: PlayerStateDataComponent = null
 var examine_component: ExamineComponent = null
 ## Condition管理コンポーネント
 var condition_component: PlayerConditionComponent = null
+## バフ管理コンポーネント
+var buff_component: PlayerBuffComponent = null
+## 投擲管理コンポーネント
+var throwing_component: PlayerThrowingComponent = null
+## 残像エフェクト管理コンポーネント
+var afterimage_component: PlayerAfterimageComponent = null
+## イベント制御コンポーネント
+var event_controller: PlayerEventController = null
 
 # ======================== 初期化処理 ========================
 
@@ -125,10 +113,14 @@ func _ready() -> void:
 	GRAVITY = ProjectSettings.get_setting("physics/2d/default_gravity")
 	_initialize_systems()
 	_initialize_health_component()
+	_initialize_examine_component()
 	_initialize_ui_component()
 	_initialize_state_data_component()
-	_initialize_examine_component()
 	_initialize_condition_component()
+	_initialize_buff_component()
+	_initialize_throwing_component()
+	_initialize_afterimage_component()
+	_initialize_event_controller()
 	_connect_debug_signals()
 
 	# セーブデータからのロード時の後処理
@@ -146,18 +138,14 @@ func _exit_tree() -> void:
 	if DebugManager and DebugManager.debug_value_changed.is_connected(_on_debug_value_changed):
 		DebugManager.debug_value_changed.disconnect(_on_debug_value_changed)
 
-	# バフ点滅エフェクトのクリーンアップ
-	if buff_blink_effect:
-		buff_blink_effect.stop()
-	buff_blink_effect = null
-
-	# StatusGaugeContainerのクリーンアップ（親ノード解放時に自動的に解放される）
-	status_gauge_container = null
-
 	# 全コンポーネントのクリーンアップを配列で一括処理
 	var components: Array = [
+		event_controller,
 		examine_component,
 		condition_component,
+		buff_component,
+		throwing_component,
+		afterimage_component,
 		health_component,
 		ui_component,
 		collision_component,
@@ -169,8 +157,12 @@ func _exit_tree() -> void:
 			component.cleanup()
 
 	# 各コンポーネントをnullに設定
+	event_controller = null
 	examine_component = null
 	condition_component = null
+	buff_component = null
+	throwing_component = null
+	afterimage_component = null
 	health_component = null
 	ui_component = null
 	collision_component = null
@@ -180,16 +172,12 @@ func _exit_tree() -> void:
 func _initialize_systems() -> void:
 	# 無敵エフェクトシステムを生成
 	invincibility_effect = InvincibilityEffect.new(self)
-	# バフ点滅エフェクトシステムを生成
-	buff_blink_effect = BuffBlinkEffect.new(sprite_2d)
 	# アニメーションツリーの初期化
 	_initialize_animation_system()
 	# ステート管理システムの初期化
 	_initialize_state_system()
 	# Collision管理コンポーネントの初期化
 	_initialize_collision_component()
-	# StatusGaugeContainerの初期化
-	_initialize_status_gauge_container()
 
 ## アニメーションシステムの初期化
 func _initialize_animation_system() -> void:
@@ -271,26 +259,37 @@ func _initialize_condition_component() -> void:
 	condition_component = PlayerConditionComponent.new()
 	condition_component.initialize(self)
 
-## StatusGaugeContainerの初期化
-func _initialize_status_gauge_container() -> void:
-	# StatusGaugeContainerのスクリプトを読み込み
-	var StatusGaugeContainerScript: Script = preload("res://scripts/ui/status_gauge_container.gd")
-	status_gauge_container = StatusGaugeContainerScript.new()
-	status_gauge_container.name = "StatusGaugeContainer"
+## BuffComponentの初期化
+func _initialize_buff_component() -> void:
+	# BuffComponent初期化
+	buff_component = PlayerBuffComponent.new()
+	buff_component.initialize(self)
 
-	# プレイヤーの頭上に配置（x座標はコンテナが自動調整）
-	status_gauge_container.position = Vector2(0, -120)
+## ThrowingComponentの初期化
+func _initialize_throwing_component() -> void:
+	# ThrowingComponent初期化
+	throwing_component = PlayerThrowingComponent.new()
+	throwing_component.initialize(self)
 
-	# プレイヤーに追加
-	add_child(status_gauge_container)
+## AfterimageComponentの初期化
+func _initialize_afterimage_component() -> void:
+	# AfterimageComponent初期化
+	afterimage_component = PlayerAfterimageComponent.new()
+	afterimage_component.initialize(self)
+
+## EventControllerの初期化
+func _initialize_event_controller() -> void:
+	# EventController初期化
+	event_controller = PlayerEventController.new()
+	event_controller.initialize(self)
 
 # ======================== メイン処理ループ ========================
 
 ## 毎フレームの更新処理（見た目・エフェクト系）
 func _process(delta: float) -> void:
-	# バフ点滅エフェクトを更新
-	if buff_blink_effect:
-		buff_blink_effect.update(delta)
+	# バフエフェクトを更新
+	if buff_component:
+		buff_component.update(delta)
 
 ## 物理演算ステップごとの更新処理（移動・物理系）
 func _physics_process(delta: float) -> void:
@@ -309,16 +308,21 @@ func _physics_process(delta: float) -> void:
 	invincibility_effect.update_invincibility_effect(delta)
 
 	# 投擲のクールタイムを更新
-	_update_throwing_cooldown(delta)
+	if throwing_component:
+		throwing_component.update(delta)
 
 	# 残像エフェクトを更新
-	_update_afterimage(delta)
+	if afterimage_component:
+		afterimage_component.update(delta)
 
 	# 硬直時間を減少（共通処理）
 	_update_recovery_times(delta)
 
-	# 自動移動モードでない場合のみ入力処理を実行
-	if not auto_move_mode:
+	# イベント制御による入力無効化チェック
+	var input_disabled: bool = event_controller and event_controller.disable_input
+
+	# 自動移動モードまたは入力無効化されていない場合のみ入力処理を実行
+	if not auto_move_mode and not input_disabled:
 		# 現在のステートに入力処理を移譲
 		current_state.handle_input(delta)
 
@@ -339,150 +343,46 @@ func _update_recovery_times(delta: float) -> void:
 	if fighting_recovery_time > 0.0:
 		fighting_recovery_time = max(0.0, fighting_recovery_time - delta)
 
-# ======================== バフ管理システム ========================
+# ======================== バフ管理システム（コンポーネント委譲） ========================
 
-## バフを適用
+## バフを適用（BuffComponentに委譲）
 ## @param buff PlayerBuff 適用するバフ
 func apply_buff(buff: PlayerBuff) -> void:
-	# 同じIDのバフが既に存在する場合は削除（上書き）
-	for i in range(active_buffs.size() - 1, -1, -1):
-		if active_buffs[i].buff_id == buff.buff_id:
-			active_buffs[i].remove()
-			active_buffs.remove_at(i)
-			break
+	if buff_component:
+		buff_component.apply_buff(buff)
 
-	# 新しいバフを適用
-	buff.apply()
-	active_buffs.append(buff)
-
-	# バフ点滅エフェクトを開始（まだアクティブでない場合のみ）
-	if buff_blink_effect and not buff_blink_effect.is_active:
-		buff_blink_effect.start()
-
-## 指定されたIDのバフを削除
+## 指定されたIDのバフを削除（BuffComponentに委譲）
 ## @param buff_id String バフのID
 func remove_buff(buff_id: String) -> void:
-	for i in range(active_buffs.size() - 1, -1, -1):
-		if active_buffs[i].buff_id == buff_id:
-			active_buffs[i].remove()
-			active_buffs.remove_at(i)
-			break
+	if buff_component:
+		buff_component.remove_buff(buff_id)
 
-	# 全てのバフが削除された場合、点滅エフェクトを停止
-	if buff_blink_effect and active_buffs.size() == 0:
-		buff_blink_effect.stop()
-
-## 全てのバフを削除
+## 全てのバフを削除（BuffComponentに委譲）
 func clear_all_buffs() -> void:
-	for buff in active_buffs:
-		buff.remove()
-	active_buffs.clear()
+	if buff_component:
+		buff_component.clear_all_buffs()
 
-	# バフ点滅エフェクトを停止
-	if buff_blink_effect:
-		buff_blink_effect.stop()
-
-## 指定されたIDのバフが有効かどうかをチェック
+## 指定されたIDのバフが有効かどうかをチェック（BuffComponentに委譲）
 ## @param buff_id String バフのID
 ## @return bool バフが有効な場合はtrue
 func has_buff(buff_id: String) -> bool:
-	for buff in active_buffs:
-		if buff.buff_id == buff_id:
-			return true
+	if buff_component:
+		return buff_component.has_buff(buff_id)
 	return false
 
-# ======================== 投擲クールタイム管理システム ========================
+# ======================== 投擲クールタイム管理（コンポーネント委譲） ========================
 
-## 投擲クールタイムを更新
-func _update_throwing_cooldown(delta: float) -> void:
-	if throwing_cooldown_remaining > 0.0:
-		throwing_cooldown_remaining -= delta
-
-		# クールタイムゲージが表示されている場合、進行度を更新
-		if throwing_cooldown_gauge:
-			var progress: float = throwing_cooldown_remaining / throwing_cooldown_max if throwing_cooldown_max > 0.0 else 0.0
-			throwing_cooldown_gauge.progress = progress
-
-		# クールタイムが終了したらゲージを削除
-		if throwing_cooldown_remaining <= 0.0:
-			throwing_cooldown_remaining = 0.0
-			_remove_throwing_cooldown_gauge()
-
-## 投擲クールタイムを開始
+## 投擲クールタイムを開始（ThrowingComponentに委譲）
 func start_throwing_cooldown() -> void:
-	# 現在のconditionに応じたクールタイム時間を取得してキャッシュ
-	var cooldown_duration: float = PlayerParameters.get_parameter(condition, "throwing_cooldown")
-	throwing_cooldown_remaining = cooldown_duration
-	throwing_cooldown_max = cooldown_duration
+	if throwing_component:
+		throwing_component.start_throwing_cooldown()
 
-	# クールタイムゲージを表示
-	_show_throwing_cooldown_gauge()
-
-## 投擲が使用可能かどうかをチェック
+## 投擲が使用可能かどうかをチェック（ThrowingComponentに委譲）
+## @return bool クールタイムが終了している場合はtrue
 func can_throw() -> bool:
-	return throwing_cooldown_remaining <= 0.0
-
-## 投擲クールタイムゲージを表示
-func _show_throwing_cooldown_gauge() -> void:
-	# 既にゲージが存在する場合は削除
-	_remove_throwing_cooldown_gauge()
-
-	if not status_gauge_container:
-		return
-
-	# status_gauge.gdのインスタンスを作成
-	var StatusGaugeScript: Script = preload("res://scripts/ui/status_gauge.gd")
-	throwing_cooldown_gauge = StatusGaugeScript.new()
-	throwing_cooldown_gauge.name = "ThrowingCooldownGauge"
-
-	# クールタイム用のプリセット設定を適用（位置はコンテナが管理）
-	# GaugeType.COOLDOWNは1
-	throwing_cooldown_gauge.setup_for_type(1, Vector2.ZERO)
-
-	# 初期進行度を設定（100%から開始）
-	throwing_cooldown_gauge.progress = 1.0
-
-	# StatusGaugeContainerに追加
-	status_gauge_container.add_gauge(throwing_cooldown_gauge)
-
-## 投擲クールタイムゲージを削除
-func _remove_throwing_cooldown_gauge() -> void:
-	if throwing_cooldown_gauge and is_instance_valid(throwing_cooldown_gauge):
-		if status_gauge_container:
-			status_gauge_container.remove_gauge(throwing_cooldown_gauge)
-	throwing_cooldown_gauge = null
-
-# ======================== 残像エフェクト管理システム ========================
-
-## 残像エフェクトを更新（回避バフが有効な場合のみ表示）
-func _update_afterimage(delta: float) -> void:
-	# 回避バフが無い場合は残像を表示しない
-	if not has_buff("speed_boost"):
-		afterimage_timer = 0.0
-		return
-
-	afterimage_timer += delta
-	if afterimage_timer >= AFTERIMAGE_SPAWN_INTERVAL:
-		afterimage_timer = 0.0
-		_spawn_afterimage()
-
-
-## 残像エフェクトを生成
-func _spawn_afterimage() -> void:
-	# スプライトが存在しない場合は生成しない
-	if not sprite_2d:
-		return
-
-	# 残像インスタンスを作成
-	var afterimage: Afterimage = Afterimage.new()
-
-	# 残像を初期化（現在のスプライトの状態をコピー）
-	afterimage.initialize(sprite_2d, global_position)
-
-	# 残像をプレイヤーの親ノード（レベル）に追加
-	var parent: Node = get_parent()
-	if parent:
-		parent.add_child(afterimage)
+	if throwing_component:
+		return throwing_component.can_throw()
+	return true
 
 ## 状態遷移（CLAUDE.md推奨形式）
 func change_state(new_state_name: String) -> void:
@@ -551,6 +451,20 @@ func get_sprite_2d() -> Sprite2D:
 func get_animation_tree() -> AnimationTree:
 	return animation_tree
 
+## StatusGaugeContainerを取得（UIComponentから）
+var status_gauge_container: Control:
+	get:
+		if ui_component:
+			return ui_component.status_gauge_container
+		return null
+
+## イベント中の入力無効化フラグを取得（EventControllerから）
+var disable_input: bool:
+	get:
+		if event_controller:
+			return event_controller.disable_input
+		return false
+
 # ======================== ダメージ処理 ========================
 
 ## 無敵状態の確認（trapから呼び出される）
@@ -577,44 +491,17 @@ func heal_hp(amount: int) -> void:
 	if health_component:
 		health_component.heal_hp(amount)
 
-# ======================== イベントシステム連携 ========================
+# ======================== イベントシステム連携（コンポーネント委譲） ========================
 
-## イベント用の準備処理（EventManagerとevent_areaから呼び出される）
-##
-## プレイヤーを適切にidle状態に遷移させ、event_preparation_completeシグナルを発信します。
-## - 入力を無効化
-## - 水平・垂直速度を完全にゼロ化
-## - 空中にいる場合: fall状態に遷移 → 着地を待つ → idle状態に遷移
-## - 地上にいる場合: 即座にidle状態に遷移
+## イベント用の準備処理（EventControllerに委譲）
 func prepare_for_event() -> void:
-	# 入力を無効化
-	disable_input = true
+	if event_controller:
+		await event_controller.prepare_for_event()
 
-	# 速度を完全にゼロ化（水平・垂直両方）
-	velocity = Vector2.ZERO
-
-	# 現在の状態に応じて処理を分岐
-	if is_grounded:
-		# 地上にいる場合は即座にIDLE状態に遷移
-		change_state("IDLE")
-	else:
-		# 空中にいる場合はFALL状態に遷移（重力適用と着地判定のため）
-		change_state("FALL")
-		# 着地を待つ（is_on_floor()がtrueになるまで）
-		while not is_on_floor():
-			await get_tree().physics_frame
-		# 着地したらIDLE状態に遷移
-		change_state("IDLE")
-
-	# 状態遷移完了を待ってから完了シグナルを発信
-	await get_tree().process_frame
-	event_preparation_complete.emit()
-
-## イベント終了時の処理（EventManagerから呼び出される）
-##
-## 入力を再有効化します。
+## イベント終了時の処理（EventControllerに委譲）
 func end_event() -> void:
-	disable_input = false
+	if event_controller:
+		event_controller.end_event()
 
 # ======================== 状態の保存・復元 ========================
 

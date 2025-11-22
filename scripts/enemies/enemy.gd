@@ -552,7 +552,7 @@ func _on_player_lost_override(_body: Node2D) -> void:
 # ======================== エネミーの有効化/無効化 ========================
 
 ## エネミーを無効化（非表示・動作停止）
-## ステートは変更せず、移動のみ停止する
+## 物理処理とステート処理を完全に停止する
 func disable() -> void:
 	# 移動を停止
 	velocity = Vector2.ZERO
@@ -563,10 +563,14 @@ func disable() -> void:
 		detection_area.set_deferred("monitoring", false)
 	# 非表示にする
 	visible = false
+	# 物理処理を完全に停止（_physics_process()が実行されなくなる）
+	process_mode = Node.PROCESS_MODE_DISABLED
 
 ## エネミーを有効化（表示・動作再開）
-## ステートは変更せず、現在の状態を維持する
+## 物理処理を再開し、現在の状態を維持する
 func enable() -> void:
+	# 物理処理を再開（_physics_process()が再び実行される）
+	process_mode = Node.PROCESS_MODE_INHERIT
 	# 表示する
 	visible = true
 	# 画面内の場合はhitbox、hurtbox、detection_areaを有効化
