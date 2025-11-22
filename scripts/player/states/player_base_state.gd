@@ -501,9 +501,6 @@ func handle_common_inputs() -> bool:
 
 	# 投擲入力チェック
 	if is_throwing_input():
-		# クールタイム中は投擲不可
-		if not player.can_throw():
-			return false
 		player.change_state("THROWING")
 		return true
 
@@ -559,9 +556,6 @@ func handle_action_input() -> bool:
 
 	# 投擲入力チェック（空中投擲）
 	if is_throwing_input():
-		# クールタイム中は投擲不可
-		if not player.can_throw():
-			return false
 		player.change_state("THROWING")
 		return true
 

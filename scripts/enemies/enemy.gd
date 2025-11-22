@@ -358,13 +358,16 @@ func _physics_process(delta: float) -> void:
 		current_state.physics_update(delta)
 
 	# FIGHTING状態（攻撃中）の場合のみ、hitboxとの重なりをチェックしてキャプチャ処理を実行
+	var capture_occurred: bool = false
 	if on_screen and capture_component and detection_component and current_state == state_instances["FIGHTING"]:
 		var current_overlapping_player: Node2D = detection_component.check_overlapping_player()
 		if current_overlapping_player:
-			capture_component.try_capture_player(current_overlapping_player, detection_component)
+			capture_occurred = capture_component.try_capture_player(current_overlapping_player, detection_component)
 
 	# Godot物理エンジンによる移動実行
-	move_and_slide()
+	# キャプチャが発生した場合はスキップ（CAPTURE状態では物理処理が変更されるため）
+	if not capture_occurred and is_inside_tree():
+		move_and_slide()
 
 	# ノックバック状態の場合、敵同士の衝突をチェックして伝播
 	if current_state == state_instances["KNOCKBACK"]:

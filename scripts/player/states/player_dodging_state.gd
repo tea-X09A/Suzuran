@@ -104,9 +104,6 @@ func handle_input(_delta: float) -> void:
 
 	# 投擲入力チェック
 	if is_throwing_input():
-		# クールタイム中は投擲不可
-		if not player.can_throw():
-			return
 		is_cancelled = true
 		player.change_state("THROWING")
 		return

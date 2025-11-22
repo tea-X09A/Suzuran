@@ -88,10 +88,11 @@ func handle_throwing() -> void:
 		is_throwing_02 = false
 		_set_throwing_animation("normal_throwing_01")
 
-	spawn_projectile()
-
-	# 投擲クールタイムを開始
-	player.start_throwing_cooldown()
+	# クールタイム中でなければ投射物を生成
+	if player.can_throw():
+		spawn_projectile()
+		# 投擲クールタイムを開始
+		player.start_throwing_cooldown()
 
 	# アニメーション完了シグナルの接続（重複接続を防止）
 	if animation_player and not animation_player.animation_finished.is_connected(_on_throwing_animation_finished):
