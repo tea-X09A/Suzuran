@@ -243,6 +243,8 @@ func set_window_mode(mode: WindowMode) -> void:
 		func(): window_mode_changed.emit(mode == WindowMode.FULLSCREEN)
 	):
 		apply_window_mode()
+		## ウィンドウモード切り替え時のみ入力クリア処理を実行
+		await _clear_input_state_after_window_mode_change()
 
 func set_resolution(resolution: Vector2i) -> void:
 	## 解像度を設定する
@@ -257,9 +259,45 @@ func set_resolution(resolution: Vector2i) -> void:
 func apply_window_mode() -> void:
 	## ウィンドウモードを適用する
 	if window_mode == WindowMode.FULLSCREEN:
+		## フルスクリーンモードではディスプレイのネイティブ解像度が使用されるため、解像度設定は適用しない
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 	else:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+		## ウィンドウモードに切り替えた際は、設定されている解像度を適用
+		apply_resolution()
+
+func _clear_input_state_after_window_mode_change() -> void:
+	## フルスクリーン切り替え時にキーが押されたままになる不具合を防ぐため、3段階で入力状態をクリアする
+
+	## 1. Godot内部の入力バッファをクリアして古い入力イベントを削除
+	Input.flush_buffered_events()
+
+	## 2. OS側のキー状態が安定するまで1フレーム待機
+	await get_tree().physics_frame
+
+	## 3. 手動で全ての移動関連キーのリリースイベントを生成してOSレベルの入力状態を強制的にクリア
+	var keys_to_release: Array[int] = []
+
+	# カスタムキーバインドを取得
+	var left_key: int = get_key_binding("left")
+	var right_key: int = get_key_binding("right")
+	if left_key != KEY_NONE and left_key not in keys_to_release:
+		keys_to_release.append(left_key)
+	if right_key != KEY_NONE and right_key not in keys_to_release:
+		keys_to_release.append(right_key)
+
+	# 常に許可されている矢印キーを追加
+	if KEY_LEFT not in keys_to_release:
+		keys_to_release.append(KEY_LEFT)
+	if KEY_RIGHT not in keys_to_release:
+		keys_to_release.append(KEY_RIGHT)
+
+	# 各キーに対してリリースイベントを生成
+	for key in keys_to_release:
+		var event := InputEventKey.new()
+		event.physical_keycode = key as Key
+		event.pressed = false
+		Input.parse_input_event(event)
 
 func apply_resolution() -> void:
 	## 解像度を適用する
@@ -269,13 +307,6 @@ func apply_resolution() -> void:
 	var screen_size: Vector2i = DisplayServer.screen_get_size()
 	var window_position: Vector2i = (screen_size - current_resolution) / 2
 	DisplayServer.window_set_position(window_position)
-
-func apply_all_display_settings() -> void:
-	## すべてのディスプレイ設定を適用する
-	apply_window_mode()
-	apply_resolution()
-	## ディスプレイ設定変更後、入力バッファをクリアして古い入力イベントを削除
-	Input.flush_buffered_events()
 
 # ======================== ゲーム設定 ========================
 func set_always_dash(enabled: bool) -> void:
@@ -519,4 +550,4 @@ func _load_from_json() -> void:
 			gamepad_bindings[action] = saved_gamepad_bindings[action]
 
 	## ディスプレイ設定を適用
-	apply_all_display_settings()
+	apply_window_mode()
