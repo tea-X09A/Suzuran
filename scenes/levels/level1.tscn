@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=4 uid="uid://db60dwikpklb4"]
+[gd_scene load_steps=12 format=4 uid="uid://db60dwikpklb4"]
 
 [ext_resource type="PackedScene" uid="uid://cb3hree4jheeu" path="res://scenes/levels/camera.tscn" id="1_2r1tl"]
 [ext_resource type="PackedScene" uid="uid://daofj62a4corn" path="res://scenes/player/player.tscn" id="2_8a7m2"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://cm2ybmb8lcuey" path="res://scenes/backgrounds/level0_bg.tscn" id="3_plydf"]
 [ext_resource type="Script" uid="uid://c1mm1jl4mji8d" path="res://scripts/ui/health_gauge.gd" id="4_5ntmo"]
 [ext_resource type="Texture2D" uid="uid://cvvb866p8u71i" path="res://assets/images/tilesets/tilesheet_complete.png" id="5_nkeig"]
+[ext_resource type="Texture2D" uid="uid://b7gowi33f56u1" path="res://assets/AlienTileSet/alien_tilesheet_complete.png" id="7_8a7m2"]
 [ext_resource type="PackedScene" uid="uid://dwhuyn1us30js" path="res://scenes/levels/transition_area.tscn" id="8_transition"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ry65h"]
@@ -281,10 +282,36 @@ texture_region_size = Vector2i(64, 64)
 20:11/0 = 0
 21:11/0 = 0
 
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_plydf"]
+texture = ExtResource("7_8a7m2")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+1:0/0 = 0
+2:0/0 = 0
+3:0/0 = 0
+4:0/0 = 0
+5:0/0 = 0
+6:0/0 = 0
+0:1/0 = 0
+1:1/0 = 0
+2:1/0 = 0
+3:1/0 = 0
+4:1/0 = 0
+5:1/0 = 0
+6:1/0 = 0
+0:2/0 = 0
+1:2/0 = 0
+2:2/0 = 0
+3:2/0 = 0
+4:2/0 = 0
+5:2/0 = 0
+6:2/0 = 0
+
 [sub_resource type="TileSet" id="TileSet_d0grl"]
 tile_size = Vector2i(64, 64)
 physics_layer_0/collision_layer = 1
 sources/0 = SubResource("TileSetAtlasSource_ry65h")
+sources/2 = SubResource("TileSetAtlasSource_plydf")
 
 [node name="Level1" type="Node2D"]
 script = ExtResource("2_level1")

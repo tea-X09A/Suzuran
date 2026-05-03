@@ -64,8 +64,9 @@ func initialize_state() -> void:
 
 ## AnimationTree状態終了時の処理
 func cleanup_state() -> void:
-	# 回避後の硬直時間を設定
-	player.dodge_recovery_time = get_parameter("dodging_recovery_duration")
+	# 回避後の硬直時間を設定（地上のみ）
+	if player.is_grounded:
+		player.dodge_recovery_time = get_parameter("dodging_recovery_duration")
 
 	# 回避終了：全hurtboxを有効化
 	if player.collision_component:
