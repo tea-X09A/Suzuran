@@ -54,8 +54,6 @@
 │   ├── settings/     // Game settings menu (UI/Save) logic
 │   ├── traps/        // Trap object control scripts
 │   └── ui/           // Various UI control scripts (gauges, indicators, etc.)
-├── shaders/          // Shader UID metadata; shader sources live under assets/shaders/
-├── create_tilesheet.py     // Utility script for tilesheet generation
 ├── default_bus_layout.tres // Audio bus layout settings
 ├── project.godot           // Godot project configuration file
 └── rules.md                // Project development rules and conventions
